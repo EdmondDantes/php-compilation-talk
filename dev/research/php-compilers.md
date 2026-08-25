@@ -4,7 +4,7 @@ Compiled 2026-08-25 from project repositories, release pages and vendor
 docs. Dates are last observed activity on that day.
 
 Read the categories first: most arguments about "PHP compilers" are
-really arguments about which of these five things the speaker meant.
+really arguments about which of these six things the speaker meant.
 
 - **A. AOT to native code** — PHP semantics translated to machine code
   or to C/C++/LLVM IR, producing a binary.
@@ -12,9 +12,11 @@ really arguments about which of these five things the speaker meant.
   Erlang, RPython.
 - **C. Compiled to JavaScript or WebAssembly** — with an important split
   between re-implementations and ports of the C interpreter.
-- **D. Encoders** — ship Zend opcode plus a loader extension. Marketed
+- **D. Inside the engine** — what php-src itself already compiles:
+  OPcache, preloading, the JIT.
+- **E. Encoders** — ship Zend opcode plus a loader extension. Marketed
   as compilers; the runtime is unchanged.
-- **E. Packagers** — bundle the unmodified interpreter into one file.
+- **F. Packagers** — bundle the unmodified interpreter into one file.
   No translation happens at all.
 
 Two rules used throughout: a benchmark stated by the project itself is
@@ -333,7 +335,151 @@ nothing else. Every WASM build is a downstream patch.
 
 ---
 
-## D. Encoders — marketed as compilers, and not compilers
+## D. Inside the engine
+
+This is the part the audience already runs, and the baseline every
+project in section A measures against.
+
+### The pipeline PHP already has
+
+**AST as a separate stage (PHP 7.0)** — <https://wiki.php.net/rfc/abstract_syntax_tree>.
+Nikita Popov, 2014. Split the single-pass "parser emits opcodes" design
+into lex → parse to AST → compile AST to opcodes. Passed 47–0;
+compilation got 10–15% faster at 5–70% more memory.
+Without this stage a PHP compiler is barely tractable — every project in
+section A that is written in PHP starts from an AST.
+
+**OPcache** — <https://wiki.php.net/rfc/optimizerplus>. Zend
+Technologies, Dmitry Stogov; Zeev Suraski's RFC of 2013-01-28 passed
+44–4 and it shipped bundled in PHP 5.5. Caches the compiled
+`zend_op_array` in shared memory, so lex/parse/compile is skipped on
+later requests, and runs the optimizer passes.
+**PHP 8.5 made it non-optional** — <https://wiki.php.net/rfc/make_opcache_required>,
+Tim Düsterhus, Arnaud Le Blanc, Ilija Tovilo; passed 30–0.
+`zend_extension=opcache` and `--disable-opcache` are gone; the extension
+is compiled in like ext/standard.
+
+**The optimizer** — `Zend/Optimizer/`, driven by
+`opcache.optimization_level`: peephole and constant folding, jump
+optimization, CFG, SSA/DFA, call graph, SCCP, DCE, literal compaction.
+Nikita Popov's write-up is the honest measure of its ceiling: only
+functions "returning a constant value" can be inlined, which he calls
+inlining that is "largely useless in practice", and constants cannot be
+propagated across file boundaries.
+<https://www.npopov.com/2022/05/22/The-opcache-optimizer.html>
+That boundary — no whole-program view — is exactly what KPHP, HHVM's
+repo-authoritative mode and every AOT project buy.
+
+**Preloading (PHP 7.4)** — <https://wiki.php.net/rfc/preload>. Dmitry
+Stogov, passed 48–0. A script runs at server startup and its classes and
+functions stay permanently linked for every request, skipping per-request
+linking.
+
+**`opcache.file_cache` (PHP 7.0)** — a second-level on-disk cache of
+compiled opcodes that survives restart and SHM reset.
+
+### The JIT
+
+**OPcache JIT (PHP 8.0)** — <https://wiki.php.net/rfc/jit>. Dmitry
+Stogov and Zeev Suraski. Compiles op_arrays or traces to native code
+inside OPcache, using **DynASM from LuaJIT** — LLVM was measured and
+rejected as "almost 100 times slower" at code generation.
+Two modes: function JIT (`1205`, whole functions at load) and tracing
+JIT (`1254`, profile then compile hot traces). AArch64 backend in 8.1.
+The numbers in the RFC itself are the talk's best single slide:
+`bench.php` **0.140 s against 0.320 s**, and WordPress **326 against 315
+req/sec**. Vote for inclusion in PHP 8: 50–2; the earlier attempt to
+ship it as experimental in 7.4 failed 18–36.
+php.watch's "PHP JIT in Depth" measured Laravel about **2% worse** with
+JIT on, and documents the default thresholds (`jit_hot_func=127`,
+`jit_hot_loop=64`, `jit_hot_return=8`, `jit_hot_side_exit=8`).
+<https://php.watch/articles/jit-in-depth>
+
+**JIT defaults (PHP 8.4)** — the pair moved from `opcache.jit=tracing`
+with a zero-sized buffer to `opcache.jit=disable` with a 64M buffer.
+Still off by default, but now switched off honestly by `opcache.jit`
+rather than by starving the buffer.
+
+**JIT rewritten on the IR framework (PHP 8.4)** —
+<https://wiki.php.net/rfc/jit-ir>. Dmitry Stogov, work started January
+2022, vote 26–0, plus 25–0 to delete the old implementation.
+The per-architecture DynASM backends are gone: 8.3 carries
+`zend_jit_x86.dasc`, `zend_jit_arm64.dasc`, `dynasm/` and `libudis86/`;
+8.4 carries none of them — only `zend_jit_ir.c` and a bundled `ir/`.
+RFC claims ~5–10% faster and smaller generated code, at up to 4× slower
+function-JIT compilation.
+
+**IR — Lightweight JIT Compilation Framework** —
+<https://github.com/dstogov/ir>. Dmitry Stogov, MIT, created 2022-09-06,
+active (last commit 2026-08-25), 501 stars. A sea-of-nodes IR with a
+folding engine, SCCP, global code motion, instruction selection and
+linear-scan register allocation, targeting x86_64, x86 and AArch64.
+README benchmarks the generated code at ~96% of GCC -O2 while compiling
+~40× faster, and says plainly it is "not yet a stable finished product".
+It also backs an experimental C compiler (RCC) — meaning php-src now
+carries a general-purpose optimizing backend that has nothing PHP about
+it. That is the piece any future in-tree AOT would build on.
+Talk: "IR JIT Framework: The Basis for the Next Generation of JIT in
+PHP", Joker 2023.
+
+**PHP 8.5** — if the JIT is enabled and fails to initialize, PHP now
+exits with a fatal error at startup instead of quietly continuing
+(php-src `UPGRADING`).
+
+**Declined: OPcache optimization without caching** —
+<https://wiki.php.net/rfc/opcache.no_cache>, Tyson Andre, 2020,
+declined 10–13. Would have let the optimizer and JIT run without shared
+memory or file caching. A side poll on moving the optimizations into
+core first passed 14–0 — the direction exists, nobody has done it.
+
+**Under discussion: OPcache Static Cache** —
+<https://wiki.php.net/rfc/opcache_static_cache>, Go Kudo, 2026-06-02,
+targeting PHP 8.6. Despite the name it persists shared-memory *data*
+across requests, not compiled code. Belongs on the "sounds like AOT,
+isn't" list.
+
+### Extension-generation compilers
+
+Not PHP compilers, but the tools people reach for when they want native
+speed inside PHP.
+
+**Zephir** — <https://github.com/zephir-lang/zephir>. A statically-typed
+language of its own → C → a compiled PHP extension. Active: 1.2.0 on
+2026-07-27, ~3.4k stars. It tracks modern PHP type semantics into
+generated C — 1.2.0 added typed properties via
+`zend_declare_typed_property`, union types and `readonly`. Phalcon is
+built with it, and that is the whole reason it is alive.
+
+**ext-php-rs** — <https://github.com/extphprs/ext-php-rs>. Rust bindings
+to the Zend API; very active (2026-08-25), 833 stars, now in its own
+org. The modern successor to the PHP-CPP idea; Turso's PHP client is
+built on it.
+
+**PHP-CPP** — <https://github.com/CopernicaMarketingSoftware/PHP-CPP>. A
+C++ library that hides the Zend API. Maintenance-only: v2.4.16 of
+2026-07-06 exists solely to keep it compiling on PHP 7.4.
+
+**ext_skel.php and gen_stub.php**, in php-src — the code generators
+every modern extension actually uses: a skeleton generator, and a
+compiler from `.stub.php` signatures to C `arginfo`.
+Its dead ancestor is **CodeGen_PECL** (`pecl-gen`), which built whole
+extensions from an XML description, 2005–2008.
+
+### Typed PHP as an enabler
+
+KPHP's type system is the clearest case: PHPDoc `@var/@param/@return`
+plus `@kphp-*` annotations are the contract, and a wrong PHPDoc is a
+**compile error**. Its docs page is titled "Strict typing is
+performance".
+In the wider ecosystem PHPStan (2.0.0, 2024-11-11) and Psalm (6,
+announced 2025-05-11) taught the codebase the same vocabulary. Note for
+honesty: no scalar-types, typed-properties or union-types RFC gives
+compilation as its motivation — they are enablers in practice, not by
+declared intent.
+
+---
+
+## E. Encoders — marketed as compilers, and not compilers
 
 All of these emit encrypted or obfuscated **Zend opcode** and require a
 proprietary loader extension. Execution is unchanged.
@@ -374,7 +520,7 @@ anything — they cache the opcodes the engine already produced.
 
 ---
 
-## E. Packagers — the interpreter in one file
+## F. Packagers — the interpreter in one file
 
 No translation happens. Listed because "compiled to a single binary" is
 where most of the confusion starts.
@@ -394,7 +540,7 @@ produce native machine code".
 
 ---
 
-## F. Ruled out
+## G. Ruled out
 
 - **Transphpile** — a PHP 7 → PHP 5.6 transpiler, not a compiler to
   anything foreign. Abandoned 2017.
@@ -442,6 +588,4 @@ produce native machine code".
 - Uniter's PHP version target; P8's and Project Zero's coverage.
 - Why Tagua VM was abandoned.
 - Every performance number above that is marked project-authored.
-- The in-engine side (OPcache, JIT, preloading, the 8.4 JIT-IR rewrite)
-  is not in this file yet — a separate sweep was still running when this
-  was written.
+- Whether the talk needs a measurement of its own at all.
