@@ -1,0 +1,332 @@
+/* Layout scaffolding only — colors, faces and shadows come from styles.css.
+
+   NO DRAWN GRID. The modular grid still governs where everything sits (field
+   x 120..1800, y 120..960; four 384px modules at 432 pitch; 48px baseline),
+   but the only lines drawn are: the four "+" registration marks at the field
+   corners, one rule under each slide title, and the rules a layout genuinely
+   owns — card frames, table rows, the matrix cross. Every content block is
+   anchored to the field top (312) and to its bottom (936), so slides fill.
+
+   CYRILLIC: Barlow has no Cyrillic — the stacks keep the system's faces first
+   (Latin: PHP, JIT, T0–T3, figures) and fall back per glyph to Fira Sans
+   Condensed / Fira Sans. Fira Mono carries the terminal plate. */
+deck-stage {
+  --font-heading: "Barlow Condensed", "Fira Sans Condensed", system-ui, sans-serif;
+  --font-body: "Barlow", "Fira Sans", system-ui, sans-serif;
+  --font-mono: "Fira Mono", ui-monospace, monospace;
+  --type-display: 176px;
+  --type-title: 96px;
+  --type-row: 40px;
+  --type-head: 52px;
+  --type-body: 30px;
+  --type-small: 28px;
+  --type-kicker: 24px;
+  --pad-x: 120px;
+  --pad-top: 96px;
+  --pad-bottom: 120px;
+  --baseline: 48px;
+  --page-foot-note: "Limelight · 2026";
+  --field-top: 312px;
+  --paper-60: color-mix(in srgb, var(--color-bg) 60%, transparent);
+  --ink-55: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
+
+.slide {
+  display: block; position: relative;
+  background: var(--color-bg); color: var(--color-text);
+  font-family: var(--font-body); text-wrap: pretty;
+  print-color-adjust: exact; -webkit-print-color-adjust: exact;
+}
+.steel { background: var(--color-accent-900); color: var(--color-bg); }
+
+/* — the field: registration marks only — */
+.board { position: absolute; left: var(--pad-x); top: calc(2.5 * var(--baseline));
+  width: 1680px; height: calc(17.5 * var(--baseline)); pointer-events: none; z-index: 0; }
+.board > .corner, .frame > .corner {
+  position: absolute; width: 15px; height: 15px; color: var(--ink-55);
+}
+.board > .corner::before, .board > .corner::after,
+.frame > .corner::before, .frame > .corner::after { content: ""; position: absolute; background: currentColor; }
+.board > .corner::before, .frame > .corner::before { left: 7px; top: 0; width: 1px; height: 100%; }
+.board > .corner::after, .frame > .corner::after  { top: 7px; left: 0; width: 100%; height: 1px; }
+.board > .corner.tl, .frame > .corner.tl { top: -8px; left: -8px; }
+.board > .corner.tr, .frame > .corner.tr { top: -8px; right: -8px; }
+.board > .corner.bl, .frame > .corner.bl { bottom: -8px; left: -8px; }
+.board > .corner.br, .frame > .corner.br { bottom: -8px; right: -8px; }
+.steel .board > .corner, .steel .frame > .corner { color: var(--paper-60); }
+
+/* — chrome — */
+.kicker {
+  position: absolute; top: calc(2 * var(--baseline) - 1cap); left: var(--pad-x);
+  text-box: trim-both cap alphabetic;
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: var(--type-kicker); letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--color-accent-700); font-feature-settings: "tnum" 1;
+}
+.steel .kicker { color: var(--color-accent-300); }
+.k-right { left: auto; right: var(--pad-x); }
+.page-num {
+  position: absolute; top: calc(2 * var(--baseline) - 1cap); right: var(--pad-x);
+  text-box: trim-both cap alphabetic;
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: var(--type-kicker); letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-55); font-feature-settings: "tnum" 1;
+}
+.page-num::before { content: counter(page) " · "; }
+.page-num::after { content: var(--page-foot-note); }
+.steel .page-num { color: var(--paper-60); }
+deck-stage { counter-reset: page; }
+.slide { counter-increment: page; }
+deck-stage[data-no-page-furniture] .page-num { display: none !important; }
+
+/* the title, and the one rule the composition owns: a hairline across the
+   field with a 2px accent segment holding module 1 */
+.slide-title {
+  position: absolute; left: var(--pad-x); right: var(--pad-x);
+  top: calc(5 * var(--baseline) - 1cap); /* baseline on the 240 rule */
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: var(--type-title); line-height: calc(2 * var(--baseline));
+  letter-spacing: -0.005em; margin: 0; margin-left: -0.052em;
+  text-box: trim-both cap alphabetic;
+}
+.content::before, .content::after { content: ""; position: absolute; top: 264px; height: 1px; }
+.content::before { left: var(--pad-x); right: var(--pad-x); background: var(--color-divider); }
+.content::after { left: var(--pad-x); width: 384px; height: 2px; background: var(--color-accent); }
+.steel.content::before { background: color-mix(in srgb, var(--color-bg) 28%, transparent); }
+.steel.content::after { background: var(--color-accent-300); }
+
+/* — the field block: every layout hangs off these two edges — */
+.field { position: absolute; left: var(--pad-x); right: var(--pad-x); top: var(--field-top); bottom: 168px; }
+.fig-note {
+  position: absolute; left: var(--pad-x); right: var(--pad-x); bottom: 144px;
+  font-size: var(--type-small); line-height: var(--baseline); max-width: 1200px;
+  color: var(--ink-55); text-box: trim-both cap alphabetic; margin: 0;
+}
+.steel .fig-note { color: var(--paper-60); }
+.note-right { left: auto; text-align: right; max-width: 700px; }
+
+/* — cover and close: display, two captions, a steel spec band — */
+.display {
+  position: absolute; left: var(--pad-x); top: calc(9.5 * var(--baseline) - 1cap); /* baseline 456 */
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: var(--type-display); line-height: calc(4 * var(--baseline));
+  letter-spacing: -0.01em; margin: 0; margin-left: -0.052em;
+  text-box: trim-both cap alphabetic;
+}
+.cover-sub {
+  position: absolute; top: calc(11.5 * var(--baseline) - 1cap); /* baseline 552 */
+  font-size: var(--type-small); line-height: var(--baseline); margin: 0;
+  text-box: trim-both cap alphabetic; color: var(--ink-55);
+}
+.cover-sub-a { left: var(--pad-x); width: 384px; color: var(--color-text); }
+.cover-sub-b { left: 672px; width: 1128px; }
+.plate {
+  position: absolute; left: var(--pad-x); right: var(--pad-x); top: 648px; height: 192px;
+  background: var(--color-accent-900); color: var(--color-bg);
+  display: grid; grid-template-columns: repeat(3, 1fr);
+}
+.plate > div { padding: 42px 48px; display: flex; flex-direction: column; gap: 18px;
+  border-left: 1px solid color-mix(in srgb, var(--color-bg) 24%, transparent); }
+.plate > div:first-child { border-left: none; }
+.plate .k { font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: var(--type-kicker); letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent-300); }
+.plate .v { font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: var(--type-head); line-height: 1; }
+.meta { position: absolute; left: var(--pad-x); bottom: 144px; display: flex; align-items: baseline; gap: 18px;
+  font-size: var(--type-kicker); color: var(--ink-55); }
+.meta span { text-box: trim-both cap alphabetic; }
+
+/* — contents / spec rows: numbered bands that fill the field — */
+.rows { position: absolute; left: var(--pad-x); right: var(--pad-x); top: var(--field-top); bottom: 144px;
+  display: grid; grid-auto-rows: minmax(0, 1fr); /* rows share the field and can
+    never grow past it — plain 1fr is minmax(auto,1fr) and overflows on a
+    three-line row */ margin: 0; padding: 0; list-style: none; }
+.rows > li { display: grid; grid-template-columns: 168px 1fr auto; align-items: start; gap: 0 24px;
+  border-top: 1px solid var(--color-divider); padding-top: 40px; }
+.rows > li:first-child { border-top: none; padding-top: 8px; }
+.rows .n { font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: var(--type-row); line-height: var(--baseline); color: var(--color-accent);
+  font-feature-settings: "tnum" 1; text-box: trim-both cap alphabetic; }
+.rows .t { font-size: var(--type-row); line-height: var(--baseline); max-width: 1280px;
+  text-box: trim-both cap alphabetic; }
+.rows .h { font-size: var(--type-small); line-height: var(--baseline); color: var(--ink-55);
+  text-box: trim-both cap alphabetic; }
+.rows.toc .t { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 64px; line-height: var(--baseline); }
+
+/* — cards: hairline wireframe objects with a plate number, filling the field — */
+.cards { position: absolute; left: var(--pad-x); right: var(--pad-x); top: var(--field-top); bottom: 168px;
+  display: grid; gap: 48px; }
+.cards-2 { grid-template-columns: 1fr 1fr; }
+.cards-3 { grid-template-columns: repeat(3, 1fr); }
+.frame { position: relative; border: 1px solid var(--color-divider); padding: 44px 44px 36px;
+  display: flex; flex-direction: column; gap: 24px; }
+.frame .k { font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: var(--type-kicker); letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent-700); }
+.frame h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: var(--type-head); line-height: var(--baseline); margin: 0; letter-spacing: -0.005em; }
+.frame p { font-size: var(--type-body); line-height: var(--baseline); margin: 0; }
+.frame .num { margin-top: auto; text-align: right; font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight); font-size: 120px; line-height: 0.8;
+  color: color-mix(in srgb, var(--color-accent) 32%, transparent); font-feature-settings: "tnum" 1; }
+.frame.solid { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-bg); }
+.frame.solid .k { color: var(--color-bg); }
+.frame.solid .num { color: color-mix(in srgb, var(--color-bg) 45%, transparent); }
+.frame.solid > .corner { color: var(--paper-60); }
+
+/* — the pipeline chain — */
+.chain { position: absolute; left: var(--pad-x); right: var(--pad-x); top: var(--field-top); height: 288px;
+  display: flex; gap: 48px; }
+.chain > div { flex: 1; position: relative; border: 1px solid var(--color-divider);
+  padding: 32px 28px; display: flex; flex-direction: column; gap: 12px; }
+.chain h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 40px; line-height: var(--baseline); margin: 0; }
+.chain p { font-size: var(--type-small); line-height: 40px; margin: 0; color: var(--ink-55); }
+.chain .k { font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: var(--type-kicker); letter-spacing: 0.1em; color: var(--color-accent-700); font-feature-settings: "tnum" 1; }
+.chain > div:not(:last-child)::after {
+  content: ""; position: absolute; right: -34px; top: 50%; width: 20px; height: 20px;
+  transform: translateY(-50%) rotate(45deg);
+  border-top: 3px solid var(--color-accent); border-right: 3px solid var(--color-accent);
+}
+.chain .solid { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-bg); }
+.chain .solid .k { color: var(--color-bg); }
+.chain .solid p { color: var(--paper-60); }
+/* deopt: the return path, drawn as a staple from the last stage back to the opcodes */
+.deopt { position: absolute; left: 840px; width: 691px; top: 624px; height: 48px;
+  border: 1.5px dashed var(--ink-55); border-top: none; }
+.deopt::before { content: ""; position: absolute; left: -8px; top: -14px;
+  border-left: 8px solid transparent; border-right: 8px solid transparent;
+  border-bottom: 14px solid var(--ink-55); }
+.deopt-label { position: absolute; left: 840px; width: 691px; top: calc(15 * var(--baseline) - 1cap);
+  text-align: center; font-size: var(--type-small); line-height: var(--baseline); color: var(--ink-55);
+  text-box: trim-both cap alphabetic; }
+
+/* — the layers matrix — */
+.layers { position: absolute; left: var(--pad-x); right: var(--pad-x); top: var(--field-top); height: 480px;
+  display: grid; grid-template-columns: 336px repeat(3, 1fr); grid-auto-rows: 144px; gap: 24px 48px; }
+.layers .rowlab { display: flex; align-items: center;
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 44px;
+  color: var(--color-accent-700); }
+.layers .cell { position: relative; border: 1px solid var(--color-divider);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 38px; }
+.layers .cell.solid { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-bg); }
+
+/* — the terminal plate — */
+.term { position: absolute; left: var(--pad-x); right: var(--pad-x); top: var(--field-top); height: 480px;
+  border: 1px solid var(--color-divider); padding: 60px; }
+.term.frame { padding: 52px 60px; gap: 0; } /* border-box: 5 lines × 72 + 104 + 2 borders = 466 inside the 480 seat */
+.term .t-line { font-family: var(--font-mono); font-size: 36px; line-height: 72px; white-space: pre; }
+.term .t-dim { color: var(--ink-55); }
+.term .t-tier { color: var(--color-accent-700); }
+
+/* — the hero number, on the steel field — */
+.hero-num { position: absolute; left: var(--pad-x); top: calc(16.5 * var(--baseline) - 1cap); /* baseline 792 */
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 520px; line-height: 1; letter-spacing: -0.02em; margin: 0; margin-left: -0.010em;
+  color: var(--color-bg); text-box: trim-both cap alphabetic; font-feature-settings: "tnum" 1; }
+.hero-caption { position: absolute; left: 1104px; width: 696px; top: calc(7.5 * var(--baseline) - 1cap); /* baseline 360 */
+  font-size: 34px; line-height: var(--baseline); margin: 0; color: var(--color-bg);
+  text-box: trim-both cap alphabetic; }
+.hero-ini { position: absolute; left: 1104px; top: calc(13.5 * var(--baseline) - 1cap); /* baseline 648 */
+  font-family: var(--font-mono); font-size: 30px; color: var(--color-accent-300);
+  text-box: trim-both cap alphabetic; }
+
+/* — dividers — */
+.ghost-num { position: absolute; left: var(--pad-x); top: calc(12.5 * var(--baseline) - 1cap); /* baseline 600 */
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 480px; line-height: 1; letter-spacing: -0.02em; margin: 0; margin-left: -0.036em;
+  color: var(--color-accent-700); text-box: trim-both cap alphabetic; }
+.divider .slide-title { top: calc(15.5 * var(--baseline) - 1cap); } /* baseline 744 */
+.divider .lede { position: absolute; left: var(--pad-x); width: 1128px; top: calc(17.5 * var(--baseline) - 1cap); /* baseline 840 */
+  font-size: var(--type-small); line-height: var(--baseline); margin: 0; color: var(--paper-60);
+  text-box: trim-both cap alphabetic; }
+
+/* — table: the rows carry their own rules — */
+.slide .table { position: absolute; left: var(--pad-x); right: var(--pad-x); top: 300px;
+  width: 1680px; font-size: 32px; font-feature-settings: "tnum" 1;
+  table-layout: fixed; border-collapse: collapse; }
+.slide .table th:nth-child(-n+3) { width: 420px; }
+.slide .table thead tr { height: 96px; }
+.slide .table tbody tr { height: 120px; }
+.slide .table th, .slide .table td {
+  text-align: left; font-weight: 400; background: none; vertical-align: middle;
+  padding: 0 24px 0 0; border: none; border-bottom: 1px solid var(--color-divider);
+}
+.slide .table th { font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: var(--type-kicker); letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent-700);
+  border-bottom: 2px solid var(--color-accent); vertical-align: bottom; padding-bottom: 12px; }
+.slide .table tbody tr:hover { background: none; }
+.slide .table td:first-child { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 38px; }
+.slide .table th:last-child, .slide .table td:last-child { padding-right: 0; }
+
+/* — the payoff matrix: the cross is the only drawing — */
+.matrix { position: absolute; left: var(--pad-x); right: var(--pad-x); top: var(--field-top); height: 480px;
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+.matrix::before, .matrix::after { content: ""; position: absolute; background: var(--color-divider); }
+.matrix::before { left: 50%; top: 0; bottom: 0; width: 1px; }
+.matrix::after { top: 50%; left: 0; right: 0; height: 1px; }
+.matrix > div { padding: 36px 48px 36px 0; }
+.matrix > div:nth-child(2), .matrix > div:nth-child(4) { padding-left: 48px; padding-right: 0; }
+.matrix h3 { font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: 44px; line-height: var(--baseline); margin: 0 0 20px; }
+.matrix p { font-size: var(--type-small); line-height: var(--baseline); margin: 0; color: var(--ink-55); max-width: 660px; }
+.matrix-axis { position: absolute; left: var(--pad-x); right: var(--pad-x); top: 840px;
+  display: flex; justify-content: space-between;
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: var(--type-kicker); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-55); }
+.matrix-axis span { text-box: trim-both cap alphabetic; }
+
+/* — charts: static SVG on the tokens, plotted to fill the field — */
+.plot { position: absolute; left: var(--pad-x); right: var(--pad-x); top: var(--field-top); margin: 0; }
+.chart { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: var(--font-body); font-size: 26px; fill: var(--ink-55); font-feature-settings: "tnum" 1; }
+.chart .grid, .chart .axis { stroke: var(--color-divider); stroke-width: 1; }
+.chart .bar { fill: none; stroke: var(--color-neutral-600); stroke-width: 1; }
+.chart .bar-hi { fill: var(--color-accent); stroke: none; }
+.chart .val { fill: var(--ink-55); }
+.chart .hi-label { fill: var(--color-accent-700); font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 34px; }
+.chart .series-a { stroke: var(--color-accent); stroke-width: 4; fill: none; }
+.chart .series-b { stroke: var(--color-neutral-800); stroke-width: 3; fill: none; stroke-dasharray: 12 9; }
+.chart .x-lab { font-family: var(--font-heading); font-weight: var(--font-heading-weight); font-size: 30px; fill: var(--color-text); }
+.legend { position: absolute; right: var(--pad-x); top: calc(5 * var(--baseline) - 1cap);
+  display: flex; align-items: baseline; gap: 14px; font-size: var(--type-kicker); color: var(--ink-55); }
+.legend span { text-box: trim-both cap alphabetic; }
+.legend .k-line, .legend .k-dash, .legend .k-out, .legend .k-fill { display: inline-block; }
+.legend .k-line { width: 48px; height: 4px; background: var(--color-accent); position: relative; top: -8px; }
+.legend .k-dash { width: 48px; height: 3px; position: relative; top: -8px; margin-left: 20px;
+  background: repeating-linear-gradient(to right, var(--color-neutral-800) 0 12px, transparent 12px 21px); }
+.legend .k-out { width: 40px; height: 22px; border: 1px solid var(--color-neutral-600); }
+.legend .k-fill { width: 40px; height: 22px; background: var(--color-accent); margin-left: 20px; }
+
+/* — project page: identity left, spec rows right — */
+.proj { position: absolute; left: var(--pad-x); right: var(--pad-x); top: var(--field-top); bottom: 144px;
+  display: grid; grid-template-columns: 744px 1fr; gap: 96px; }
+.proj .id { display: flex; flex-direction: column; }
+.proj .lede { font-size: var(--type-row); line-height: var(--baseline); margin: 0; }
+.proj .repo { font-family: var(--font-mono); font-size: 26px; color: var(--color-accent-700); margin-top: 32px; }
+.proj .verdict { margin: auto 0 0; font-size: var(--type-small); line-height: var(--baseline);
+  color: var(--ink-55); border-top: 1px solid var(--color-divider); padding-top: 28px; }
+.specs { display: grid; grid-auto-rows: minmax(0, 1fr); }
+.specs > div { display: grid; grid-template-columns: 264px 1fr; gap: 24px; align-items: start;
+  border-top: 1px solid var(--color-divider); padding-top: 24px; }
+.specs > div:first-child { border-top: none; padding-top: 0; }
+.specs .l { font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: var(--type-kicker); letter-spacing: 0.1em; text-transform: uppercase; color: var(--color-accent-700); }
+.specs .v { font-size: 32px; line-height: var(--baseline); }
+/* the landscape summary carries more rows than a normal table: tighter pitch */
+.slide .table.compact { font-size: 26px; top: 300px; }
+.slide .table.compact tbody tr { height: 56px; }
+.slide .table.compact td:first-child { font-size: 30px; }
+.slide .table.compact th:nth-child(-n+3) { width: 336px; }
+
+/* the draft-data flag */
+.flag { position: absolute; right: var(--pad-x); bottom: 132px;
+  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
+  font-size: var(--type-kicker); letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--color-accent-700); border: 1px solid var(--color-accent-700); padding: 4px 14px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-deck-active] .rise { animation: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+}

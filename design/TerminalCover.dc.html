@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;600&family=Fira+Sans+Condensed:wght@400;600;700&family=Fira+Sans:wght@400;500&family=Fira+Mono&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #ffb000; } a:hover { color: #ffcf5c; }
+  </style>
+</helmet>
+<div style="{{ t.root }}">
+  <div style="{{ t.grid }}"></div>
+  <div style="{{ t.field }}"></div>
+  <div style="{{ t.kicker }}">{{ t.kickerText }}</div>
+  <h1 style="{{ t.h1 }}">PHP и компиляция</h1>
+  <p style="{{ t.sub }}">Зачем вообще пишут компиляторы PHP, чем за это платят и стоит ли ждать чего-то в проде.</p>
+  <div style="{{ t.band }}">
+    <div style="{{ t.cell1 }}">
+      <span style="{{ t.cellK }}">Подходов</span>
+      <span style="{{ t.cellV }}">3</span>
+    </div>
+    <div style="{{ t.cell }}">
+      <span style="{{ t.cellK }}">Проектов</span>
+      <span style="{{ t.cellV }}">20+</span>
+    </div>
+    <div style="{{ t.cell }}">
+      <span style="{{ t.cellK }}">Дожили</span>
+      <span style="{{ t.cellV }}">единицы</span>
+    </div>
+  </div>
+  <div style="{{ t.foot }}">
+    <span>Имя докладчика</span><span>Конференция · 2026</span>
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"theme":{"editor":"enum","options":["Терминал","Чертёж"],"default":"Терминал","section":"Тема"},"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  palette() {
+    const dark = {
+      bg: '#0d0f12', ink: '#e8e6e1', dim: '#a9b2b9', faint: '#5f6b74',
+      accent: '#ffb000', bandBg: '#12161a', bandInk: '#e8e6e1', bandLabel: '#ffb000',
+      bandGap: '#1e242a', rule: 'transparent',
+      head: "'JetBrains Mono', ui-monospace, monospace",
+      body: "'IBM Plex Sans', system-ui, sans-serif",
+      mono: "'JetBrains Mono', ui-monospace, monospace",
+      headWeight: '700', headSize: '124px', headLS: '-0.035em',
+      grid: 'linear-gradient(#ffffff08 1px, transparent 1px)',
+      kickerText: '~/php $ php --emit-native app.php',
+      kickerCase: 'none', kickerLS: '0em',
+      pad: 112
+    };
+    const light = {
+      bg: '#f2f2f3', ink: '#1d1f20', dim: '#4a4d4f', faint: '#83878a',
+      accent: '#416180', bandBg: '#1d2d3d', bandInk: '#f2f2f3', bandLabel: '#b5d9fd',
+      bandGap: 'transparent', rule: '#1d1f2018',
+      head: "'Fira Sans Condensed', system-ui, sans-serif",
+      body: "'Fira Sans', system-ui, sans-serif",
+      mono: "'Fira Mono', ui-monospace, monospace",
+      headWeight: '700', headSize: '168px', headLS: '-0.01em',
+      grid: 'none',
+      kickerText: 'Рантаймы и компиляторы',
+      kickerCase: 'uppercase', kickerLS: '0.1em',
+      pad: 120
+    };
+    return (this.props.theme ?? 'Терминал') === 'Чертёж' ? light : dark;
+  }
+  renderVals() {
+    const p = this.palette();
+    const x = p.pad + 'px';
+    const cellBase = 'padding: 34px 44px; display: flex; flex-direction: column; gap: 14px; background: ' + p.bandBg + ';';
+    return {
+      t: {
+        root: 'width: 1920px; height: 1080px; background: ' + p.bg + '; color: ' + p.ink +
+              '; font-family: ' + p.body + '; position: relative; overflow: hidden;',
+        grid: 'position: absolute; inset: 0; background-image: ' + p.grid + '; background-size: 100% 48px;',
+        field: 'position: absolute; left: ' + x + '; top: 120px; right: ' + x +
+               '; height: 840px; border: 1px solid ' + p.rule + ';',
+        kicker: 'position: absolute; left: ' + x + '; top: 100px; font-family: ' + p.mono +
+                '; font-weight: 600; font-size: 26px; letter-spacing: ' + p.kickerLS +
+                '; text-transform: ' + p.kickerCase + '; color: ' + p.accent + ';',
+        kickerText: p.kickerText,
+        h1: 'position: absolute; left: ' + (p.pad - 4) + 'px; top: 248px; margin: 0; width: 1560px; font-family: ' +
+            p.head + '; font-weight: ' + p.headWeight + '; font-size: ' + p.headSize +
+            '; line-height: 1; letter-spacing: ' + p.headLS + ';',
+        sub: 'position: absolute; left: ' + x + '; top: 560px; margin: 0; width: 1200px; font-size: 38px; line-height: 1.45; color: ' + p.dim + ';',
+        band: 'position: absolute; left: ' + x + '; right: ' + x + '; top: 760px; height: 168px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; background: ' + p.bandGap + '; color: ' + p.bandInk + ';',
+        cell1: cellBase,
+        cell: cellBase,
+        cellK: 'font-family: ' + p.mono + '; font-weight: 600; font-size: 22px; letter-spacing: 0.14em; text-transform: uppercase; color: ' + p.bandLabel + ';',
+        cellV: 'font-family: ' + p.head + '; font-weight: ' + p.headWeight + '; font-size: 52px; line-height: 1;',
+        foot: 'position: absolute; left: ' + x + '; right: ' + x + '; bottom: 88px; display: flex; justify-content: space-between; font-family: ' + p.mono + '; font-size: 24px; color: ' + p.faint + ';'
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

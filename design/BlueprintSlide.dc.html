@@ -1,0 +1,51 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans+Condensed:wght@400;600;700&family=Fira+Sans:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #416180; } a:hover { color: #2c455d; }
+  </style>
+</helmet>
+<div style="width: 1920px; height: 1080px; background: #f2f2f3; color: #1d1f20; font-family: 'Fira Sans', system-ui, sans-serif; position: relative; overflow: hidden;">
+  <div style="position: absolute; left: 120px; top: 96px; right: 120px; display: flex; justify-content: space-between; font-family: 'Fira Sans Condensed', system-ui, sans-serif; font-weight: 600; font-size: 24px; letter-spacing: 0.1em; text-transform: uppercase;">
+    <span style="color: #416180;">01 · Стоимость динамики</span><span style="color: #1d1f2090;">04 · Limelight · 2026</span>
+  </div>
+  <h2 style="position: absolute; left: 116px; top: 176px; margin: 0; font-family: 'Fira Sans Condensed', system-ui, sans-serif; font-weight: 600; font-size: 96px; line-height: 1; letter-spacing: -0.005em;">
+    Три источника расходов
+  </h2>
+  <div style="position: absolute; left: 120px; top: 300px; right: 120px; height: 1px; background: #1d1f2028;"></div>
+  <div style="position: absolute; left: 120px; top: 299px; width: 384px; height: 2px; background: #5980a6;"></div>
+  <div style="position: absolute; left: 120px; top: 384px; right: 120px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 48px;">
+    <div style="border: 1px solid #1d1f2028; padding: 44px 44px 36px; display: flex; flex-direction: column; gap: 24px; min-height: 480px;">
+      <span style="font-family: 'Fira Sans Condensed', system-ui, sans-serif; font-weight: 600; font-size: 24px; letter-spacing: 0.1em; text-transform: uppercase; color: #416180;">Цикл VM</span>
+      <h3 style="margin: 0; font-family: 'Fira Sans Condensed', system-ui, sans-serif; font-weight: 600; font-size: 52px; line-height: 1.05;">Диспетчеризация</h3>
+      <p style="margin: 0; font-size: 30px; line-height: 1.5;">Прыжок на обработчик опкода стоит дороже самой операции.</p>
+      <span style="margin-top: auto; text-align: right; font-family: 'Fira Sans Condensed', system-ui, sans-serif; font-weight: 700; font-size: 120px; line-height: 0.8; color: #5980a652;">01</span>
+    </div>
+    <div style="border: 1px solid #1d1f2028; padding: 44px 44px 36px; display: flex; flex-direction: column; gap: 24px; min-height: 480px;">
+      <span style="font-family: 'Fira Sans Condensed', system-ui, sans-serif; font-weight: 600; font-size: 24px; letter-spacing: 0.1em; text-transform: uppercase; color: #416180;">Типы</span>
+      <h3 style="margin: 0; font-family: 'Fira Sans Condensed', system-ui, sans-serif; font-weight: 600; font-size: 52px; line-height: 1.05;">Динамика типов</h3>
+      <p style="margin: 0; font-size: 30px; line-height: 1.5;">Тип известен только в рантайме — проверка на каждом шаге.</p>
+      <span style="margin-top: auto; text-align: right; font-family: 'Fira Sans Condensed', system-ui, sans-serif; font-weight: 700; font-size: 120px; line-height: 0.8; color: #5980a652;">02</span>
+    </div>
+    <div style="border: 1px solid #5980a6; background: #5980a6; color: #f2f2f3; padding: 44px 44px 36px; display: flex; flex-direction: column; gap: 24px; min-height: 480px;">
+      <span style="font-family: 'Fira Sans Condensed', system-ui, sans-serif; font-weight: 600; font-size: 24px; letter-spacing: 0.1em; text-transform: uppercase;">Память</span>
+      <h3 style="margin: 0; font-family: 'Fira Sans Condensed', system-ui, sans-serif; font-weight: 600; font-size: 52px; line-height: 1.05;">Учёт ссылок</h3>
+      <p style="margin: 0; font-size: 30px; line-height: 1.5;">Refcount меняется почти на каждом присваивании.</p>
+      <span style="margin-top: auto; text-align: right; font-family: 'Fira Sans Condensed', system-ui, sans-serif; font-weight: 700; font-size: 120px; line-height: 0.8; color: #f2f2f373;">03</span>
+    </div>
+  </div>
+  <p style="position: absolute; left: 120px; bottom: 96px; margin: 0; width: 1200px; font-size: 28px; line-height: 1.45; color: #1d1f2090;">
+    Первые два компиляция снимает напрямую, третий — только через анализ времён жизни.
+  </p>
+</div>
+</x-dc>
+</body>
+</html>

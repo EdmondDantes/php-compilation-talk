@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Golos+Text:wght@400;500&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #d1401f; } a:hover { color: #a32f14; }
+  </style>
+</helmet>
+<div style="width: 1920px; height: 1080px; background: #f4f1ea; color: #16150f; font-family: 'Golos Text', system-ui, sans-serif; position: relative; overflow: hidden;">
+  <div style="position: absolute; left: 112px; top: 92px; right: 112px; display: flex; justify-content: space-between; align-items: baseline; font-size: 24px; letter-spacing: 0.18em; text-transform: uppercase; color: #7a746a;">
+    <span><span style="color: #d1401f;">01</span> &nbsp;Стоимость динамики</span><span>04</span>
+  </div>
+  <h2 style="position: absolute; left: 104px; top: 168px; margin: 0; font-family: 'Unbounded', system-ui, sans-serif; font-weight: 600; font-size: 92px; line-height: 1; letter-spacing: -0.025em;">
+    Три источника расходов
+  </h2>
+  <div style="position: absolute; left: 112px; top: 316px; right: 112px; height: 6px; background: #16150f;"></div>
+  <div style="position: absolute; left: 112px; top: 388px; right: 112px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 72px;">
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <span style="font-family: 'Unbounded', system-ui, sans-serif; font-weight: 800; font-size: 128px; line-height: 0.9; color: #d1401f;">01</span>
+      <h3 style="margin: 0; font-family: 'Unbounded', system-ui, sans-serif; font-weight: 600; font-size: 46px; line-height: 1.1;">Диспетчеризация</h3>
+      <p style="margin: 0; font-size: 32px; line-height: 1.45; color: #3c382f;">Прыжок на обработчик опкода стоит дороже самой операции.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <span style="font-family: 'Unbounded', system-ui, sans-serif; font-weight: 800; font-size: 128px; line-height: 0.9; color: #d1401f;">02</span>
+      <h3 style="margin: 0; font-family: 'Unbounded', system-ui, sans-serif; font-weight: 600; font-size: 46px; line-height: 1.1;">Динамика типов</h3>
+      <p style="margin: 0; font-size: 32px; line-height: 1.45; color: #3c382f;">Тип известен только в рантайме — проверка на каждом шаге.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <span style="font-family: 'Unbounded', system-ui, sans-serif; font-weight: 800; font-size: 128px; line-height: 0.9; color: #d1401f;">03</span>
+      <h3 style="margin: 0; font-family: 'Unbounded', system-ui, sans-serif; font-weight: 600; font-size: 46px; line-height: 1.1;">Учёт ссылок</h3>
+      <p style="margin: 0; font-size: 32px; line-height: 1.45; color: #3c382f;">Refcount меняется почти на каждом присваивании.</p>
+    </div>
+  </div>
+  <p style="position: absolute; left: 112px; bottom: 88px; margin: 0; width: 1300px; font-size: 28px; line-height: 1.4; color: #7a746a; border-top: 2px solid #d8d2c6; padding-top: 24px;">
+    Первые два компиляция снимает напрямую, третий — только через анализ времён жизни.
+  </p>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=IBM+Plex+Sans:wght@400;600&family=Fira+Sans+Condensed:wght@400;600;700&family=Fira+Sans:wght@400;500&family=Fira+Mono&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #ffb000; } a:hover { color: #ffcf5c; }
+  </style>
+</helmet>
+<div style="{{ t.root }}">
+  <div style="{{ t.grid }}"></div>
+  <div style="{{ t.top }}">
+    <span><span style="{{ t.topNum }}">01</span> Стоимость динамики</span><span>04</span>
+  </div>
+  <h2 style="{{ t.h2 }}">Три источника расходов</h2>
+  <div style="{{ t.rule }}"></div>
+  <div style="{{ t.ruleAccent }}"></div>
+  <div style="{{ t.list }}">
+    <sc-for list="{{ rows }}" as="row" hint-placeholder-count="3">
+      <div style="{{ row.style }}">
+        <span style="{{ t.rowN }}">{{ row.n }}</span>
+        <h3 style="{{ t.rowH }}">{{ row.title }}</h3>
+        <p style="{{ t.rowP }}">{{ row.text }}</p>
+        <span style="{{ row.markStyle }}">{{ row.mark }}</span>
+      </div>
+    </sc-for>
+  </div>
+  <p style="{{ t.note }}">{{ t.noteText }}</p>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"theme":{"editor":"enum","options":["Терминал","Чертёж"],"default":"Терминал","section":"Тема"},"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  palette() {
+    const dark = {
+      bg: '#0d0f12', ink: '#e8e6e1', dim: '#a9b2b9', faint: '#5f6b74',
+      accent: '#ffb000', panel: '#12161a', gap: '#1a2027', border: 'transparent',
+      rule: '#263038', ok: '#4ec9b0', warn: '#d97757',
+      head: "'JetBrains Mono', ui-monospace, monospace",
+      body: "'IBM Plex Sans', system-ui, sans-serif",
+      mono: "'JetBrains Mono', ui-monospace, monospace",
+      headSize: '84px', headWeight: '700', headLS: '-0.03em',
+      grid: 'linear-gradient(#ffffff08 1px, transparent 1px)',
+      gapSize: '2px', accentBar: 'transparent',
+      noteText: '// третий снимается только через анализ времён жизни',
+      pad: 112
+    };
+    const light = {
+      bg: '#f2f2f3', ink: '#1d1f20', dim: '#4a4d4f', faint: '#83878a',
+      accent: '#416180', panel: 'transparent', gap: 'transparent', border: '#1d1f2028',
+      rule: '#1d1f2028', ok: '#416180', warn: '#8a5a2b',
+      head: "'Fira Sans Condensed', system-ui, sans-serif",
+      body: "'Fira Sans', system-ui, sans-serif",
+      mono: "'Fira Mono', ui-monospace, monospace",
+      headSize: '96px', headWeight: '600', headLS: '-0.005em',
+      grid: 'none',
+      gapSize: '24px', accentBar: '#5980a6',
+      noteText: 'Третий снимается только через анализ времён жизни.',
+      pad: 120
+    };
+    return (this.props.theme ?? 'Терминал') === 'Чертёж' ? light : dark;
+  }
+  renderVals() {
+    const p = this.palette();
+    const x = p.pad + 'px';
+    const rowStyle = 'background: ' + p.panel + '; border: 1px solid ' + p.border +
+      '; padding: 44px 48px; display: grid; grid-template-columns: 120px 460px minmax(0, 1fr) 220px; gap: 40px; align-items: baseline;';
+    const mark = (color) => 'font-family: ' + p.mono + '; font-size: 30px; text-align: right; color: ' + color + ';';
+    const data = [
+      { n: '01', title: 'Диспетчеризация', text: 'Прыжок на обработчик опкода стоит дороже самой операции.', mark: 'снимается', color: p.ok },
+      { n: '02', title: 'Динамика типов', text: 'Тип известен только в рантайме — проверка на каждом шаге.', mark: 'снимается', color: p.ok },
+      { n: '03', title: 'Учёт ссылок', text: 'Refcount меняется почти на каждом присваивании.', mark: 'частично', color: p.warn }
+    ];
+    return {
+      rows: data.map((r) => ({ ...r, style: rowStyle, markStyle: mark(r.color) })),
+      t: {
+        root: 'width: 1920px; height: 1080px; background: ' + p.bg + '; color: ' + p.ink +
+              '; font-family: ' + p.body + '; position: relative; overflow: hidden;',
+        grid: 'position: absolute; inset: 0; background-image: ' + p.grid + '; background-size: 100% 48px;',
+        top: 'position: absolute; left: ' + x + '; top: 92px; right: ' + x +
+             '; display: flex; justify-content: space-between; font-family: ' + p.mono +
+             '; font-weight: 600; font-size: 22px; letter-spacing: 0.14em; text-transform: uppercase; color: ' + p.faint + ';',
+        topNum: 'color: ' + p.accent + ';',
+        h2: 'position: absolute; left: ' + (p.pad - 4) + 'px; top: 168px; margin: 0; font-family: ' + p.head +
+            '; font-weight: ' + p.headWeight + '; font-size: ' + p.headSize + '; line-height: 1; letter-spacing: ' + p.headLS + ';',
+        rule: 'position: absolute; left: ' + x + '; right: ' + x + '; top: 300px; height: 1px; background: ' + p.rule + ';',
+        ruleAccent: 'position: absolute; left: ' + x + '; top: 299px; width: 384px; height: 2px; background: ' + p.accentBar + ';',
+        list: 'position: absolute; left: ' + x + '; right: ' + x + '; top: 372px; display: flex; flex-direction: column; gap: ' +
+              p.gapSize + '; background: ' + p.gap + ';',
+        rowN: 'font-family: ' + p.mono + '; font-size: 40px; color: ' + p.accent + ';',
+        rowH: 'margin: 0; font-family: ' + p.head + '; font-size: 44px; font-weight: 600; line-height: 1.1;',
+        rowP: 'margin: 0; font-size: 30px; line-height: 1.4; color: ' + p.dim + ';',
+        note: 'position: absolute; left: ' + x + '; bottom: 88px; margin: 0; width: 1300px; font-family: ' + p.mono +
+              '; font-size: 26px; line-height: 1.4; color: ' + p.faint + ';',
+        noteText: p.noteText
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

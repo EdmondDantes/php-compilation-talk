@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PHP и компиляция: для чего?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="crossorigin" />
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans+Condensed:wght@400;600;700&family=Fira+Sans:wght@400;500&family=Fira+Mono:wght@400&display=swap" rel="stylesheet" />
+<!-- 1. tokens and components of the Industry design system -->
+<link rel="stylesheet" href="css/industry.css" />
+<!-- 2. this deck's layout: the slide grammar only -->
+<link rel="stylesheet" href="css/deck.css" />
+</head>
+<body>
+
+<!-- The stage owns scaling, keyboard nav, the thumbnail rail, speaker notes
+     and print (one page per slide). Slides are its direct children. -->
+<deck-stage width="1920" height="1080">
+
+<section class="slide cover" data-label="Титул" data-screen-label="01" data-speaker-notes="Рамка доклада: не «наш рантайм быстрее», а что именно даёт компиляция PHP и чем за неё платят. Пример — Limelight.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker k-right"><span>Рантаймы и компиляторы</span></div>
+  <h1 class="display rise">PHP и компиляция</h1>
+  <p class="cover-sub cover-sub-a">Для чего?</p>
+  <p class="cover-sub cover-sub-b">Что ускоряет JIT, чего он не может и что рантайм платит за скорость. На примере Limelight — PHP-совместимого рантайма с трассирующим JIT.</p>
+  <div class="plate rise">
+    <div><span class="k">Совместимость</span><span class="v">PHP 8.1–8.4</span></div>
+    <div><span class="k">Тиры исполнения</span><span class="v">T0 → T3</span></div>
+    <div><span class="k">Порог компиляции</span><span class="v">1000 вызовов</span></div>
+  </div>
+  <div class="meta"><span>Имя докладчика</span><span>·</span><span>Конференция</span><span>·</span><span>2026</span></div>
+</section>
+<section class="slide content" data-label="Содержание" data-screen-label="02" data-speaker-notes="Четыре части: как исполняется PHP, как устроена компиляция, что вокруг неё делает рантайм, и цифры с границами применимости.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <h2 class="slide-title">Содержание</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <ol class="rows toc rise">
+    <li><span class="n">01</span><span class="t">Стоимость динамики</span><span class="h">за что платит интерпретатор</span></li>
+    <li><span class="n">02</span><span class="t">Пайплайн компиляции</span><span class="h">тиры, трассы, деоптимизация</span></li>
+    <li><span class="n">03</span><span class="t">Рантайм и память</span><span class="h">воркеры, арены, совместимость</span></li>
+    <li><span class="n">04</span><span class="t">Ландшафт</span><span class="h">кто уже компилирует PHP</span></li>
+    <li><span class="n">05</span><span class="t">Цифры и выводы</span><span class="h">где окупается, где нет</span></li>
+  </ol>
+</section>
+<section class="slide divider steel" data-label="01 · Стоимость динамики" data-screen-label="03" data-speaker-notes="Первая часть: за что платит интерпретатор на каждой операции.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="ghost-num">01</div>
+  <h2 class="slide-title rise">Стоимость динамики</h2>
+  <p class="lede">Три накладных расхода, которые повторяются миллионы раз за запрос и не относятся к задаче приложения.</p>
+</section>
+<section class="slide content" data-label="Что делает интерпретатор" data-screen-label="04" data-speaker-notes="Ни одна из трёх операций не делает работу приложения — это цена динамической семантики.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>01 · Стоимость динамики</span></div>
+  <h2 class="slide-title">Что делает интерпретатор</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <ol class="rows rise">
+    <li><span class="n">01</span><span class="t">Читает опкод и прыгает в обработчик — один switch на операцию.</span><span class="h">диспетчеризация</span></li>
+    <li><span class="n">02</span><span class="t">Проверяет типы в рантайме: сложение и склейка строк — один опкод.</span><span class="h">динамика типов</span></li>
+    <li><span class="n">03</span><span class="t">Считает ссылки: почти каждое присваивание меняет refcount.</span><span class="h">учёт ссылок</span></li>
+  </ol>
+</section>
+<section class="slide content" data-label="Три источника расходов" data-screen-label="05" data-speaker-notes="Компиляция бьёт по первым двум напрямую, по третьему — через анализ времён жизни.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>01 · Стоимость динамики</span></div>
+  <h2 class="slide-title">Три источника расходов</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="cards cards-3 rise">
+    <div class="frame"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <span class="k">Цикл VM</span><h3>Диспетчеризация</h3><p>Прыжок на обработчик стоит дороже самой операции.</p><span class="num">01</span></div>
+    <div class="frame"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <span class="k">Типы</span><h3>Динамика типов</h3><p>Тип известен только в рантайме — проверка на каждом шаге.</p><span class="num">02</span></div>
+    <div class="frame"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <span class="k">Память</span><h3>Учёт ссылок</h3><p>Refcount и работа с памятью живут в горячем пути.</p><span class="num">03</span></div>
+  </div>
+</section>
+<section class="slide content" data-label="Что уже решено" data-screen-label="06" data-speaker-notes="Честно про существующие средства: OPcache снимает компиляцию, JIT в PHP 8 — часть диспетчеризации. Остальное остаётся.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>01 · Стоимость динамики</span></div>
+  <h2 class="slide-title">Что уже решено</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="cards cards-2 rise">
+    <div class="frame"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <span class="k">Есть с 5.5</span><h3>OPcache</h3><p>Убирает парсинг и компиляцию в опкоды. Цикл интерпретатора остаётся — а это основная часть времени запроса.</p><span class="num">01</span></div>
+    <div class="frame"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <span class="k">Есть с 8.0</span><h3>JIT в PHP 8</h3><p>Компилирует функции по счётчику вызовов. Выигрыш виден на числовых циклах; на веб-нагрузке время уходит на вызовы, память и ввод-вывод.</p><span class="num">02</span></div>
+  </div>
+</section>
+<section class="slide divider steel" data-label="02 · Пайплайн компиляции" data-screen-label="07" data-speaker-notes="Вторая часть: путь от файла до машинного кода и обратно.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="ghost-num">02</div>
+  <h2 class="slide-title rise">Пайплайн компиляции</h2>
+  <p class="lede">Что кэшируется один раз, что пересобирается по профилю исполнения и почему обратный путь обязателен.</p>
+</section>
+<section class="slide content" data-label="От исходника к машинному коду" data-screen-label="08" data-speaker-notes="Слева направо — один раз на файл. Обратная стрелка — деоптимизация: guard не сошёлся, управление возвращается интерпретатору.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>02 · Пайплайн компиляции</span></div>
+  <h2 class="slide-title">От исходника к машинному коду</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="chain rise">
+    <div><span class="k">01</span><h3>Исходник</h3><p>.php, как есть</p></div>
+    <div><span class="k">02</span><h3>Парсер</h3><p>лексер и AST — один раз на файл</p></div>
+    <div><span class="k">03</span><h3>Опкоды</h3><p>кэш опкодов, переживает запрос</p></div>
+    <div><span class="k">04</span><h3>IR и профиль</h3><p>SSA, типы по наблюдению</p></div>
+    <div class="solid"><span class="k">05</span><h3>Машинный код</h3><p>кэш трасс, тиры T1–T3</p></div>
+  </div>
+  <div class="deopt" aria-hidden="true"></div>
+  <div class="deopt-label">деоптимизация: возврат к опкодам</div>
+  <p class="fig-note">Без обратного пути компилятор не имел бы права предполагать типы.</p>
+</section>
+<section class="slide content" data-label="Тиры исполнения" data-screen-label="09" data-speaker-notes="Тиры — способ не платить за компиляцию там, где она не окупится. Холодный код остаётся в интерпретаторе.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>02 · Пайплайн компиляции</span></div>
+  <h2 class="slide-title">Тиры исполнения</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="cards cards-3 rise">
+    <div class="frame"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <span class="k">Холодный код</span><h3>Интерпретатор</h3><p>Исполняет опкоды, считает вызовы и витки циклов.</p><span class="num">T0</span></div>
+    <div class="frame"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <span class="k">Тёплый код</span><h3>Baseline</h3><p>Компилирует трассу быстро и собирает профиль типов.</p><span class="num">T1–T2</span></div>
+    <div class="frame solid"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <span class="k">Горячий код</span><h3>Оптимизация</h3><p>Инлайн, специализация по типам, вынос проверок из цикла.</p><span class="num">T3</span></div>
+  </div>
+</section>
+<section class="slide steel" data-label="Порог 1000 вызовов" data-screen-label="10" data-speaker-notes="Одна цифра, которую стоит запомнить: порог из php.ini. Аннотаций в коде нет — решение принимает рантайм по реальному поведению.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>02 · Пайплайн компиляции</span></div>
+  <div class="page-num" aria-hidden="true"></div>
+  <p class="hero-caption">Столько вызовов функция проводит в интерпретаторе, прежде чем попасть в компилятор. Аннотаций в коде нет: решение принимает рантайм по реальному поведению.</p>
+  <div class="hero-ini">jit.hot_threshold = 1000</div>
+  <p class="hero-num rise">1000</p>
+</section>
+<section class="slide content" data-label="Что скомпилировалось" data-screen-label="11" data-speaker-notes="Наблюдаемость обязательна: если нельзя увидеть, что скомпилировалось, приложение нельзя оптимизировать.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>02 · Пайплайн компиляции</span></div>
+  <h2 class="slide-title">Что скомпилировалось</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="term frame rise"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+    <div class="t-line"><span class="t-dim">$</span> limelight jit --trace public/index.php</div>
+    <div class="t-line"><span class="t-tier">T3</span>  Illuminate\Pipeline\pipe     <span class="t-dim">hot:  8 901</span></div>
+    <div class="t-line"><span class="t-tier">T2</span>  App\Repository::hydrate      <span class="t-dim">hot:  1 240</span></div>
+    <div class="t-line"><span class="t-tier">T1</span>  App\Support\Str::snake       <span class="t-dim">hot:  1 018</span></div>
+    <div class="t-line"><span class="t-dim">T0  App\Http\bootstrap           cold:     1</span></div>
+  </div>
+  <p class="fig-note">Тир, символ и счётчик — по каждому решению компилятора. Холодная загрузка приложения остаётся в интерпретаторе: компилировать её нечего.</p>
+</section>
+<section class="slide content" data-label="Чего компилятор не знает" data-screen-label="12" data-speaker-notes="Причина, почему PHP сложнее для JIT, чем JavaScript: семантика ссылок и магия меняют форму данных под скомпилированным кодом.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>02 · Пайплайн компиляции</span></div>
+  <h2 class="slide-title">Чего компилятор не знает</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <ol class="rows rise">
+    <li><span class="n">01</span><span class="t">Ссылки: &amp;$x меняет владельца значения и ломает предположение о типе.</span><span class="h">guard</span></li>
+    <li><span class="n">02</span><span class="t">Магия: __get и __call меняют форму объекта на ходу.</span><span class="h">форма объекта</span></li>
+    <li><span class="n">03</span><span class="t">eval и include: код появляется после того, как трасса скомпилирована.</span><span class="h">новый байткод</span></li>
+    <li><span class="n">04</span><span class="t">Guard не сошёлся — исполнение возвращается в интерпретатор.</span><span class="h">деоптимизация</span></li>
+  </ol>
+</section>
+<section class="slide divider steel" data-label="03 · Рантайм и память" data-screen-label="13" data-speaker-notes="Третья часть: компилятор — только один слой. Остальное решает рантайм.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="ghost-num">03</div>
+  <h2 class="slide-title rise">Рантайм и память</h2>
+  <p class="lede">Скомпилированный код бесполезен, если процесс живёт один запрос. Отсюда воркеры, арены и кэш трасс.</p>
+</section>
+<section class="slide content" data-label="Слои рантайма" data-screen-label="14" data-speaker-notes="Компилятор — единственный сплошной объект. Всё остальное обслуживает его вход и выход: приём запроса сверху, память и расширения снизу.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>03 · Рантайм и память</span></div>
+  <h2 class="slide-title">Слои рантайма</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="layers rise">
+    <div class="rowlab">Вход</div>
+    <div class="cell">CLI</div>
+    <div class="cell">FastCGI / HTTP</div>
+    <div class="cell">Воркеры</div>
+    <div class="rowlab">Рантайм</div>
+    <div class="cell">VM · опкоды</div>
+    <div class="cell solid">JIT · T1–T3</div>
+    <div class="cell">Кэш трасс</div>
+    <div class="rowlab">Основание</div>
+    <div class="cell">Арены + GC</div>
+    <div class="cell">PECL / PIE</div>
+    <div class="cell">FFI · syscalls</div>
+  </div>
+  <p class="fig-note">Кэш трасс живёт рядом с компилятором и переживает перезапуск: прогрев в CI — и продакшн стартует горячим.</p>
+</section>
+<section class="slide content" data-label="Память" data-screen-label="15" data-speaker-notes="Долгоживущий воркер обязан держать резидентную память на плато — иначе он не доживёт до окупаемости компиляции.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>03 · Рантайм и память</span></div>
+  <h2 class="slide-title">Память</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="cards cards-2 rise">
+    <div class="frame"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <span class="k">Аллокация</span><h3>Арена на запрос</h3><p>Аллокации запроса живут в одном блоке и освобождаются одним движением — без обхода объектов и без фрагментации между запросами.</p><span class="num">01</span></div>
+    <div class="frame"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+      <span class="k">Сборка</span><h3>Уплотняющий GC</h3><p>Считает ссылки, собирает циклы и сдвигает живые объекты. Резидентная память не растёт от фрагментации.</p><span class="num">02</span></div>
+  </div>
+</section>
+<section class="slide content" data-label="Профиль памяти" data-screen-label="16" data-speaker-notes="Форма кривой, не замеры: пул отдаёт память между запросами и платит прогревом заново; воркер выходит на плато. Заменить на свои графики.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>03 · Рантайм и память</span></div>
+  <h2 class="slide-title">Профиль памяти</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="legend"><span class="k-line"></span><span>Воркер с JIT</span><span class="k-dash"></span><span>Пул FPM</span></div>
+  <figure class="plot rise">
+    <svg class="chart" viewBox="0 0 1680 480" role="img" aria-label="Линейный график резидентной памяти по минутам: воркер выходит на плато около 88 мегабайт, пул FPM пилообразно колеблется между 95 и 172 мегабайтами">
+    <!-- 1.44px per megabyte, axis at y 408: the 100 and 200 MB gridlines land
+         on the 48px lattice (slide 576 and 432). -->
+    <line class="grid" x1="0" y1="264" x2="1680" y2="264"/>
+    <line class="grid" x1="0" y1="120" x2="1680" y2="120"/>
+    <text x="-20" y="264" text-anchor="end">100 МБ</text>
+    <text x="-20" y="120" text-anchor="end">200 МБ</text>
+    <polyline class="series-b" points="0,271.2 152.7,170.4 305.4,264 458.2,163.2 611,256.8 763.6,166.1 916.4,266.9 1069,160.3 1221.8,261.1 1374.6,169 1527.2,264 1680,163.2"/>
+    <polyline class="series-a" points="0,379.2 152.7,338.9 305.4,312.9 458.2,298.6 611,289.9 763.6,285.6 916.4,284.2 1069,282.7 1221.8,282.7 1374.6,281.3 1527.2,281.3 1680,281.3"/>
+    <line class="axis" x1="0" y1="408" x2="1680" y2="408"/>
+    <text x="0" y="456">0</text>
+    <text x="763.6" y="456" text-anchor="middle">5 минут под нагрузкой</text>
+    <text x="1680" y="456" text-anchor="end">11</text>
+    </svg>
+  </figure>
+  <p class="fig-note">Пул отдаёт память между запросами и платит прогревом заново; воркер выходит на плато.</p>
+  <div class="flag">данные-заглушки</div>
+</section>
+<section class="slide content" data-label="Совместимость" data-screen-label="17" data-speaker-notes="Совместимость — не фича, а условие задачи: если приложение надо переписывать, скорость никого не интересует.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>03 · Рантайм и память</span></div>
+  <h2 class="slide-title">Совместимость</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <table class="table rise">
+    <thead>
+      <tr><th>Область</th><th>Что поддержано</th><th>Покрытие</th><th>Как проверяется</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Семантика</td><td>PHP 8.1–8.4</td><td>98 %*</td><td>Тесты Zend, каждый коммит</td></tr>
+      <tr><td>Пакеты</td><td>Composer, PSR-4</td><td>без изменений</td><td>composer dump-autoload -o</td></tr>
+      <tr><td>Расширения</td><td>PECL / PIE</td><td>40 из 60*</td><td>Остальные — через FFI</td></tr>
+      <tr><td>Конфигурация</td><td>ваш php.ini</td><td>секция [limelight]</td><td>Стартует без правок</td></tr>
+    </tbody>
+  </table>
+  <div class="flag">* оценка</div>
+</section>
+<section class="slide divider steel" data-label="04 · Ландшафт" data-screen-label="18" data-speaker-notes="Четвёртая часть: PHP компилировали много раз. Стоит посмотреть, кто и чем за это заплатил.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="ghost-num">04</div>
+  <h2 class="slide-title rise">Ландшафт</h2>
+  <p class="lede">PHP компилировали десять с лишним лет. Почти каждый проект выбирал между совместимостью и скоростью — и почти каждый выбрал скорость.</p>
+</section>
+<section class="slide content" data-label="Карта подходов" data-screen-label="19" data-speaker-notes="Две оси решают всё: когда компилируем и что получаем на выходе. Место проекта на этой карте определяет, что придётся переписать.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>04 · Ландшафт</span></div>
+  <h2 class="slide-title">Карта подходов</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="matrix rise">
+    <div><h3>AOT → свой бинарник</h3><p>KPHP, Swoole Compiler, manticore, phprs. Типы решаются на компиляции — значит, динамику приходится запрещать.</p></div>
+    <div><h3>JIT → свой процесс</h3><p>JIT в php-src, HHVM, Limelight. Компилируется то, что реально горячее; за это платят прогревом.</p></div>
+    <div><h3>AOT → чужая VM</h3><p>PeachPie (CIL), JPHP (JVM), Zephir. Выход — байткод, а не машинный код.</p></div>
+    <div><h3>JIT чужой VM</h3><p>PeachPie отдаёт финальную компиляцию .NET: своего оптимизатора нет.</p></div>
+  </div>
+  <div class="matrix-axis" aria-hidden="true"><span>← компиляция заранее</span><span>компиляция по профилю →</span></div>
+</section>
+<section class="slide content" data-label="KPHP" data-screen-label="20" data-speaker-notes="Главный пример промышленного AOT: VK годами держал на нём соцсеть. Цена — код пишется под компилятор, а не наоборот.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>04 · Ландшафт · AOT</span></div>
+  <h2 class="slide-title">KPHP</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="proj rise">
+    <div class="id">
+      <p class="lede">Транспилятор PHP в C++ с выводом типов по всей программе. Не JIT: типы известны на компиляции, фазы прогрева нет.</p>
+      <div class="repo">github.com/VKCOM/kphp</div>
+      <p class="verdict">Цена скорости — переписать код под систему типов компилятора: существующий проект почти никогда не собирается с первого раза.</p>
+    </div>
+    <div class="specs">
+      <div><span class="l">Модель</span><span class="v">PHP → C++ → бинарник с HTTP-сервером внутри</span></div>
+      <div><span class="l">Выигрыш</span><span class="v">3–10× на коде под строгие типы</span></div>
+      <div><span class="l">Ограничения</span><span class="v">Нет генераторов, анонимных классов, вызова по имени</span></div>
+      <div><span class="l">Статус</span><span class="v">VK.com, открыт в конце 2020, GPLv3</span></div>
+    </div>
+  </div>
+</section>
+<section class="slide content" data-label="PeachPie" data-screen-label="21" data-speaker-notes="Другой ответ: не делать свой машинный код, а въехать в чужую зрелую VM и получить её JIT и инструменты бесплатно.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>04 · Ландшафт · AOT в чужую VM</span></div>
+  <h2 class="slide-title">PeachPie</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="proj rise">
+    <div class="id">
+      <p class="lede">Компилирует PHP в CIL и запускает на .NET. Построен на Roslyn, наследник Phalanger.</p>
+      <div class="repo">github.com/peachpiecompiler/peachpie</div>
+      <p class="verdict">Ценен не скоростью, а двусторонней совместимостью: части приложения на PHP и на C# живут в одной сборке.</p>
+    </div>
+    <div class="specs">
+      <div><span class="l">Модель</span><span class="v">PHP → CIL, финальную компиляцию делает JIT самой .NET</span></div>
+      <div><span class="l">Выход</span><span class="v">Сборки .NET; PHP и C# в одном проекте</span></div>
+      <div><span class="l">Совместимость</span><span class="v">Свой рантайм, повторяющий поведение PHP</span></div>
+      <div><span class="l">Статус</span><span class="v">Проект .NET Foundation с 2017, Apache 2.0</span></div>
+    </div>
+  </div>
+</section>
+<section class="slide content" data-label="Swoole Compiler" data-screen-label="22" data-speaker-notes="Тот самый AOT от Swoole. Цифру 150× произносить как заявку вендора, а не как замер: без yield современные фреймворки не заводятся.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>04 · Ландшафт · AOT</span></div>
+  <h2 class="slide-title">Swoole Compiler</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="proj rise">
+    <div class="id">
+      <p class="lede">Коммерческий AOT: компилирует опкоды в нативные исполняемые файлы или динамические библиотеки и попутно шифрует исходный код.</p>
+      <div class="repo">business.swoole.com/compiler</div>
+      <p class="verdict">Считается только на счётной нагрузке и внутри собственной модели исполнения Swoole; веб-фреймворки вне зоны поддержки.</p>
+    </div>
+    <div class="specs">
+      <div><span class="l">Модель</span><span class="v">Байткод → нативный бинарник, Windows / Linux / macOS</span></div>
+      <div><span class="l">Заявка вендора</span><span class="v">До 150× на вычислительной нагрузке</span></div>
+      <div><span class="l">Ограничения</span><span class="v">Нет yield: Laravel, Symfony и WordPress не запускаются</span></div>
+      <div><span class="l">Побочная цель</span><span class="v">Обфускация и защита исходников, а не только скорость</span></div>
+    </div>
+  </div>
+</section>
+<section class="slide content" data-label="manticore" data-screen-label="23" data-speaker-notes="Самый радикальный из живых: PHP как язык системного программирования. Компилятор написан на PHP и компилирует сам себя до неподвижной точки.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>04 · Ландшафт · AOT</span></div>
+  <h2 class="slide-title">manticore</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="proj rise">
+    <div class="id">
+      <p class="lede">AOT-компилятор PHP, написанный на самом PHP: через LLVM IR в самостоятельный бинарник без рантайма PHP.</p>
+      <div class="repo">github.com/manticorephp/compiler</div>
+      <p class="verdict">PHP как язык системного программирования: на выходе бинарник, которому нужен только libc.</p>
+    </div>
+    <div class="specs">
+      <div><span class="l">Модель</span><span class="v">PHP → LLVM IR → arm64 / x86_64, из зависимостей только libc</span></div>
+      <div><span class="l">Самохостинг</span><span class="v">Компилирует сам себя до побайтово совпадающей точки</span></div>
+      <div><span class="l">Покрытие</span><span class="v">Широкое подмножество PHP 8.5: классы, трейты, энумы, замыкания</span></div>
+      <div><span class="l">Расширения</span><span class="v">Биндинги нативных библиотек по манифесту, MVP</span></div>
+    </div>
+  </div>
+</section>
+<section class="slide content" data-label="phprs" data-screen-label="24" data-speaker-notes="Ответ на вопрос «а если убрать из PHP всё, что мешает компилятору». Получается уже не PHP — и это признают сами авторы.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>04 · Ландшафт · AOT</span></div>
+  <h2 class="slide-title">phprs</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="proj rise">
+    <div class="id">
+      <p class="lede">Синтаксис PHP с семантикой Rust: владение вместо сборки мусора, компиляция через Cranelift.</p>
+      <div class="repo">github.com/neokofg/phprs</div>
+      <p class="verdict">Убрать из PHP всё, что мешает компилятору, можно — но на выходе получается другой язык.</p>
+    </div>
+    <div class="specs">
+      <div><span class="l">Модель</span><span class="v">Свой лексер, парсер, вывод типов, borrow checker, кодоген на Cranelift</span></div>
+      <div><span class="l">Память</span><span class="v">Владение и перемещение значений, сборщика мусора нет</span></div>
+      <div><span class="l">Рантайм</span><span class="v">Собственный: строки, массивы, JSON, HTTP, SIMD</span></div>
+      <div><span class="l">Совместимость</span><span class="v">$s2 = $s перемещает значение — старый код так не работает</span></div>
+    </div>
+  </div>
+</section>
+<section class="slide content" data-label="HHVM и Hack" data-screen-label="25" data-speaker-notes="Главный урок ландшафта. Самый мощный JIT для PHP закончился тем, что PHP из него убрали. Совместимость не сохраняется сама.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>04 · Ландшафт · JIT</span></div>
+  <h2 class="slide-title">HHVM и Hack</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="proj rise">
+    <div class="id">
+      <p class="lede">HipHop компилировал PHP в C++, HHVM заменил его виртуальной машиной с JIT — а затем поддержку PHP из HHVM убрали.</p>
+      <div class="repo">github.com/facebook/hhvm</div>
+      <p class="verdict">Развилка, на которой стоит каждый такой проект: остаться совместимым с PHP или стать отдельным языком. Здесь выбрали второе.</p>
+    </div>
+    <div class="specs">
+      <div><span class="l">Модель</span><span class="v">Сначала AOT в C++, затем JIT-виртуальная машина</span></div>
+      <div><span class="l">Совместимость</span><span class="v">PHP поддерживался до 3.24, дальше только Hack</span></div>
+      <div><span class="l">Причина</span><span class="v">Язык разошёлся с PHP: типы, семантика, стандартная библиотека</span></div>
+      <div><span class="l">Урок</span><span class="v">Совместимость — это работа, которую надо делать постоянно</span></div>
+    </div>
+  </div>
+</section>
+<section class="slide content" data-label="Что не дожило" data-screen-label="26" data-speaker-notes="Шесть проектов, каждый со своей идеей. Ни один не умер от того, что медленно работал — все умерли на совместимости и поддержке.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>04 · Ландшафт</span></div>
+  <h2 class="slide-title">Что не дожило</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <ol class="rows rise">
+    <li><span class="n">01</span><span class="t">Phalanger — PHP в .NET, предшественник PeachPie.</span><span class="h">продолжен</span></li>
+    <li><span class="n">02</span><span class="t">Roadsend и Raven — PHP через LLVM; переписывание на C++ не дошло до релиза.</span><span class="h">заброшен</span></li>
+    <li><span class="n">03</span><span class="t">Recki-CT — компилятор подмножества PHP, написанный на PHP.</span><span class="h">эксперимент</span></li>
+    <li><span class="n">04</span><span class="t">php-compiler — JIT и AOT через FFI и LLVM, тот же автор.</span><span class="h">эксперимент</span></li>
+    <li><span class="n">05</span><span class="t">Tagua VM — виртуальная машина PHP на Rust и LLVM.</span><span class="h">заброшен</span></li>
+    <li><span class="n">06</span><span class="t">JPHP — PHP на JVM: чужая VM, чужая экосистема.</span><span class="h">нишевый</span></li>
+  </ol>
+</section>
+<section class="slide content" data-label="Сводка по ландшафту" data-screen-label="27" data-speaker-notes="Одна страница, чтобы всё сравнить. Правая колонка — то, что на самом деле решает: сколько кода придётся переписать.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>04 · Ландшафт</span></div>
+  <h2 class="slide-title">Сводка</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <table class="table compact rise">
+    <thead>
+      <tr><th>Проект</th><th>Когда компилирует</th><th>Что на выходе</th><th>Совместимость с PHP</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>JIT в php-src</td><td>JIT</td><td>машинный код</td><td>полная — это и есть PHP</td></tr>
+      <tr><td>HHVM / Hack</td><td>JIT</td><td>своя VM</td><td>PHP убран после 3.24</td></tr>
+      <tr><td>KPHP</td><td>AOT</td><td>C++ → бинарник</td><td>подмножество, код правится</td></tr>
+      <tr><td>PeachPie</td><td>AOT</td><td>CIL для .NET</td><td>свой рантайм на .NET</td></tr>
+      <tr><td>Swoole Compiler</td><td>AOT</td><td>нативный бинарник</td><td>без yield</td></tr>
+      <tr><td>manticore</td><td>AOT</td><td>LLVM → бинарник</td><td>подмножество PHP 8.5</td></tr>
+      <tr><td>phprs</td><td>AOT</td><td>Cranelift → бинарник</td><td>другой язык</td></tr>
+      <tr><td>Zephir</td><td>AOT</td><td>C-расширение для Zend</td><td>пишется отдельно от PHP</td></tr>
+      <tr><td>Limelight</td><td>JIT</td><td>трассы в процессе</td><td>PHP 8.1–8.4</td></tr>
+    </tbody>
+  </table>
+</section>
+<section class="slide divider steel" data-label="05 · Цифры и выводы" data-screen-label="28" data-speaker-notes="Пятая часть: сколько это даёт и где не даёт ничего.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="ghost-num">05</div>
+  <h2 class="slide-title rise">Цифры и выводы</h2>
+  <p class="lede">Чем больше времени приложение проводит в собственном PHP-коде, тем больше даёт компиляция.</p>
+</section>
+<section class="slide content" data-label="Пропускная способность" data-screen-label="19" data-speaker-notes="Главное здесь — разрыв между веб-нагрузкой и числовым циклом: на вебе время уходит не в PHP-код.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>05 · Цифры и выводы</span></div>
+  <h2 class="slide-title">Пропускная способность</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="legend"><span class="k-out"></span><span>PHP 8.4 + OPcache</span><span class="k-fill"></span><span>Limelight</span></div>
+  <figure class="plot rise">
+    <svg class="chart" viewBox="0 0 1680 480" role="img" aria-label="Столбиковая диаграмма относительной пропускной способности: Laravel 1,8, Symfony 2,1, WordPress 1,6, числовой цикл 6,4 раза от базовой линии PHP 8.4">
+    <!-- 48px per unit, axis at y 408: the 2,5× and 5,0× gridlines land on the
+         48px lattice (slide 600 and 480). -->
+    <line class="grid" x1="0" y1="288" x2="1680" y2="288"/>
+    <line class="grid" x1="0" y1="168" x2="1680" y2="168"/>
+    <text x="-20" y="288" text-anchor="end">2,5×</text>
+    <text x="-20" y="168" text-anchor="end">5,0×</text>
+    <rect class="bar" x="38.5" y="360.5" width="159" height="47"/>
+    <rect class="bar" x="458.5" y="360.5" width="159" height="47"/>
+    <rect class="bar" x="878.5" y="360.5" width="159" height="47"/>
+    <rect class="bar" x="1298.5" y="360.5" width="159" height="47"/>
+    <rect class="bar-hi" x="222" y="321.6" width="160" height="86.4"/>
+    <rect class="bar-hi" x="642" y="307.2" width="160" height="100.8"/>
+    <rect class="bar-hi" x="1062" y="331.2" width="160" height="76.8"/>
+    <rect class="bar-hi" x="1482" y="100.8" width="160" height="307.2"/>
+    <text class="val" x="118" y="348" text-anchor="middle">1,0×</text>
+    <text class="val" x="538" y="348" text-anchor="middle">1,0×</text>
+    <text class="val" x="958" y="348" text-anchor="middle">1,0×</text>
+    <text class="val" x="1378" y="348" text-anchor="middle">1,0×</text>
+    <text class="hi-label" x="302" y="303.6" text-anchor="middle">1,8×</text>
+    <text class="hi-label" x="722" y="289.2" text-anchor="middle">2,1×</text>
+    <text class="hi-label" x="1142" y="313.2" text-anchor="middle">1,6×</text>
+    <text class="hi-label" x="1562" y="82.8" text-anchor="middle">6,4×</text>
+    <line class="axis" x1="0" y1="408" x2="1680" y2="408"/>
+    <text class="x-lab" x="210" y="456" text-anchor="middle">Laravel</text>
+    <text class="x-lab" x="630" y="456" text-anchor="middle">Symfony</text>
+    <text class="x-lab" x="1050" y="456" text-anchor="middle">WordPress</text>
+    <text class="x-lab" x="1470" y="456" text-anchor="middle">числовой цикл</text>
+    </svg>
+  </figure>
+  <p class="fig-note">Запросов в секунду относительно PHP 8.4 с OPcache: одно железо, прогретый кэш трасс.</p>
+  <div class="flag">данные-заглушки</div>
+</section>
+<section class="slide content" data-label="Когда компиляция окупается" data-screen-label="20" data-speaker-notes="Ось влево-вправо — время жизни процесса. Компиляция окупается в правом нижнем углу.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>05 · Цифры и выводы</span></div>
+  <h2 class="slide-title">Когда компиляция окупается</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <div class="matrix rise">
+    <div><h3>CLI-скрипт</h3><p>Процесс живёт секунды — компилятор не успевает прогреться.</p></div>
+    <div><h3>Очередь и крон</h3><p>Долго, но время уходит в базу — выигрыш в памяти, не в CPU.</p></div>
+    <div><h3>Веб-запрос на FPM</h3><p>Прогрев на каждый процесс: спасает только кэш трасс.</p></div>
+    <div><h3>Долгоживущий воркер</h3><p>Горячий код остаётся горячим — компиляция окупается.</p></div>
+  </div>
+  <div class="matrix-axis" aria-hidden="true"><span>← короткий процесс</span><span>долгоживущий воркер →</span></div>
+</section>
+<section class="slide content" data-label="Итоги" data-screen-label="21" data-speaker-notes="Если запомнить один вывод — компиляция ускоряет горячий код, а не запрос целиком.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker"><span>05 · Цифры и выводы</span></div>
+  <h2 class="slide-title">Итоги</h2>
+  <div class="page-num" aria-hidden="true"></div>
+  <ol class="rows rise">
+    <li><span class="n">01</span><span class="t">JIT снимает диспетчеризацию и проверки типов в горячем коде.</span><span class="h">выигрыш</span></li>
+    <li><span class="n">02</span><span class="t">Рантайм даёт остальное: воркеры, арены, кэш трасс между запусками.</span><span class="h">условие</span></li>
+    <li><span class="n">03</span><span class="t">Цена — прогрев, деоптимизация и обязательство держать семантику PHP.</span><span class="h">цена</span></li>
+  </ol>
+</section>
+<section class="slide cover steel" data-label="Вопросы" data-screen-label="22" data-speaker-notes="Контакты и ссылка на сборки. Дальше — вопросы.">
+  <div class="board" aria-hidden="true"><i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i></div>
+  <div class="kicker k-right"><span>Рантаймы и компиляторы</span></div>
+  <h2 class="display rise">Вопросы</h2>
+  <p class="cover-sub cover-sub-a" style="color: var(--color-bg)">Спасибо.</p>
+  <p class="cover-sub cover-sub-b" style="color: var(--paper-60)">Limelight — PHP-совместимый рантайм с трассирующим JIT. Порог компиляции, тиры и кэш трасс настраиваются в php.ini.</p>
+  <div class="plate rise" style="background: var(--color-bg); color: var(--color-text)">
+    <div style="border-left: none"><span class="k" style="color: var(--color-accent-700)">Документация</span><span class="v">limelight.dev</span></div>
+    <div style="border-left: 1px solid var(--color-divider)"><span class="k" style="color: var(--color-accent-700)">Почта</span><span class="v">you@example.com</span></div>
+    <div style="border-left: 1px solid var(--color-divider)"><span class="k" style="color: var(--color-accent-700)">Сборка</span><span class="v">1.0.0-beta.3</span></div>
+  </div>
+</section>
+
+</deck-stage>
+
+<script src="js/deck-stage.js"></script>
+</body>
+</html>
