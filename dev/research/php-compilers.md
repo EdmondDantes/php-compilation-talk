@@ -4,7 +4,7 @@ Compiled 2026-08-25 from project repositories, release pages and vendor
 docs. Dates are last observed activity on that day.
 
 Read the categories first: most arguments about "PHP compilers" are
-really arguments about which of these six things the speaker meant.
+really arguments about which of these eight things the speaker meant.
 
 - **A. AOT to native code** — PHP semantics translated to machine code
   or to C/C++/LLVM IR, producing a binary.
@@ -18,6 +18,8 @@ really arguments about which of these six things the speaker meant.
   as compilers; the runtime is unchanged.
 - **F. Packagers** — bundle the unmodified interpreter into one file.
   No translation happens at all.
+- **G. PHP-shaped languages** — the syntax without the semantics.
+- **H. The 2025–2026 wave** — young, small, mostly Rust-hosted.
 
 Two rules used throughout: a benchmark stated by the project itself is
 labelled *project-authored*; anything a primary source did not confirm is
@@ -102,11 +104,32 @@ Its own benchmark, a 10000×100000 update loop: PHP arrays with JIT
 **67.6 s**, TypePHP `std::array` **6.4 s**, hand-written C++
 `std::vector` **6.2 s** — project-authored, but the shape of the claim
 is "we reach C++, not merely beat PHP".
-Limits are documented in `docs/INCOMPATIBLE_PHP_FEATURES.md`.
+Limits are documented in `docs/INCOMPATIBLE_PHP_FEATURES.md`, and they
+are honest: no `$$var`, no executable statements at global scope, no
+nested function or class declarations, `strict_types=1` only, `main()`
+required in binary mode, no by-reference return from closures.
+Two finds inside the repository that belong in the talk:
+`docs/kphp-review.md`, `hhvm-review.md`, `peachpie-review.md` and
+`php-src-optimizer-analysis.md` — the vendor's own written comparison
+against every predecessor in this file; and
+`docs/PATENT_01_CPP_TEMPLATE_TYPED_CONTAINER.md` and `PATENT_02…` —
+Chinese patent-application disclosure drafts, sitting in a GPL
+repository. Distributed as a Composer package
+(`composer require --dev swoole/typephp`), tags up to v0.6.2 on
+Packagist, no GitHub releases and no committed binaries. Its C++ runtime
+`swoole/phpx` is a separate Apache-2.0 repository, also open.
 The README also sells **source protection** — the shipped artifact is a
 binary, not readable PHP. Note where that lands the vendor: Swoole sells
 an encoder called Swoole Compiler and now ships a real compiler whose
 pitch overlaps it.
+
+**TinyPHP** — <https://github.com/tphp-lang/TinyPHP>. PHP → readable **C**
+→ GCC/Clang/TCC. The compiler is written in PHP, and the pipeline is a
+real one: `Lexer.php`, `Parser.php`, `TypeChecker.php`,
+`NameResolver.php`, `SSA/`, `MIR/`, `CodeGenerator.php`, with a grammar
+document and benchmarks. Created 2026-06-13, ~444 commits, 10 stars,
+last push 2026-08-15. KPHP-shaped, and the most complete of the new
+small implementations.
 
 **php-to-native-compiler (PTN)** — <https://github.com/adamziel/php-to-native-compiler>
 Adam Zieliński (of WordPress Playground). Personal experiment, no
@@ -566,7 +589,80 @@ produce native machine code".
 
 ---
 
-## G. Ruled out
+## G. PHP-shaped languages that are not PHP
+
+A separate answer to "why not just fix PHP": take the syntax, drop the
+semantics.
+
+**Echo** — <https://github.com/echolang/echo> · <https://echoc.dev>.
+Mario Deluna (known in the PHP world for php-glfw), Apache-2.0, written
+in C++. Created 2026-08-10, ~195 commits, sole contributor; releases
+v0.2.2 through v0.3.1 (2026-08-24) with binaries for Linux, macOS and
+Windows. `echoc run` JITs, `echoc build` emits a native binary through
+clang and lld; source files are `.eco`, and there is a package manager
+(`epm`) and a VS Code extension.
+Its README settles the question itself: "a statically typed, natively
+compiled, general-purpose programming language… **Echo won't run PHP
+right now, nor in the future.** Echo is fundamentally different but due
+to its syntax very easy to be picked up by PHP / Java people."
+So: kinship of syntax, nothing else. Worth a slide as the honest end of
+the road — when the semantics are the problem, you stop calling it PHP.
+
+**Hack** — Facebook's PHP superset, and the only thing HHVM runs today.
+The same move, made ten years earlier by a company that could afford it.
+
+**phprs** — <https://github.com/neokofg/phprs>. PHP syntax with **Rust
+semantics** — move and borrow, no GC — compiled AOT through Cranelift.
+~61 commits, 8 stars, last push 2026-06-15. Not PHP-compatible.
+
+**PXP** — a PHP superset written in Rust, 804 stars; the author has
+declared it no longer under development.
+
+**Zephir** — see section D. It reached **v1.0.0 on 2026-06-30** after
+years at 0.x, and is the one PHP-like compiled language with a
+production user.
+
+## H. The 2025–2026 wave, and what it is made of
+
+Small, young, and mostly Rust-hosted. Worth naming as a phenomenon
+rather than project by project.
+
+**Limelight** — <https://github.com/limelight-lang> (`rfc`, `model`,
+`io`, `mlir-back`). PHP → LLVM/MLIR → native, with request arenas,
+compiler-tracked ownership, a pluggable GC and `#[Actor]` classes. The
+`model` repo is real Rust; the RFCs are specified in TLA+. The RFC
+itself says "Status: design phase" — there is no working frontend yet.
+Last push 2026-08-25.
+
+**VHP** — <https://github.com/leocavalcante/vhp>. A full PHP 8.x
+bytecode VM in pure Rust with no external crates, ~354 commits, and an
+`AGENTS.md` declaring it is 100% written by AI agents. Stalled since
+January 2026. A cultural data point rather than a technical one.
+
+**Wolf** — <https://github.com/Loneewolf15/wolf>. A Go-hosted compiled
+language "that feels like PHP", with a full lexer/parser/typechecker/IR
+tree. Heavy agent scaffolding; quality unverified.
+
+**FEL** — <https://github.com/kemolife/FEL-language>. A Rust scripting
+language embeddable in PHP applications, with an LLVM backend for
+numeric code. Relation to PHP is embedding, not syntax.
+
+**rustc-php** — <https://github.com/mrconter1/rustc-php>. A **Rust**
+compiler written in PHP. 340 stars, went round in February–March 2026
+and then stopped. Not a PHP compiler; excellent talk material for the
+slide about what the community actually rewards with attention.
+
+Rejected as marketing without code: `makalin/php2ir`, `php-universe`,
+`php2wasm` — single-day README drops whose "first true AOT pipeline that
+skips C" claims have nothing behind them.
+
+**The pattern to name on a slide:** the new wave is overwhelmingly
+Rust-hosted, and a visible share of it is AI-generated — VHP says so
+outright. Of the newcomers, two are serious: TinyPHP (PHP → C, in the
+KPHP shape) and TypePHP (PHP → C++, gradual, from a vendor with a
+product behind it). Limelight is still on paper.
+
+## I. Ruled out
 
 - **Transphpile** — a PHP 7 → PHP 5.6 transpiler, not a compiler to
   anything foreign. Abandoned 2017.
