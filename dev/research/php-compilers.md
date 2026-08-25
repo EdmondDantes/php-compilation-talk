@@ -72,15 +72,41 @@ Name collision: **Manticore Search** (search engine) and Trail of Bits'
 **Manticore** (symbolic execution) are unrelated.
 
 **TypePHP** (was `swoole/aot-compiler`) — <https://github.com/swoole/typephp>
-Swoole team. PHP → C++17 → native; three outputs — standalone
-executable, PHP extension, static library — and a WASM target. GPL-3.0.
-Active preview: created 2026-05-11, ~1.5k commits, commits as recent as
-2026-08-25, ~95 stars. Linux-primary.
-Accepts PHP 8.4/8.5 syntax, requires PHP 8.4–8.5 with the `embed` SAPI,
-and ships an explicit `docs/INCOMPATIBLE_PHP_FEATURES.md`. Claims
-strongly-typed containers ~10× faster than PHP arrays (project-authored).
-A beta and full open-sourcing "in H2 2026" comes from a secondary
-article, not from the repo — unverified.
+Swoole (上海识沃网络科技有限公司), GPL-3.0. PHP → C++17 → native machine
+code. Active preview: created 2026-05-11, ~1.5k commits, commits as
+recent as 2026-08-25, ~95 stars. No tagged releases; `project.yml` says
+0.6.3. Linux-primary (Ubuntu 22.04 recommended).
+
+**The source is open** — checked against the repository tree on
+2026-08-25, not against the README. `src/` holds the compiler itself,
+written in PHP: `Parser/`, `Analysis/`, `TypeSystem/`, `Optimizer/`,
+`Backend/`, `Generator/`, `Resolver/`, `Symbol/`, `Transform/`,
+plus `Translator.php` (219 KB), `CompilerBase.php` (217 KB) and
+`Preprocessor.php` (97 KB). CI builds a bootstrap compiler `tpc` and
+runs PHPT tests against it, keeping the generated `.cc`/`.h` files as
+artifacts. Requires PHP 8.4–8.5 with the `embed` SAPI, GCC 9+ or Clang,
+CMake 3.24+, GMP, MPFR and libmpdec.
+
+What makes it different from KPHP: **gradual, and it does not ask for
+the whole codebase.** `use native_types` turns `int`/`float`/`bool` into
+`int64_t`/`double`/`bool` in the compiled unit; `std::vector`,
+`std::map`, `std::ordered_map` and `std::array` are typed containers;
+`bigInt`/`decimal`/`bigFloat` map to GMP, libmpdec and MPFR. Everything
+untouched keeps running on Zend. Three build modes — standalone binary
+(needs a global `main()`), **loadable PHP extension** (drops into
+php-fpm, so frameworks keep working), or a static library. There is also
+a WASI 0.2 and browser target, and a Python bridge.
+Methods on primitives (`$s->upper()`, `$arr->contains()`) resolve at
+compile time to direct C calls.
+Its own benchmark, a 10000×100000 update loop: PHP arrays with JIT
+**67.6 s**, TypePHP `std::array` **6.4 s**, hand-written C++
+`std::vector` **6.2 s** — project-authored, but the shape of the claim
+is "we reach C++, not merely beat PHP".
+Limits are documented in `docs/INCOMPATIBLE_PHP_FEATURES.md`.
+The README also sells **source protection** — the shipped artifact is a
+binary, not readable PHP. Note where that lands the vendor: Swoole sells
+an encoder called Swoole Compiler and now ships a real compiler whose
+pitch overlaps it.
 
 **php-to-native-compiler (PTN)** — <https://github.com/adamziel/php-to-native-compiler>
 Adam Zieliński (of WordPress Playground). Personal experiment, no
