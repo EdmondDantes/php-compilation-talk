@@ -1,6 +1,6 @@
 # PLAN
 
-Updated: 2026-08-25 · Active: S1
+Updated: 2026-08-25 · Active: S3
 
 Destination: a 40–45 minute talk that answers one question — why PHP
 compilers keep getting written, and whether a working developer should
@@ -24,11 +24,13 @@ folklore.
 Goal: an agreed part-by-part outline with slide counts, so slides can be
 written without renegotiating the shape.
 
-- [ ] S1.1 Agree the six-part outline (entry, why the question, what
-      "compiling PHP" means, landscape, business case, what to expect).
-- [ ] S1.2 Fix the through-line as one sentence and write it at the top
-      of the outline.
+- [x] S1.1 Agree the outline — six parts, 30 slides, written up in
+      dev/OUTLINE.md.
+- [x] S1.2 Fix the through-line: a PHP compiler is stopped by the
+      language semantics and by the absence of an owner, not by a lack of
+      compiler craft.
 - [ ] S1.3 Decide how much of the talk Limelight occupies.
+- [x] S1.4 Decide TypePHP is the running example rather than a chapter.
 
 ## S2. Content sources
 
@@ -36,8 +38,8 @@ Goal: every factual slide has a source in the repository.
 
 - [x] S2.1 Collect the inventory of projects that compile PHP —
       `dev/research/php-compilers.md`.
-- [ ] S2.2 Decide which projects appear on slides and in what order;
-      drop the rest into an appendix list.
+- [x] S2.2 Decide which projects appear on slides and in what order —
+      part 3 of dev/OUTLINE.md.
 - [ ] S2.3 Find or discard the economics: what a PHP worker fleet costs
       and where request time actually goes. Without a source, the
       business part is framed as a method, not as figures.
