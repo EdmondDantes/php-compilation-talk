@@ -123,6 +123,31 @@ binary, not readable PHP. Note where that lands the vendor: Swoole sells
 an encoder called Swoole Compiler and now ships a real compiler whose
 pitch overlaps it.
 
+**ext/mlir** — an MLIR-based JIT extension living inside a php-src tree,
+targeting long-running applications: PHP opcodes → MLIR → LLVM IR →
+native, through the MLIR C API, against the unmodified Zend runtime.
+In development; phases 1–3 done, lowering and Zend integration not
+started.
+Its pilot is the most useful measurement collected for this talk, because
+it is the only one taken against the stock JIT on an ordinary construct.
+A 2000-element `foreach ($arr as $v) { $s = $s + $v; }`, nanoseconds
+per iteration: interpreter 10.91 · stock tracing JIT on 8.4.1 — 1.80 · on
+8.6.0-dev — 1.72 · ext/mlir — 0.73 · the same loop in C — 0.76.
+The diagnosis is the sharpest statement of the problem in this whole
+file: `FE_FETCH_R` is opaque to the JIT because it calls into the engine
+(arrays can have holes, something has to skip them), and **after a
+foreign call the optimizer must treat everything it had established as
+stale**. The type tag is read three times per iteration instead of once.
+The fix was not an optimization pass but recording the language construct
+as a construct, with the loop body inside it: twenty instructions instead
+of twenty-seven, and "not a single optimization pass was written — LLVM
+does all the work, it was simply stopped from being obstructed".
+Honest limits, stated by its author: `as $k => $v` is parity (2.04
+against 2.02); a body containing `if` is not lifted; loops carrying a
+string across iterations are not lifted; the stock JIT's own assembly
+could not be disassembled in an ordinary build, so that side of the
+analysis rests on the trace structure and the timings.
+
 **TinyPHP** — <https://github.com/tphp-lang/TinyPHP>. PHP → readable **C**
 → GCC/Clang/TCC. The compiler is written in PHP, and the pipeline is a
 real one: `Lexer.php`, `Parser.php`, `TypeChecker.php`,
@@ -628,11 +653,25 @@ Small, young, and mostly Rust-hosted. Worth naming as a phenomenon
 rather than project by project.
 
 **Limelight** — <https://github.com/limelight-lang> (`rfc`, `model`,
-`io`, `mlir-back`). PHP → LLVM/MLIR → native, with request arenas,
-compiler-tracked ownership, a pluggable GC and `#[Actor]` classes. The
-`model` repo is real Rust; the RFCs are specified in TLA+. The RFC
-itself says "Status: design phase" — there is no working frontend yet.
-Last push 2026-08-25.
+`io`, `mlir-back`). PHP → LLVM → native, with request arenas,
+compiler-tracked ownership, a pluggable GC and `#[Actor]` classes.
+**Correction to an earlier reading of the public repos.** "Design phase"
+is what the RFC says about the RFC, and the compiler frontend is indeed
+at the parser milestone. The runtime is not: `ll-model` is working Rust
+with measured benchmarks, and its `rc-walk` collector has been the
+default build since 2026-07-27.
+Its distinguishing idea is that GC roots are **computed rather than
+scanned**: since every reference is counted, `RC − IN > 0` identifies an
+object referenced from outside the walked region. No write barrier, no
+safepoints, no stack maps. Measured: allocation ~0.82 ns against 1.26 for
+bumpalo and 4.4 for mimalloc; retain+release 2.78 ns; a collection epoch
+45–78 ns per entity, linear from 10k to 100k.
+Its compatibility stance is the opposite of everyone else's: zero new
+keywords, the whole language surface is PHP 8 attributes, so a Limelight
+program stays syntactically valid PHP.
+Documented limits: the collector may skip a cycle, so there is no upper
+bound on collection latency; a thread asleep in a syscall delays an epoch;
+epoch thresholds are unmeasured.
 
 **VHP** — <https://github.com/leocavalcante/vhp>. A full PHP 8.x
 bytecode VM in pure Rust with no external crates, ~354 commits, and an
