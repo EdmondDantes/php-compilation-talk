@@ -27,7 +27,7 @@ cuts the infrastructure first.
 - `dev/OUTLINE.md` — the running order. Currently 46 slides, which is too
   many; renumbering was deliberately deferred until the introduction
   settles.
-- `dev/script/00…09` — the speaker's own text, dictated then edited.
+- `dev/script/00…11` — the speaker's own text, dictated then edited.
   Every file carries its slide composition and the places that need a
   decision.
 - `dev/research/php-compilers.md` — the inventory, eight categories,
@@ -72,6 +72,11 @@ PHP).
    this.
 2. **Timing.** 46 slides against 45 minutes. Nothing has been rehearsed.
    Part 3 is designated as the first thing to cut.
+
+**Sections 10 and 11** were dictated early and filed last, so they are the
+least settled: 10 (what holds PHP back) and 11 (money, governance, why
+generics are missing). Their slide compositions have never been reviewed
+out loud.
 
 **Unverified claims still standing in the text:**
 
