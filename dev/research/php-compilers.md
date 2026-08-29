@@ -39,10 +39,71 @@ Subset, and a hard one: no `eval`, no dynamic names, no reflection, no
 variable variables, no generators, no anonymous classes, no `finally`,
 no SPL, no XML/DOM, no `$_SESSION`, no file uploads; references only
 partially. Static typing must hold.
-Docs claim 3–10× over Zend for code that follows its rules
-(project-authored). Runs vk.com in production — the strongest production
-reference in the whole category. Exact PHP language-version target is
-never stated (unverified).
+Runs vk.com in production — the strongest production reference in the
+whole category. Language level ≈PHP 7.4 per the docs (the 2020
+announcement said 7.2).
+
+**Correction to an earlier version of this file.** The docs' 3–10× is
+project-authored and does not survive contact with VK's own material:
+
+- **VK's own benchmarking tutorial publishes a case where KPHP is 5.6×
+  slower than PHP.** A UUIDv4 generator measured with their `ktest`,
+  Turbo Boost off, benchstat, same machine: PHP 1.14 µs/op against KPHP
+  7.54 µs/op, +558%. Printed without comment. The reason is stated there:
+  untyped code infers `mixed` and gets no benefit.
+- **Yuri Nasretdinov, ex-VK**, under the open-sourcing announcement: with
+  xdebug off and production mode on, most VK pages ran **within ±10% of
+  KPHP** — the feed, genuinely tuned for KPHP, was ~10× — and *"точно не в
+  3-10 раз"*. He asked for a published methodology; none appeared.
+- KPHP with FFI against SQLite came out only ~25% ahead of PHP 8.1 with
+  JIT.
+
+So the gain is the return on **rewriting with types**, not on compiling —
+the same conclusion the TypePHP `use native_types` material reaches from
+the other side.
+
+**The operational cost, from VK's own posts.** Full compilation of the VK
+monolith took **2 h 48 min** on stock distcc; after VK wrote its own
+distributed compiler (nocc) it is 398 s cold and **72.6 s warm**, on 32
+build servers at `make -j400`. ~150–200k generated C++ files. The
+unstripped binary is **almost 3 GB**, linked from over 100k object files.
+The bottleneck is g++, not the PHP front end, which processes 8M lines in
+25 seconds. Codebase trajectory: 5.5M PHP lines in 2020, 8M in 2022, 9M in
+2023, 3M QPS.
+
+**Debugging**, from the announcement: *"в С++ не получить человекочитаемый
+стек, а хочется разработчику вообще его на PHP-код намаппить"*.
+
+**Migration, measured.** A third-party project (BIPULSE): 8,000 PHP files
+to 22,000 KPHP targets, **six months**, over half of it spent on typing,
+6 weeks to get 600 unit and 1,600 acceptance tests green. *"KPHP выдаёт 30
+тысяч строк ошибок. Ты их исправляешь и переходишь на следующий уровень,
+там тебе дают ещё 20 тысяч."* Payoff: 3× on one subsystem. The real motive
+was shipping a closed binary, not speed; the site still runs plain PHP as
+well. They survived only on an unmerged generics branch — *"без дженериков
+мы бы умерли"*. The sharpest community reframe: *"эти полгода были
+рефакторингом проекта, а KPHP был линтером, который помогал в этом"*.
+
+**Ecosystem.** Zend extensions are unsupported — the internals overlap the
+Zend API by roughly 0%, so **PHPUnit cannot run**; VK ships `ktest` and
+`kphpunit` instead. No reflection means no DI containers, hydrators,
+serializers or mappers.
+
+**And VK did not choose it for new work.** August 2025, Alexander
+Virochkin, head of VK Mini Apps infrastructure, on moving static hosting
+off PHP: *"KPHP был первым в списке… Но при более глубоком погружении мы
+обнаружили, что язык не подходит для работы с файлами в продакшене… Любые
+проблемы потребовали бы изменений на уровне языка, а значит, мы зависели
+бы от чужого расписания."* They shipped Go.
+
+Its lead, Vasily Kirsanov: *"Если код работает на PHP — это не значит, что
+он заработает на KPHP. KPHP — это отдельный язык"*, and *"KPHP пока
+остаётся инструментом, заточенным под задачи VK"*.
+
+**k2**, the new runtime, is ~65% of the last year of commits and has **no
+public documentation, announcement or discussion in any language**.
+Anything said about it is read from the source, and that silence is itself
+part of the story.
 
 **elephc** — <https://github.com/illegalstudio/elephc> · <https://elephc.dev/>
 Vincenzo Petrucci, Guillaume Loulier. Written in Rust; compiles a PHP
