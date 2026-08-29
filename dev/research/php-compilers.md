@@ -166,11 +166,49 @@ precisely for that.
 ### Dead
 
 **HipHop for PHP (HPHPc)** — Facebook, 2010. PHP → C++ → one binary.
-Killed by February 2013, when all Facebook production had moved to HHVM.
-Causes, from the record: a flattened performance curve, no `eval()` or
-`create_function()`, and deploy binaries above 1 GB.
+Retired **February 2013** — "February 2013, when hphpc was completely
+retired", Brett Simmers on the official HHVM blog, matching Sara Golemon's
+`use-hphpc` tag of 2013-02-19.
+
+**Correction to an earlier version of this file.** "A flattened
+performance curve" was traced to Wikipedia's own editorial wording, cited
+to a Drew Paroski post that contains no such statement. Two independent
+checks agree. It is not a reason anyone at Facebook gave, and it is cut.
+
+The reasons that are actually on the record are operational, not
+technical, which makes them better material:
+
+- **Developer iteration.** Sara Golemon, FOSDEM 2013: *"invoking gcc for
+  every little source code change is more arduous than the average PHP
+  developer wants to deal with"*, and *"the frustration of a development
+  environment which sometimes behaves differently than production"*.
+- **Deploy economics.** The build was **over 1 GB after stripping debug
+  information** (Xin Qi, Facebook Engineering, 2011-03-30); the deployed
+  executable, web server and application included, was **~1.5 GB** (Chuck
+  Rossi to Ars Technica, 2012-04-05, corroborated by Feitelson,
+  Frachtenberg & Beck, IEEE Software 30(4), 2013). A push took ~30
+  minutes: 15 to build, 15 to distribute across the fleet over Facebook's
+  **own BitTorrent tracker**, rack- and cluster-affine.
+- **The constraint that chose the JIT.** Brett Simmers, hhvm.com,
+  2013-12-11: *"We were pushing a new version of the site to our fleet of
+  web servers once every weekday, and the whole process took less than 20
+  minutes. We had to maintain that ability for hhvm to be a viable
+  option."* The move off AOT was a deploy-cadence decision before it was
+  a performance one.
+- **Maintenance.** Simmers again: *"hphpc and hphpi were independent
+  pieces of software with unintentional subtle differences in behavior and
+  a significant maintenance burden."*
+- **By 2013 the JIT had simply caught up.** Golemon: *"At this point,
+  HHVM is actually a bit more performant than HPHPc."*
+
+Cost of the replacement, from a named founder — Jason Evans, HN
+2018-09-13: *"It took us three years to initially ship HHVM"*, and the
+project had to be built on HPHP to have any chance of replacing it.
+
 Wikipedia reports up to ~6× page-generation throughput over Zend
-(project-authored, 2010 baseline).
+(project-authored, 2010 baseline). There is **no** "we were wrong about X"
+statement from anyone at Facebook; two independent searches confirm its
+absence.
 
 **HHVM** — <https://github.com/facebook/hhvm> — alive, but not for PHP.
 Branch cut 2018-12-03; v3.30.0 (2018-12-17) was the last PHP-supporting
