@@ -28,6 +28,13 @@ buy, what they cost, and whether to expect one in production.
   that compile PHP, with status, target and sourcing. Feeds the
   "Ландшафт" part of the talk.
 
+## Spoken text
+
+- `dev/script/` — the talk's narration, one file per part, in the
+  speaker's own words. Dictated first, edited for print second; slide
+  copy is derived from it, never the other way round. Russian, like the
+  deck.
+
 ## Working documents
 
 - `dev/PLAN.md` — stages and steps; the task list is rebuilt from it.
