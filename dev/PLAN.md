@@ -69,3 +69,14 @@ Goal: the talk fits the slot and survives questions.
 
 - [ ] S5.1 Time a full run; cut to fit 45 minutes with questions.
 - [ ] S5.2 Collect the likely hostile questions and prepare answers.
+
+## S6. Player
+
+Goal: a deck player of its own, separate from the `mock/` draft, good
+enough to present from.
+
+- [x] S6.1 Build `player/` — stage scaling, keyboard navigation, overview,
+      theme switching between Терминал and Чертёж, presenter screen with
+      notes and a talk clock, print to one slide per page.
+- [ ] S6.2 Publish it as a GitHub Pages site.
+- [ ] S6.3 Move the real deck into it once S4 has written the slides.

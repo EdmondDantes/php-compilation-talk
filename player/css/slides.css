@@ -1,0 +1,1112 @@
+/* Slide grammar: how a slide's parts sit on the 1920x1080 field.
+   Colours, faces and paddings come from css/theme.css — nothing here
+   names a colour, so both directions share one layout. */
+
+.slide {
+  position: absolute;
+  inset: 0;
+  width: var(--stage-w);
+  height: var(--stage-h);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  overflow: hidden;
+}
+
+/* The ground each direction paints behind the slide: soft pools of light,
+   never a pattern the type has to compete with. */
+.slide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: var(--grid);
+  /* Only the first layer — the grain tile — repeats; the pools of light are
+     sized to the slide. */
+  background-size: 180px 180px, auto, auto;
+  pointer-events: none;
+}
+
+.slide > * {
+  position: relative;
+}
+
+/* Running head: part number and title on the left, slide number on the right. */
+.top {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 92px;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: var(--type-kicker);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.top .part {
+  color: var(--accent);
+}
+
+.slide-title {
+  position: absolute;
+  left: calc(var(--pad) - 4px);
+  top: 168px;
+  margin: 0;
+  width: calc(var(--stage-w) - 2 * var(--pad));
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  font-size: var(--type-h2);
+  line-height: 1;
+  letter-spacing: var(--head-ls);
+}
+
+/* Rule under the title, with a short accent segment over its left end. */
+.rule {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 300px;
+  height: 1px;
+  background: var(--rule);
+}
+
+.rule::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 384px;
+  height: 2px;
+  background: var(--rule-accent);
+}
+
+.note {
+  position: absolute;
+  left: var(--pad);
+  bottom: 88px;
+  margin: 0;
+  width: 1300px;
+  font-family: var(--font-mono);
+  font-size: var(--type-note);
+  line-height: 1.4;
+  color: var(--faint);
+}
+
+/* --- cover ------------------------------------------------------------ */
+
+.cover .kicker {
+  position: absolute;
+  left: var(--pad);
+  top: 100px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: var(--type-kicker);
+  letter-spacing: var(--kicker-ls);
+  text-transform: var(--kicker-transform);
+  color: var(--accent);
+}
+
+.cover h1 {
+  position: absolute;
+  left: calc(var(--pad) - 4px);
+  top: 248px;
+  margin: 0;
+  width: 1560px;
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  font-size: var(--type-display);
+  line-height: 1;
+  letter-spacing: var(--display-ls);
+}
+
+.cover .sub {
+  position: absolute;
+  left: var(--pad);
+  top: 560px;
+  margin: 0;
+  width: 1200px;
+  font-size: var(--type-lede);
+  line-height: 1.45;
+  color: var(--dim);
+}
+
+/* Three-cell band of facts across the lower third of the cover. */
+.cover .band {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 760px;
+  height: 168px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  background: var(--panel-gap);
+}
+
+.band > div {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 34px 44px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+}
+
+.band .k {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: var(--type-kicker);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.band .v {
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  font-size: 52px;
+  line-height: 1;
+}
+
+.foot {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  bottom: 88px;
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: var(--type-min);
+  color: var(--faint);
+}
+
+/* --- divider ---------------------------------------------------------- */
+
+/* Part opener: an oversized number behind the part's title. */
+.divider .ghost {
+  position: absolute;
+  right: var(--pad);
+  top: 180px;
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  font-size: 420px;
+  line-height: 1;
+  color: var(--accent);
+  opacity: 0.16;
+}
+
+.divider .slide-title {
+  top: 420px;
+  font-size: var(--type-display);
+  letter-spacing: var(--display-ls);
+}
+
+.divider .lede {
+  position: absolute;
+  left: var(--pad);
+  top: 720px;
+  margin: 0;
+  width: 1180px;
+  font-size: var(--type-lede);
+  line-height: 1.4;
+  color: var(--dim);
+}
+
+/* --- statement -------------------------------------------------------- */
+
+/* One sentence carrying the slide, with optional smaller lines under it.
+   Laid out in flow rather than at fixed coordinates: the sentence sets its
+   own height, and a long one in the wider face must not land on the lines
+   underneath it. */
+.statement {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 56px;
+  padding: 0 var(--pad);
+}
+
+.statement .lead {
+  margin: 0;
+  max-width: 1560px;
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  font-size: 88px;
+  line-height: 1.05;
+  letter-spacing: var(--head-ls);
+}
+
+.statement .after {
+  margin: 0;
+  max-width: 1300px;
+  font-size: var(--type-lede);
+  line-height: 1.45;
+  color: var(--dim);
+}
+
+/* Small label over the sentence, for a slide whose lines above it are read
+   first and whose statement is the answer to them. */
+.statement .label {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: var(--type-kicker);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.statement .label + .lead {
+  margin-top: -32px;
+}
+
+/* --- stack ------------------------------------------------------------ */
+
+/* A column of large lines read one after another, with nothing to explain
+   them: the speech does that. */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  font-size: 56px;
+  line-height: 1.15;
+  letter-spacing: var(--head-ls);
+}
+
+/* On its own the stack holds the slide's field; inside a statement it
+   follows the sentence in flow. The low variant leaves room for a line of
+   names above it. */
+.slide > .stack {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 372px;
+}
+
+.slide > .stack.low {
+  top: 620px;
+}
+
+/* Lines read after a pair of large figures, so they start below them. */
+.slide > .stack.after-figures {
+  top: 740px;
+  gap: 20px;
+  font-size: 30px;
+}
+
+.statement > .stack {
+  position: static;
+  font-size: 42px;
+}
+
+.stack .dim {
+  color: var(--dim);
+}
+
+/* A row of names read as one line, sized to carry the slide on its own.
+   Sits below the rule, on the same line the other layouts start from. */
+.names {
+  position: absolute;
+  left: calc(var(--pad) - 4px);
+  right: var(--pad);
+  top: 372px;
+  margin: 0;
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  font-size: 96px;
+  line-height: 1.1;
+  letter-spacing: var(--head-ls);
+}
+
+.names .sep {
+  color: var(--accent);
+}
+
+/* --- rows ------------------------------------------------------------- */
+
+/* Numbered rows: number, heading, text, and a right-aligned verdict. */
+.rows {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 372px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-size);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--panel-gap);
+}
+
+.rows li {
+  display: grid;
+  grid-template-columns: 120px 460px minmax(0, 1fr) 220px;
+  gap: 40px;
+  align-items: baseline;
+  padding: 44px 48px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+}
+
+.rows .n {
+  font-family: var(--font-mono);
+  font-size: var(--type-num);
+  color: var(--accent);
+}
+
+.rows h3 {
+  margin: 0;
+  font-family: var(--font-head);
+  font-size: var(--type-h3);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.rows p {
+  margin: 0;
+  font-size: var(--type-body);
+  line-height: 1.4;
+  color: var(--dim);
+}
+
+/* Source line inside a row: the claim above it is only worth as much. */
+.rows .src {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--faint);
+}
+
+.rows p .src {
+  margin-top: 8px;
+}
+
+.rows .mark {
+  font-family: var(--font-mono);
+  font-size: var(--type-mark);
+  text-align: right;
+  color: var(--dim);
+}
+
+.rows .mark.ok {
+  color: var(--ok);
+}
+
+.rows .mark.warn {
+  color: var(--warn);
+}
+
+/* A row list without the verdict column. */
+.rows.plain li {
+  grid-template-columns: 120px 460px minmax(0, 1fr);
+}
+
+/* Six rows and up: the field holds them only at this height, which is why
+   the type here is smaller than anywhere else on a slide. */
+.rows.compact li {
+  grid-template-columns: 100px 560px minmax(0, 1fr);
+  padding: 22px 48px;
+}
+
+.rows.compact h3 {
+  font-size: 36px;
+}
+
+.rows.compact p {
+  font-size: 26px;
+}
+
+.rows.compact .n {
+  font-size: 32px;
+}
+
+/* Four claims as a two-by-two field: each gets room for a heading, a
+   sentence and its source, which four stacked rows cannot give. */
+.rows.cards {
+  top: 336px;
+  bottom: 150px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--gap-size);
+}
+
+.rows.cards li {
+  display: block;
+  padding: 24px 30px;
+}
+
+.rows.cards .n {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 32px;
+}
+
+.rows.cards h3 {
+  margin-bottom: 12px;
+  font-size: 32px;
+}
+
+.rows.cards p {
+  font-size: 24px;
+  line-height: 1.35;
+  color: var(--dim);
+}
+
+/* Four rows that each carry a claim and its source: the only way they fit is
+   smaller type and tighter rows. */
+.rows.tight li {
+  padding: 11px 48px;
+}
+
+.rows.tight h3 {
+  font-size: 30px;
+}
+
+.rows.tight p {
+  font-size: 24px;
+  line-height: 1.35;
+}
+
+/* --- columns ---------------------------------------------------------- */
+
+.columns {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 372px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 96px;
+}
+
+.columns h3 {
+  margin: 0 0 24px;
+  font-family: var(--font-head);
+  font-size: var(--type-h3);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.columns p {
+  margin: 0 0 20px;
+  font-size: var(--type-body);
+  line-height: 1.45;
+  color: var(--dim);
+}
+
+.columns .label {
+  display: block;
+  margin-bottom: 20px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: var(--type-kicker);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* --- expand ----------------------------------------------------------- */
+
+/* A row can carry the detail behind its claim — the sample it rests on, the
+   dates, the quote. It stays out of the slide until the row is clicked, and
+   then covers the list: the room reads one thing at a time. */
+.rows li[data-more] {
+  cursor: pointer;
+}
+
+.rows li[data-more]:hover h3 {
+  color: var(--accent);
+}
+
+.more {
+  display: none;
+}
+
+.expand {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 340px;
+  bottom: 120px;
+  display: none;
+  padding: 36px 44px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  overflow-y: auto;
+}
+
+.slide[data-expanded] .expand {
+  display: block;
+}
+
+.expand h4 {
+  margin: 0 0 18px;
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  font-size: 44px;
+  line-height: 1.1;
+}
+
+.expand p {
+  margin: 0 0 16px;
+  max-width: 1500px;
+  font-size: 26px;
+  line-height: 1.4;
+  color: var(--dim);
+}
+
+.expand .quote {
+  color: var(--ink);
+  border-left: 3px solid var(--accent);
+  padding-left: 24px;
+}
+
+/* The sample a claim rests on, as counted bars: --h is the bar height in
+   pixels, set against the largest figure in the row. */
+.expand .sample {
+  display: flex;
+  align-items: stretch;
+  gap: 40px;
+  margin: 24px 0 20px;
+  height: 170px;
+}
+
+.expand .sample div {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 280px;
+  height: 100%;
+  text-align: center;
+}
+
+.expand .sample i {
+  display: block;
+  height: calc(var(--h) * 1px);
+  background: var(--panel-gap);
+  border-top: 3px solid var(--accent);
+}
+
+.expand .sample b {
+  font-family: var(--font-mono);
+  font-size: 30px;
+  color: var(--ink);
+}
+
+.expand .sample span {
+  font-size: 22px;
+  color: var(--faint);
+}
+
+.expand .close {
+  font-family: var(--font-mono);
+  font-size: var(--type-kicker);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* --- figures ---------------------------------------------------------- */
+
+/* Two numbers set against each other, each with what it counts under it. */
+.figures {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 372px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 80px;
+}
+
+.figures .num {
+  display: block;
+  font-family: var(--font-head);
+  font-weight: var(--head-weight);
+  font-size: 168px;
+  line-height: 1;
+  letter-spacing: var(--head-ls);
+}
+
+.figures .of {
+  display: block;
+  margin-top: 20px;
+  font-size: var(--type-lede);
+  line-height: 1.35;
+}
+
+.figures .src {
+  display: block;
+  margin-top: 16px;
+  font-family: var(--font-mono);
+  font-size: var(--type-min);
+  color: var(--faint);
+}
+
+/* The second figure is the one that undercuts the first. */
+.figures .low .num {
+  color: var(--warn);
+}
+
+/* --- table ------------------------------------------------------------ */
+
+/* Numbers, read down a column. The figure column is monospaced so digits
+   line up; the source column says whose number it is. */
+.table {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 372px;
+  border-collapse: collapse;
+  width: calc(var(--stage-w) - 2 * var(--pad));
+  font-size: var(--type-body);
+}
+
+.table th,
+.table td {
+  padding: 16px 24px 16px 0;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+}
+
+.table th {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: var(--type-kicker);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.table .num {
+  font-family: var(--font-mono);
+  font-size: 40px;
+  white-space: nowrap;
+}
+
+.table .src {
+  color: var(--faint);
+  font-size: var(--type-note);
+}
+
+/* The row the slide is about. */
+.table .lead-row .num {
+  color: var(--accent);
+}
+
+/* --- map -------------------------------------------------------------- */
+
+/* Inventory of attempts, grouped by what they compile to. Every chip is a
+   project; clicking one writes its fate into the panel below. Scrolls
+   inside its own box — the list is longer than one field. */
+.map {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 340px;
+  bottom: 276px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 26px 40px;
+  overflow-y: auto;
+  padding-right: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+}
+
+/* A group that reads as one line across the whole field. */
+.map .wide {
+  grid-column: 1 / -1;
+}
+
+.map h3 {
+  margin: 0 0 12px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: var(--type-kicker);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* A second group in the same column. */
+.map .next-group {
+  margin-top: 22px;
+}
+
+.map .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.map .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  font-family: var(--font-body);
+  font-size: var(--type-min);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* The dot carries the verdict, so the name stays readable at any size. */
+.map .chip::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  background: var(--warn);
+}
+
+.map .chip[data-alive='yes']::before {
+  background: var(--ok);
+}
+
+.map .chip[data-alive='part']::before {
+  background: var(--accent);
+}
+
+/* Year mark: the 2025-2026 wave runs across the groups, so it is marked on
+   the chip rather than gathered into a group of its own. */
+.map .chip[data-year]::after {
+  content: attr(data-year);
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1;
+  color: var(--accent);
+}
+
+.map .chip[data-open] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.map .chip:hover {
+  border-color: var(--accent);
+}
+
+/* A closing line under the body of a slide: the same place as .detail, but
+   written into the markup instead of filled in on a click. */
+.closing {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  bottom: 150px;
+  margin: 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+  font-size: var(--type-body);
+  line-height: 1.45;
+  color: var(--dim);
+}
+
+.closing b {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Where a clicked chip tells its story. */
+.detail {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  bottom: 120px;
+  min-height: 150px;
+  margin: 0;
+  padding-top: 20px;
+  border-top: 1px solid var(--rule);
+  font-size: var(--type-body);
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.detail:empty::before {
+  content: 'Нажмите на проект — здесь появится его судьба';
+  color: var(--faint);
+}
+
+.detail b {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* The link is a line of its own: inline it collides with the sentence and
+   reads as part of it. */
+.detail a {
+  display: block;
+  width: fit-content;
+  margin-top: 14px;
+  font-family: var(--font-mono);
+  font-size: var(--type-note);
+  color: var(--dim);
+  text-decoration: none;
+  border-bottom: 1px solid var(--rule);
+}
+
+.detail a:hover {
+  color: var(--accent);
+}
+
+/* --- bars ------------------------------------------------------------- */
+
+/* A small column chart under a table: --h is the bar's height in pixels,
+   computed from the value against the axis the caption names. The axis does
+   not start at zero, and the caption has to say so. */
+.bars {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  bottom: 128px;
+}
+
+.bars .caption {
+  margin: 0 0 10px;
+  font-family: var(--font-mono);
+  font-size: var(--type-kicker);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.bars .plot {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 104px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.bars .plot div {
+  position: relative;
+  flex: 1;
+  height: calc(var(--h) * 1px);
+  background: var(--panel-gap);
+  border-top: 3px solid var(--dim);
+}
+
+/* The last column is where the talk is: today's figure. */
+.bars .plot .now {
+  border-top-color: var(--accent);
+  background: var(--panel);
+}
+
+.bars .axis {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  color: var(--faint);
+}
+
+.bars .axis span {
+  flex: 1;
+  text-align: center;
+}
+
+/* --- timeline --------------------------------------------------------- */
+
+/* Twenty-four years across the field: a row per project, the bar spanning
+   from its start to its death or to today. Positions are computed from the
+   scale below — 2002 at the left edge of the track, 2026 at the right —
+   and written as inline left/width, so a date change means one number. */
+.timeline {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 300px;
+}
+
+.timeline .scale {
+  display: flex;
+  justify-content: space-between;
+  margin-left: 320px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: var(--type-kicker);
+  color: var(--faint);
+}
+
+/* Years filter the rows: a click keeps whoever was alive that year. */
+.scale button {
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.scale button:hover,
+.scale button[data-on] {
+  color: var(--accent);
+}
+
+/* Vertical rule at the chosen year, drawn across the rows. */
+.timeline .marker {
+  position: absolute;
+  top: 48px;
+  bottom: 0;
+  width: 1px;
+  background: var(--accent);
+  opacity: 0.5;
+  display: none;
+}
+
+.timeline[data-year] .marker {
+  display: block;
+}
+
+/* Rows outside the chosen year keep their place and recede. */
+.timeline li[data-out] {
+  opacity: 0.22;
+}
+
+.timeline .rows {
+  position: static;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  background: none;
+}
+
+.timeline li {
+  display: block;
+  position: relative;
+  height: 36px;
+  padding: 0;
+  background: none;
+  border: 0;
+}
+
+.timeline .who {
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 300px;
+  padding: 0;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  font-size: 26px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.timeline .who:hover,
+.timeline li[data-open] .who {
+  color: var(--accent);
+}
+
+/* Hover tip: the one-line version of the note, for reading the row without
+   committing the detail line to it. */
+.timeline .who[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 0;
+  top: 40px;
+  z-index: 2;
+  width: 560px;
+  padding: 16px 20px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  font-family: var(--font-body);
+  font-size: var(--type-min);
+  line-height: 1.4;
+  color: var(--ink);
+  white-space: normal;
+}
+
+/* The bar itself: --at and --span are set per row, in track pixels. */
+.timeline .bar {
+  position: absolute;
+  top: 6px;
+  left: calc(320px + var(--at) * 1px);
+  width: calc(var(--span) * 1px);
+  height: 22px;
+  background: var(--warn);
+}
+
+/* The 2026 wave is months old: its span rounds to nothing, so it gets a
+   stub wide enough to be a mark on the scale. */
+.timeline li[data-new] .bar {
+  min-width: 40px;
+}
+
+.timeline li[data-alive='yes'] .bar {
+  background: var(--ok);
+}
+
+.timeline li[data-new] .bar {
+  background: var(--accent);
+}
+
+/* Why it ended, set right after the bar. */
+.timeline .why {
+  position: absolute;
+  top: 8px;
+  left: calc(332px + (var(--at) + var(--span)) * 1px);
+  font-family: var(--font-mono);
+  font-size: var(--type-kicker);
+  color: var(--faint);
+  white-space: nowrap;
+}
+
+/* A living project's bar runs to the right edge, so its line has nowhere to
+   go after it: set it inside the bar, in the slide's own ground colour. */
+.timeline li[data-alive='yes'] .why {
+  top: 6px;
+  left: calc(336px + var(--at) * 1px);
+  height: 22px;
+  display: flex;
+  align-items: center;
+  font-size: 20px;
+  color: var(--bg);
+}
+
+/* --- terminal plate --------------------------------------------------- */
+
+/* Verbatim console or code, kept monospaced in both directions. */
+.plate {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 372px;
+  margin: 0;
+  padding: 40px 48px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  font-family: var(--font-mono);
+  font-size: var(--type-body);
+  line-height: 1.5;
+  color: var(--ink);
+  white-space: pre;
+  overflow: hidden;
+}
+
+.plate .out {
+  color: var(--dim);
+}
+
+.plate .hi {
+  color: var(--accent);
+}

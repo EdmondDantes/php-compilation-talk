@@ -1,0 +1,554 @@
+/* The shell around the slides: stage scaling, progress, overview, help,
+   the presenter screen and print. Everything here is chrome — slides never
+   see it, and it borrows the same tokens so it matches either direction. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  overflow: hidden;
+  /* Cursor is hidden while the deck is idle; see js/player.js. */
+  cursor: default;
+}
+
+body[data-idle='yes'] {
+  cursor: none;
+}
+
+/* --- stage ------------------------------------------------------------ */
+
+/* Viewport-filling box; the stage inside it is scaled to fit and centred. */
+.viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Centred by translation rather than by layout: the stage keeps its 1920px
+   layout width, and a flex or grid parent would size its track to that
+   width instead of to the viewport, pushing the right edge off screen. */
+.stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--stage-w);
+  height: var(--stage-h);
+  /* --scale is written by the player on every resize. */
+  transform: translate(-50%, -50%) scale(var(--scale, 1));
+}
+
+.stage .slide {
+  visibility: hidden;
+}
+
+.stage .slide[data-current] {
+  visibility: visible;
+}
+
+/* Blackout: B hides the slide without losing the position. */
+body[data-blackout='yes'] .stage,
+body[data-blackout='yes'] .progress {
+  visibility: hidden;
+}
+
+/* --- control ---------------------------------------------------------- */
+
+/* Not a widget over the slide but type set on it: the same accent, mono
+   face and hairline the slides use. The current number carries the accent,
+   the total stays faint. Sits against the slide's own bottom-right corner —
+   --gutter-* is the letterbox the player measures on every resize. Fades
+   with the cursor: on a projector it must not sit in the frame for the
+   whole talk. */
+.control {
+  position: absolute;
+  right: calc(var(--gutter-x, 0px) + 28px);
+  bottom: calc(var(--gutter-y, 0px) + 22px);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  opacity: 1;
+  transition: opacity 200ms ease-out;
+}
+
+body[data-idle='yes'] .control {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body[data-overview='yes'] .control,
+body[data-blackout='yes'] .control,
+body[data-mode='presenter'] .control {
+  display: none;
+}
+
+.control button {
+  padding: 0;
+  background: none;
+  border: 0;
+  font-family: var(--font-mono);
+  font-size: 24px;
+  line-height: 1;
+  color: var(--faint);
+  cursor: pointer;
+  transition: color 120ms ease-out, transform 120ms ease-out;
+}
+
+.control button:hover {
+  color: var(--accent);
+}
+
+.control .back:hover {
+  transform: translateX(-3px);
+}
+
+.control .forward:hover {
+  transform: translateX(3px);
+}
+
+.control .at {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The total is context, not the reading; it recedes behind the current
+   number set beside it. */
+.control .at .of {
+  color: var(--faint);
+}
+
+/* Separated from the pair by a hairline: it switches a mode, it does not
+   move the deck. */
+.control .prompter {
+  padding-left: 14px;
+  border-left: 1px solid var(--rule);
+  font-size: 15px;
+}
+
+body[data-script='yes'] .control .prompter {
+  color: var(--accent);
+}
+
+/* --- theme menu ------------------------------------------------------- */
+
+/* Top right, out of the slide's field: the look is chosen once before the
+   talk, so it does not belong next to the controls used during it. */
+.themes {
+  position: absolute;
+  right: calc(var(--gutter-x, 0px) + 28px);
+  top: calc(var(--gutter-y, 0px) + 22px);
+  font-family: var(--font-mono);
+  opacity: 1;
+  transition: opacity 200ms ease-out;
+}
+
+body[data-idle='yes'] .themes {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body[data-overview='yes'] .themes,
+body[data-blackout='yes'] .themes,
+body[data-mode='presenter'] .themes {
+  display: none;
+}
+
+.themes .pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  font: inherit;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+  cursor: pointer;
+  transition: color 120ms ease-out, border-color 120ms ease-out;
+}
+
+.themes .pick:hover,
+.themes[data-open] .pick {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* The caret turns over when the menu is open. */
+.themes .pick i {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid currentColor;
+  transition: transform 140ms ease-out;
+}
+
+.themes[data-open] .pick i {
+  transform: rotate(180deg);
+}
+
+.themes .menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+}
+
+.themes[data-open] .menu {
+  display: block;
+}
+
+.themes .menu button {
+  display: block;
+  width: 100%;
+  padding: 9px 16px;
+  background: none;
+  border: 0;
+  font: inherit;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--dim);
+  cursor: pointer;
+}
+
+.themes .menu button:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* The theme now on stays marked while the menu is open. */
+.themes .menu button[data-on] {
+  color: var(--accent);
+}
+
+/* --- prompter --------------------------------------------------------- */
+
+/* The speaker's own text, on the same screen as the slide: a talk given
+   from one machine has no second monitor for the presenter window. */
+.script {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: none;
+  max-height: 34vh;
+  padding: 24px 32px 32px;
+  background: var(--panel);
+  border-top: 1px solid var(--accent);
+  overflow-y: auto;
+}
+
+body[data-script='yes'] .script {
+  display: block;
+}
+
+body[data-mode='presenter'] .script,
+body[data-overview='yes'] .script {
+  display: none;
+}
+
+.script::before {
+  content: 'Что говорить';
+  display: block;
+  margin-bottom: 12px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.script p {
+  margin: 0;
+  max-width: 100ch;
+  font-size: 24px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.script p:empty::before {
+  content: 'Заметок к этому слайду нет';
+  color: var(--faint);
+}
+
+/* The bar rides above the panel instead of hiding behind it. */
+body[data-script='yes'] .control {
+  bottom: calc(34vh + 32px);
+}
+
+/* --- progress --------------------------------------------------------- */
+
+.progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: transparent;
+}
+
+.progress i {
+  display: block;
+  height: 100%;
+  width: var(--progress, 0%);
+  background: var(--accent);
+  transition: width 160ms ease-out;
+}
+
+/* --- overview --------------------------------------------------------- */
+
+.overview {
+  position: absolute;
+  inset: 0;
+  display: none;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  align-content: start;
+  gap: 24px;
+  padding: 32px;
+  background: var(--bg);
+  overflow-y: auto;
+}
+
+body[data-overview='yes'] .overview {
+  display: grid;
+}
+
+body[data-overview='yes'] .viewport {
+  visibility: hidden;
+}
+
+.thumb {
+  position: relative;
+  border: 2px solid transparent;
+  background: var(--panel);
+  cursor: pointer;
+}
+
+.thumb[data-current] {
+  border-color: var(--accent);
+}
+
+/* Holds a slide clone at full size, scaled down to the tile's width. */
+.thumb .shot {
+  position: relative;
+  overflow: hidden;
+}
+
+.thumb .shot .slide {
+  transform: scale(var(--thumb-scale, 0.16));
+  transform-origin: 0 0;
+}
+
+.thumb figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--faint);
+}
+
+.thumb figcaption b {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* --- presenter screen ------------------------------------------------- */
+
+.presenter {
+  position: absolute;
+  inset: 0;
+  display: none;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 28px;
+  padding: 28px;
+  background: var(--bg);
+}
+
+body[data-mode='presenter'] .presenter {
+  display: grid;
+}
+
+body[data-mode='presenter'] .viewport,
+body[data-mode='presenter'] .progress {
+  display: none;
+}
+
+.presenter .bar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: 32px;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  color: var(--faint);
+}
+
+.presenter .timer {
+  font-size: 44px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Turns amber once the talk passes the slot given by <body data-limit>. */
+.presenter .timer[data-over='yes'] {
+  color: var(--warn);
+}
+
+.presenter .clock {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.presenter .now,
+.presenter .next {
+  align-self: start;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+}
+
+.presenter .shot {
+  position: relative;
+  overflow: hidden;
+}
+
+.presenter .shot .slide {
+  transform-origin: 0 0;
+}
+
+.presenter .side {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 20px;
+  min-height: 0;
+}
+
+.presenter .notes {
+  overflow-y: auto;
+  font-size: 26px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.presenter .notes:empty::before {
+  content: 'Заметок нет';
+  color: var(--faint);
+}
+
+.presenter .label {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* --- help ------------------------------------------------------------- */
+
+.help {
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-items: center;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+}
+
+body[data-help='yes'] .help {
+  display: grid;
+}
+
+.help dl {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 14px 32px;
+  margin: 0;
+  padding: 40px 56px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  font-size: 20px;
+}
+
+.help dt {
+  font-family: var(--font-mono);
+  color: var(--accent);
+}
+
+.help dd {
+  margin: 0;
+  color: var(--dim);
+}
+
+/* --- print ------------------------------------------------------------ */
+
+@page {
+  size: 1920px 1080px;
+  margin: 0;
+}
+
+@media print {
+  body {
+    overflow: visible;
+    background: #fff;
+  }
+
+  .progress,
+  .control,
+  .script,
+  .overview,
+  .presenter,
+  .help {
+    display: none !important;
+  }
+
+  .viewport {
+    position: static;
+    display: block;
+    overflow: visible;
+  }
+
+  .stage {
+    position: static;
+    transform: none;
+    width: auto;
+    height: auto;
+  }
+
+  .stage .slide {
+    position: relative;
+    visibility: visible;
+    break-after: page;
+    /* Panels and accents are part of the slide, not decoration the print
+       dialog may drop. */
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Without this the deck ends on a blank page. */
+  .stage .slide:last-child {
+    break-after: auto;
+  }
+}

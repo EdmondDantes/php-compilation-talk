@@ -1,0 +1,144 @@
+/* Design tokens for the two directions the deck can wear.
+   Values come from design/TerminalCover.dc.html and TerminalSlide.dc.html,
+   whose palette() already carried both: the dark "Терминал" and the light
+   "Чертёж". Layout reads tokens only, so a direction is a palette swap. */
+
+:root {
+  /* The slide field is authored at this size and scaled to the viewport. */
+  --stage-w: 1920px;
+  --stage-h: 1080px;
+
+  /* Type never drops below this on a 1920x1080 slide (dev/WORKFLOW.md). */
+  --type-min: 24px;
+
+  --type-display: 152px;
+  --type-h2: 84px;
+  --type-h3: 44px;
+  --type-lede: 38px;
+  --type-body: 30px;
+  --type-mark: 30px;
+  --type-kicker: 24px;
+  --type-num: 40px;
+  --type-note: 26px;
+
+  --step: 48px;
+}
+
+/* Терминал: dark ground, amber accent, monospaced headings. */
+[data-theme='terminal'] {
+  --bg: #0d0f12;
+  --ink: #e8e6e1;
+  --dim: #a9b2b9;
+  --faint: #5f6b74;
+  --accent: #ffb000;
+  --accent-soft: #ffcf5c;
+  --panel: #12161a;
+  --panel-gap: #1a2027;
+  --panel-border: transparent;
+  --rule: #263038;
+  --rule-accent: transparent;
+  --ok: #4ec9b0;
+  --warn: #d97757;
+
+  --font-head: 'JetBrains Mono', ui-monospace, monospace;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --head-weight: 700;
+  --head-ls: -0.03em;
+  --display-ls: -0.035em;
+  --kicker-transform: none;
+  --kicker-ls: 0;
+
+  /* Ground: two soft pools of light, one cool at the top left and one in the
+     accent at the bottom right. Both stay under 8% so type never sits on a
+     gradient it has to fight. */
+  --grid:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.11'/%3E%3C/svg%3E"),
+    radial-gradient(1400px 900px at 8% -12%, #1a2530 0%, transparent 62%),
+    radial-gradient(1100px 800px at 104% 112%, rgba(255, 176, 0, 0.07) 0%, transparent 60%);
+  --gap-size: 2px;
+  --pad: 112px;
+}
+
+/* Чертёж: paper ground, steel accent, condensed sans. */
+[data-theme='blueprint'] {
+  --bg: #f2f2f3;
+  --ink: #1d1f20;
+  --dim: #4a4d4f;
+  --faint: #83878a;
+  --accent: #416180;
+  --accent-soft: #5980a6;
+  --panel: transparent;
+  --panel-gap: transparent;
+  --panel-border: #1d1f2028;
+  --rule: #1d1f2028;
+  --rule-accent: #5980a6;
+  --ok: #416180;
+  --warn: #8a5a2b;
+
+  --font-head: 'Fira Sans Condensed', system-ui, sans-serif;
+  --font-body: 'Fira Sans', system-ui, sans-serif;
+  --font-mono: 'Fira Mono', ui-monospace, monospace;
+
+  --head-weight: 600;
+  --head-ls: -0.005em;
+  --display-ls: -0.01em;
+  --kicker-transform: uppercase;
+  --kicker-ls: 0.1em;
+
+  --grid:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.11'/%3E%3C/svg%3E"),
+    radial-gradient(1400px 900px at 8% -12%, #ffffff 0%, transparent 60%),
+    radial-gradient(1100px 800px at 104% 112%, rgba(65, 97, 128, 0.08) 0%, transparent 58%);
+  --gap-size: 24px;
+  --pad: 120px;
+}
+
+/* The blueprint direction runs a larger head size: condensed sans at the
+   terminal's 84px reads smaller than the mono it replaces. */
+[data-theme='blueprint'] {
+  --type-h2: 96px;
+  --type-display: 168px;
+}
+
+/* Слон: PHP's own palette on paper — the elephant blue-violet of the logo
+   over a light ground, with the darker shade for headings. */
+[data-theme='php'] {
+  --bg: #f3f3f7;
+  --ink: #232538;
+  --dim: #4b4f68;
+  --faint: #8a8ea6;
+  --accent: #777bb4;
+  --accent-soft: #4f5b93;
+  --panel: #ffffff;
+  --panel-gap: #e6e7f0;
+  --panel-border: #d7d9e6;
+  --rule: #cbcdde;
+  --rule-accent: #777bb4;
+  --ok: #2f7d5f;
+  --warn: #b4581f;
+
+  --font-head: 'Fira Sans Condensed', system-ui, sans-serif;
+  --font-body: 'Fira Sans', system-ui, sans-serif;
+  --font-mono: 'Fira Mono', ui-monospace, monospace;
+
+  --head-weight: 700;
+  --head-ls: -0.01em;
+  --display-ls: -0.015em;
+  --kicker-transform: uppercase;
+  --kicker-ls: 0.1em;
+
+  --grid:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.11'/%3E%3C/svg%3E"),
+    radial-gradient(1400px 900px at 8% -12%, #ffffff 0%, transparent 62%),
+    radial-gradient(1100px 800px at 104% 112%, rgba(119, 123, 180, 0.16) 0%, transparent 58%);
+  --gap-size: 20px;
+  --pad: 120px;
+}
+
+/* Condensed sans needs more size than the mono it replaces. */
+[data-theme='php'] {
+  --type-h2: 96px;
+  --type-display: 168px;
+}

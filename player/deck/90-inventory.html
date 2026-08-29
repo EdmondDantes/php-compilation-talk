@@ -1,0 +1,108 @@
+<!-- Инвентарь целиком. Slides only: the player fetches this file into the
+     stage of index.html. Stands at the end of the deck as a reference to
+     answer questions from the room, not as part of the running order.
+     Every note comes from dev/research/php-compilers.md. -->
+
+<section class="slide" data-label="Инвентарь · справочно"
+  data-speaker-notes="Запасной слайд для вопросов из зала: весь инвентарь на одном экране. Нажимать по одному, судьба проекта появляется внизу. Зелёная точка — живой, янтарная — живой, но не для PHP или вовсе не компилятор, красная — мёртвый. Подряд не читать.">
+  <div class="top"><span><span class="part">∞</span> Справочно</span><span class="count"></span></div>
+  <h2 class="slide-title">Кто компилировал PHP</h2>
+  <div class="rule"></div>
+
+  <div class="map">
+    <div>
+      <h3>В нативный код</h3>
+      <div class="chips">
+        <button type="button" class="chip" data-alive="yes"
+          data-note="ВКонтакте, открыт в конце 2020-го. Подмножество PHP → C++ → бинарник со встроенным HTTP-сервером, крутит vk.com. Цена диалекта: ни eval, ни рефлексии, ни динамических имён." data-url="https://github.com/VKCOM/kphp">KPHP</button>
+        <button type="button" class="chip" data-alive="no"
+          data-note="Facebook, 2010. PHP → C++ → один бинарник. Умер от экономики выкладки: сборка 1,5 ГБ, gcc на каждое изменение, двадцатиминутный цикл. Заменён на HHVM в феврале 2013-го." data-url="https://github.com/facebook/hhvm">HipHop</button>
+        <button type="button" class="chip" data-alive="part"
+          data-note="Жив, но не для PHP: последняя версия с поддержкой PHP вышла в декабре 2018-го, дальше HHVM исполняет только Hack." data-url="https://github.com/facebook/hhvm">HHVM</button>
+        <button type="button" class="chip" data-alive="yes"
+          data-note="Автор Swoole, май 2026. Требует strict_types=1, запрещает $$var и исполняемый код в глобальной области — под это не соберётся заметная часть пакетов Composer." data-url="https://github.com/swoole/typephp" data-year="26">TypePHP</button>
+        <button type="button" class="chip" data-alive="yes"
+          data-note="Создан 21 марта 2026, около 5300 коммитов и 568 звёзд, последний коммит 24 августа 2026. Автор сам называет проект экспериментальным." data-url="https://github.com/illegalstudio/elephc" data-year="26">elephc</button>
+        <button type="button" class="chip" data-alive="yes"
+          data-note="Создан 12 июня 2026, v0.6.0, около 957 коммитов и 35 звёзд. Жив, но очень молод." data-url="https://github.com/manticorephp/compiler" data-year="26">Manticore</button>
+        <button type="button" class="chip" data-alive="yes"
+          data-note="Наш проект: JIT на MLIR внутри дерева php-src. В разработке, числа предварительные.">ext/mlir</button>
+        <button type="button" class="chip" data-alive="yes"
+          data-note="PHP → читаемый C, создан 13 июня 2026, 444 коммита. По устройству ближе всего к KPHP и полнее прочих новичков." data-url="https://github.com/tphp-lang/TinyPHP" data-year="26">TinyPHP</button>
+        <button type="button" class="chip" data-alive="no"
+          data-note="Начат в 2005 в Тринити-колледже. Академический проект: писался под язык вообще, а не под чью-то кодовую базу." data-url="https://github.com/pbiggar/phc">phc</button>
+        <button type="button" class="chip" data-alive="no"
+          data-note="Шеннон Уэйрик. PHP → Bigloo Scheme → C → машинный код; собирал самостоятельные бинарники, FastCGI и PHP-GTK. Коммерческий с 2002, открыт в 2007, последний коммит январь 2012." data-url="https://github.com/weyrick/roadsend-php">Roadsend</button>
+        <button type="button" class="chip" data-alive="no"
+          data-note="Энтони Феррара при поддержке Google, август 2014. Компилировал подмножество PHP; остановлен автором в том же году." data-url="https://github.com/google/recki-ct">Recki-CT</button>
+        <button type="button" class="chip" data-alive="no"
+          data-note="Джо Уоткинс. JIT как расширение PHP; остановлен." data-url="https://github.com/krakjoe/jitfu">JIT-Fu</button>
+      </div>
+    </div>
+
+    <div>
+      <h3>На чужую машину</h3>
+      <div class="chips">
+        <button type="button" class="chip" data-alive="yes"
+          data-note="DEVSENSE, с 2017. PHP → CIL через Roslyn, язык уровня PHP 8.x. Жив: писался под свою задачу — PHP на .NET и WordPress под ним." data-url="https://github.com/peachpiecompiler/peachpie">PeachPie</button>
+        <button type="button" class="chip" data-alive="yes"
+          data-note="Марк Карпелес. Полноценная виртуальная машина PHP на Go, не транспайлер. 695 звёзд, заявлено около 97,9% набора тестов 8.5 с FPM и CGI. Самый полный не-Zend PHP из живых — и это не принесло ему пользователей." data-url="https://github.com/KarpelesLab/goro">Goro</button>
+        <button type="button" class="chip" data-alive="yes"
+          data-note="Мануэль Рубио. Интерпретатор PHP на Erlang/OTP, 289 звёзд, активен." data-url="https://github.com/bragful/ephp">ePHP</button>
+        <button type="button" class="chip" data-alive="no"
+          data-note="DEVSENSE, предшественник PeachPie. Архив: стабильная версия в январе 2013, последний коммит 2017." data-url="https://github.com/DEVSENSE/Phalanger">Phalanger</button>
+        <button type="button" class="chip" data-alive="no"
+          data-note="Caucho Technology. PHP на JVM, поставлялся с сервером приложений Resin. Закрыт вместе с компанией." data-url="http://quercus.caucho.com/">Quercus</button>
+        <button type="button" class="chip" data-alive="no"
+          data-note="Дмитрий Зайцев. PHP на JVM, 1710 звёзд. Главным потребителем была среда DevelNext, мёртвая с 2020-го." data-url="https://github.com/jphp-group/jphp">JPHP</button>
+        <button type="button" class="chip" data-alive="no"
+          data-note="Андрин Бертши. PHP на GraalVM, университетская работа; последний коммит сентябрь 2020-го." data-url="https://github.com/abertschi/graalphp">graalphp</button>
+        <button type="button" class="chip" data-alive="no"
+          data-note="Мацей Фиялковский, команда PyPy. Технически сильная попытка на RPython — и отказ Y Combinator после двух собеседований. Деловой ответ на вопрос, почему у PHP нет хорошего компилятора." data-url="https://github.com/hippyvm/hippyvm">HippyVM</button>
+        <button type="button" class="chip" data-alive="no"
+          data-note="IBM Hursley, Роб Николсон. PHP на JVM; покрытие языка так и не опубликовано.">P8</button>
+        <button type="button" class="chip" data-alive="no"
+          data-note="Иван Эндерлин. Виртуальная машина PHP на Rust, заброшена. Причина в инвентаре помечена как невыясненная." data-url="https://github.com/tagua-vm/tagua-vm">Tagua VM</button>
+      </div>
+    </div>
+
+    <div>
+      <h3>Похожие языки</h3>
+      <div class="chips">
+        <button type="button" class="chip" data-alive="yes"
+          data-note="Надмножество PHP от Facebook и единственное, что сегодня исполняет HHVM. Цена показательна: это уже не PHP, и код на нём в обычный PHP не возвращается." data-url="https://hacklang.org/">Hack</button>
+        <button type="button" class="chip" data-alive="yes"
+          data-note="Надмножество PHP на Rust, 804 звезды. Автор заявил о смене направления работы.">PXP</button>
+      </div>
+
+      <h3 class="next-group">Свои языки и рантаймы</h3>
+      <div class="chips">
+        <button type="button" class="chip" data-alive="yes"
+          data-note="Наш проект: PHP-совместимый рантайм с трассирующим JIT. В разработке." data-url="https://github.com/limelight-lang" data-year="26">Limelight</button>
+        <button type="button" class="chip" data-alive="no"
+          data-note="Полноценный PHP 8.x на Rust. Встал в январе 2026 — единственное собранное свидетельство того, чем кончается «перепишем всё на Rust»." data-url="https://github.com/leocavalcante/vhp" data-year="26">VHP</button>
+        <button type="button" class="chip" data-alive="yes"
+          data-note="Компилируемый язык на Go с синтаксисом PHP. Молодой, промышленного применения нет." data-url="https://github.com/Loneewolf15/wolf" data-year="26">Wolf</button>
+        <button type="button" class="chip" data-alive="yes"
+          data-note="Скриптовый язык на Rust с синтаксисом, близким к PHP." data-url="https://github.com/kemolife/FEL-language" data-year="26">FEL</button>
+        <button type="button" class="chip" data-alive="yes"
+          data-note="Компилятор Rust, написанный на PHP, 340 звёзд. Разошёлся по лентам в феврале–марте 2026 — показатель интереса, а не инструмент." data-url="https://github.com/mrconter1/rustc-php" data-year="26">rustc-php</button>
+      </div>
+    </div>
+
+    <div class="wide">
+      <h3>Не компиляторы</h3>
+      <div class="chips">
+        <button type="button" class="chip" data-alive="part"
+          data-note="Энкодеры: опкод плюс загрузчик. Продаются как компиляторы, машинного кода не производят — защищают исходник, а не ускоряют его." data-url="https://www.ioncube.com/">ionCube, SourceGuardian, Zend Guard</button>
+        <button type="button" class="chip" data-alive="part"
+          data-note="Упаковщики: интерпретатор и код приложения в одном файле. Удобно раздавать, но исполняет всё тот же PHP." data-url="https://frankenphp.dev/">phpmicro, static-php-cli, FrankenPHP</button>
+        <button type="button" class="chip" data-alive="part"
+          data-note="PHP, собранный в WebAssembly: тот же интерпретатор, перенесённый в браузер. Playground выпускается еженедельно и держит PHP 7.0–8.5." data-url="https://wordpress.github.io/wordpress-playground/">WordPress Playground, php-wasm</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="detail"></p>
+  <p class="note">// зелёный — живой · янтарный — живой, но не для PHP · красный — мёртвый · <sup>26</sup> — волна 2025–2026</p>
+</section>

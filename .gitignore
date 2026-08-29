@@ -1,5 +1,9 @@
 # Generated design canvas: seeded from design/*.dc.html, never edited by hand
 design/*-directions.html
+design/**/*-directions.html
+
+# Built from deck/90-inventory.html by player/tools/build-map.mjs
+player/inventory.html
 
 # OS noise
 Thumbs.db

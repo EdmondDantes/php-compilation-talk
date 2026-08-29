@@ -1,0 +1,61 @@
+<!-- Два разных размена: свой рантайм против транспиляции в обычный PHP.
+     Slides only: the player fetches this file into the stage of index.html.
+     Facts from dev/research/goro-review.md and dev/research/pxp-review.md,
+     both written from the projects' own code on 29 August 2026. -->
+
+<section class="slide" data-label="Полнота, которой не видно"
+  data-speaker-notes="Goro — самая полная реализация PHP вне Zend из живых, виртуальная машина на Go, 695 звёзд. Заявлено 97,9 процента набора тестов PHP 8.5. Мы проверили по коду: число снято на 55,7 процента набора, посчитано не той формулой, что печатает их же прогонщик, и исключает 87 поимённо вычеркнутых падений движка. Дальше важнее: Composer не запускается вовсе — ошибка в разрешении self при вложенном автозагрузе ломает ClassLoader. То есть приложение, собранное после 2013 года, не доходит до своей первой строки. Расширения на C невозможны в принципе: dl отключён, значит PECL закрыт не «пока», а навсегда. Вывод произносится вслух: полнота языка и совместимость с инфраструктурой — разные вещи, и меряют их разными тестами.">
+  <div class="top"><span><span class="part">2026</span> Свой рантайм</span><span class="count"></span></div>
+  <h2 class="slide-title">Полнота, которой не видно</h2>
+  <div class="rule"></div>
+
+  <div class="figures">
+    <div>
+      <span class="num">97,9 %</span>
+      <span class="of">набора тестов PHP 8.5 — заявлено в Goro</span>
+      <span class="src">самый полный не-Zend PHP из живых</span>
+    </div>
+    <div class="low">
+      <span class="num">0</span>
+      <span class="of">приложений с Composer, которые на нём запустятся</span>
+      <span class="src">разбор кода, 29 августа 2026</span>
+    </div>
+  </div>
+
+  <ul class="stack after-figures">
+    <li>Число снято на 55,7 % набора, своим прогонщиком, минус 87 вычеркнутых падений.</li>
+    <li class="dim">Нет PDO, dom, tokenizer, intl, Phar, zip. <b>dl()</b> отключён — PECL закрыт навсегда.</li>
+  </ul>
+
+  <p class="note">// полнота языка и совместимость с инфраструктурой — разные вещи, и тесты у них разные</p>
+</section>
+
+<section class="slide" data-label="Другой размен"
+  data-speaker-notes="PXP — единственный в инвентаре, кто не покупает скорость. Он компилирует надмножество PHP в обычный PHP, рантайм не трогает вовсе, поэтому не ломает ни расширения, ни PHPUnit, ни opcache, ни Composer. Дженерики стираются в аннотации template и param — то есть во вход PHPStan, проверка остаётся на статическом анализаторе. Транспилятор устроен как список правок байтовых диапазонов, а не как принтер дерева: неизменённый код копируется дословно, поэтому сохраняются форматирование, комментарии и номера строк, а карта соответствия выпадает из того же прохода бесплатно. Это сделка TypeScript, перенесённая в PHP. Цена честная: ускорения нет вовсе, и пакета на Packagist пока тоже нет.">
+  <div class="top"><span><span class="part">2026</span> Другой размен</span><span class="count"></span></div>
+  <h2 class="slide-title">Компилировать в сам PHP</h2>
+  <div class="rule"></div>
+
+  <div class="columns">
+    <div>
+      <span class="label">PXP делает</span>
+      <ul class="stack">
+        <li>дженерики и вывод типов</li>
+        <li>стирает их в <b>@template</b></li>
+        <li>выдаёт обычный PHP</li>
+      </ul>
+    </div>
+    <div>
+      <span class="label">Поэтому цело</span>
+      <ul class="stack">
+        <li>расширения и PECL</li>
+        <li>PHPUnit и opcache</li>
+        <li class="dim">Composer и весь vendor</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="closing"><b>Цена — </b>ускорения нет вовсе: на выходе тот же Zend. Компиляция потрачена
+     на удобство записи, а не на скорость.</p>
+  <p class="note">// правки байтовых диапазонов вместо печати дерева: форматирование, комментарии и номера строк целы</p>
+</section>

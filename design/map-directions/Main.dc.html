@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #ffb000; } a:hover { color: #ffcf5c; }
+    /* Track: 1376px wide, 2002…2026, so one year is 57.3px. A row's --at is
+       (start − 2002) × 57.3 and --span is its length in the same units. */
+    .row { position: relative; height: 40px; }
+    .who { position: absolute; left: 0; top: 6px; width: 300px; font-size: 30px; }
+    .bar { position: absolute; top: 8px; left: calc(320px + var(--at) * 1px);
+           width: calc(var(--span) * 1px); height: 24px; background: #d97757; }
+    .why { position: absolute; top: 10px; left: calc(332px + (var(--at) + var(--span)) * 1px);
+           font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 24px;
+           color: #5f6b74; white-space: nowrap; }
+    .alive .bar { background: #4ec9b0; }
+    .alive .why { top: 8px; left: calc(336px + var(--at) * 1px); height: 24px;
+                  display: flex; align-items: center; font-size: 20px; color: #0d0f12; }
+    .fresh .bar { background: #ffb000; }
+  </style>
+</helmet>
+<div style="width: 1920px; height: 1080px; background: #0d0f12; color: #e8e6e1; font-family: 'IBM Plex Sans', system-ui, sans-serif; position: relative; overflow: hidden;">
+  <div style="position: absolute; left: 112px; top: 92px; right: 112px; display: flex; justify-content: space-between; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 600; font-size: 24px; letter-spacing: 0.14em; text-transform: uppercase; color: #5f6b74;">
+    <span><span style="color: #ffb000;">2002</span> — 2026</span><span>16 / 16</span>
+  </div>
+
+  <h2 style="position: absolute; left: 108px; top: 168px; margin: 0; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 84px; line-height: 1; letter-spacing: -0.03em;">Двадцать лет попыток</h2>
+
+  <div style="position: absolute; left: 112px; right: 112px; top: 300px;">
+    <div style="display: flex; justify-content: space-between; margin-left: 320px; padding-bottom: 12px; border-bottom: 1px solid #263038; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 24px; color: #5f6b74;">
+      <span>2002</span><span>2007</span><span>2012</span><span>2017</span><span>2022</span><span>2026</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 24px;">
+      <div class="row" style="--at: 0; --span: 573;">
+        <span class="who">Roadsend</span><span class="bar"></span>
+        <span class="why">PHP → Scheme → C, коммерческий · закрыт 2012</span>
+      </div>
+      <div class="row" style="--at: 172; --span: 630;">
+        <span class="who">phc</span><span class="bar"></span>
+        <span class="why">писался под язык вообще</span>
+      </div>
+      <div class="row" style="--at: 458; --span: 172;">
+        <span class="who">HipHop</span><span class="bar"></span>
+        <span class="why">экономика выкладки: 1,5 ГБ и 20 минут</span>
+      </div>
+      <div class="row" style="--at: 573; --span: 172;">
+        <span class="who">HippyVM</span><span class="bar"></span>
+        <span class="why">отказ Y Combinator, 2015</span>
+      </div>
+      <div class="row" style="--at: 688; --span: 57;">
+        <span class="who">Recki-CT</span><span class="bar"></span>
+        <span class="why">остановлен автором</span>
+      </div>
+      <div class="row" style="--at: 630; --span: 344;">
+        <span class="who">HHVM</span><span class="bar"></span>
+        <span class="why">с 2019 исполняет только Hack</span>
+      </div>
+      <div class="row" style="--at: 860; --span: 172;">
+        <span class="who">JPHP</span><span class="bar"></span>
+        <span class="why">умер вместе с DevelNext</span>
+      </div>
+      <div class="row" style="--at: 917; --span: 115;">
+        <span class="who">graalphp</span><span class="bar"></span>
+        <span class="why">курсовая работа, 2020</span>
+      </div>
+      <div class="row alive" style="--at: 860; --span: 516;">
+        <span class="who">PeachPie</span><span class="bar"></span>
+        <span class="why">под PHP на .NET у DEVSENSE</span>
+      </div>
+      <div class="row alive" style="--at: 1032; --span: 344;">
+        <span class="who">KPHP</span><span class="bar"></span>
+        <span class="why">под код vk.com</span>
+      </div>
+      <div class="row fresh" style="--at: 1318; --span: 58;">
+        <span class="who">Волна 2026</span><span class="bar"></span>
+      </div>
+    </div>
+  </div>
+
+  <p style="position: absolute; left: 112px; bottom: 88px; margin: 0; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 26px; color: #5f6b74;">// доживают те, кого писали под конкретную кодовую базу, а не под язык</p>
+</div>
+</x-dc>
+</body>
+</html>

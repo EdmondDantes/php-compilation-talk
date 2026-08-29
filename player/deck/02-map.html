@@ -1,0 +1,95 @@
+<!-- Двадцать лет попыток. Slides only: the player fetches this file into the
+     stage of index.html.
+
+     Dates, fates and notes come from dev/research/php-compilers.md. A row
+     carries its years in data-from/data-to; the player turns those into the
+     bar's position and length, so nothing here is a pixel. -->
+
+<section class="slide" data-label="Двадцать лет попыток"
+  data-speaker-notes="Длина полосы — срок жизни проекта. Годы на шкале нажимаются: остаются те, кто был жив в этот год. Имя проекта тоже нажимается — под списком появляется, что это было и чем кончилось. Читать сверху вниз: Roadsend и phc писались под язык вообще; HipHop убила экономика выкладки; HHVM жив, но с 2019 исполняет только Hack; HippyVM отвергнут Y Combinator при команде PyPy. Внизу — те, кого писали под конкретную кодовую базу: PeachPie под PHP на .NET, KPHP под код vk.com.">
+  <div class="top"><span><span class="part">2002</span> — 2026</span><span class="count"></span></div>
+  <h2 class="slide-title">Двадцать лет попыток</h2>
+
+  <div class="timeline">
+    <div class="scale">
+      <button type="button">2002</button>
+      <button type="button">2007</button>
+      <button type="button">2012</button>
+      <button type="button">2017</button>
+      <button type="button">2022</button>
+      <button type="button">2026</button>
+    </div>
+    <div class="marker" aria-hidden="true"></div>
+
+    <ol class="rows">
+      <li data-from="2002" data-to="2012"
+        data-note="Шеннон Уэйрик. Коммерческий с 2002, открыт в 2007. Цепочка PHP → Bigloo Scheme → C → машинный код; собирал самостоятельные бинарники, FastCGI и настольные приложения на PHP-GTK. Последний коммит 16 января 2012. Преемник Raven на LLVM так и не дописан.">
+        <button type="button" class="who" data-tip="PHP через Scheme в машинный код. Коммерческий с 2002, открыт в 2007, закрыт в 2012.">Roadsend</button>
+        <span class="bar"></span>
+        <span class="why">коммерческий · закрыт 2012</span>
+      </li>
+      <li data-from="2005" data-to="2016"
+        data-note="Начат в 2005 в Тринити-колледже, Дублин. Академический компилятор PHP в C; последние существенные коммиты в 2016-м. Писался под язык вообще — переписываться под него было некому.">
+        <button type="button" class="who" data-tip="Академический компилятор из Тринити-колледжа. Писался под язык вообще — переписываться под него было некому.">phc</button>
+        <span class="bar"></span>
+        <span class="why">писался под язык вообще</span>
+      </li>
+      <li data-from="2010" data-to="2013"
+        data-note="Facebook, 2010. PHP → C++ → один бинарник. В феврале 2013 полностью заменён на HHVM. Убила не производительность, а экономика выкладки: сборка около 1,5 ГБ, gcc на каждое изменение и двадцатиминутный цикл до продакшена.">
+        <button type="button" class="who" data-tip="Facebook, PHP в один бинарник. Убила выкладка: 1,5 ГБ сборки и двадцать минут до продакшена.">HipHop</button>
+        <span class="bar"></span>
+        <span class="why">экономика выкладки: 1,5 ГБ и 20 минут</span>
+      </li>
+      <li data-from="2012" data-to="2015"
+        data-note="Мацей Фиялковский и команда PyPy, на RPython. Технически одна из самых сильных попыток — и отвергнута Y Combinator после двух собеседований в 2015-м. Формально репозиторий дожил до 2022 года, работа кончилась много раньше.">
+        <button type="button" class="who" data-tip="Команда PyPy, на RPython. Технически сильная попытка, отвергнутая Y Combinator в 2015-м.">HippyVM</button>
+        <span class="bar"></span>
+        <span class="why">отказ Y Combinator, 2015</span>
+      </li>
+      <li data-from="2014" data-to="2015"
+        data-note="Энтони Феррара, при поддержке Google, август 2014. Компилировал подмножество PHP и заявлял выигрыш над интерпретатором. Остановлен автором в конце того же года.">
+        <button type="button" class="who" data-tip="Энтони Феррара при поддержке Google, 2014. Остановлен автором в том же году.">Recki-CT</button>
+        <span class="bar"></span>
+        <span class="why">остановлен автором</span>
+      </li>
+      <li data-from="2013" data-to="2019"
+        data-note="Facebook, замена HipHop. Последняя версия с поддержкой PHP вышла в декабре 2018-го, дальше HHVM исполняет только Hack. Жив — но уже не для PHP: Facebook увёл свой код на собственный диалект.">
+        <button type="button" class="who" data-tip="Замена HipHop. Последняя версия с поддержкой PHP — декабрь 2018-го, дальше только Hack.">HHVM</button>
+        <span class="bar"></span>
+        <span class="why">с 2019 исполняет только Hack</span>
+      </li>
+      <li data-from="2017" data-to="2020"
+        data-note="Дмитрий Зайцев. PHP на JVM, 1710 звёзд. Главным потребителем была DevelNext — среда для настольных приложений; она умерла в 2020-м, и вместе с ней кончился JPHP.">
+        <button type="button" class="who" data-tip="PHP на JVM. Умер вместе со средой DevelNext, ради которой и писался.">JPHP</button>
+        <span class="bar"></span>
+        <span class="why">умер вместе с DevelNext</span>
+      </li>
+      <li data-from="2018" data-to="2020"
+        data-note="Андрин Бертши. PHP на GraalVM, университетская работа. Последний коммит 26 сентября 2020 года.">
+        <button type="button" class="who" data-tip="PHP на GraalVM, университетская работа. Последний коммит — сентябрь 2020-го.">graalphp</button>
+        <span class="bar"></span>
+        <span class="why">курсовая работа, 2020</span>
+      </li>
+      <li data-alive="yes" data-from="2017"
+        data-note="DEVSENSE, с 2017. PHP → CIL через Roslyn, язык уровня PHP 8.x, версия 1.1.13 в ноябре 2025-го. Жив, потому что писался под конкретную задачу хозяина: PHP на .NET и WordPress под ним.">
+        <button type="button" class="who" data-tip="DEVSENSE, PHP в CIL. Жив: писался под свою задачу — PHP на .NET.">PeachPie</button>
+        <span class="bar"></span>
+        <span class="why">под PHP на .NET у DEVSENSE</span>
+      </li>
+      <li data-alive="yes" data-from="2020"
+        data-note="ВКонтакте, открыт в конце 2020-го. Подмножество PHP → C++ → бинарник со встроенным HTTP-сервером; крутит vk.com. Цена диалекта: ни eval, ни рефлексии, ни динамических имён, ни генераторов. ВК может её платить — код один и свой.">
+        <button type="button" class="who" data-tip="ВКонтакте, PHP в C++. Крутит vk.com; за это отдали eval, рефлексию и динамические имена.">KPHP</button>
+        <span class="bar"></span>
+        <span class="why">под код vk.com</span>
+      </li>
+      <li data-new data-from="2026"
+        data-note="За пять месяцев 2026-го: elephc в марте, TypePHP в мае, Manticore и TinyPHP в июне. Все младше года, промышленного применения ни у одного нет. VHP на Rust из той же волны уже встал в январе.">
+        <button type="button" class="who" data-tip="elephc, TypePHP, Manticore, TinyPHP — все младше года. VHP из той же волны уже встал.">Волна 2026</button>
+        <span class="bar"></span>
+      </li>
+    </ol>
+  </div>
+
+  <p class="detail"></p>
+  <p class="note">// доживают те, кого писали под конкретную кодовую базу, а не под язык</p>
+</section>

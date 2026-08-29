@@ -1,0 +1,160 @@
+<!-- Часть 1. Что стоит динамика — и почему JIT её не снимает.
+     Slides only: the player fetches this file into the stage of index.html.
+     Composition from dev/OUTLINE.md, part 1. Figures that belong to other
+     projects are attributed on the slide; ours carry the in-development
+     flag and the placeholder mark until the method is written down. -->
+
+<section class="slide divider" data-label="01 · Стоимость динамики"
+  data-speaker-notes="Первая часть заменяет общие слова про накладные расходы одним разобранным случаем — циклом foreach.">
+  <div class="top"><span><span class="part">01</span> Часть первая</span><span class="count"></span></div>
+  <div class="ghost">01</div>
+  <h2 class="slide-title">Стоимость динамики</h2>
+  <p class="lede">Один цикл, разобранный до инструкций: чем платит интерпретатор,
+     что снимает JIT и что остаётся после него.</p>
+</section>
+
+<section class="slide" data-label="Три источника расходов"
+  data-speaker-notes="Ни одна из трёх операций не делает работу приложения. У каждой дальше по докладу свой ответ и свой проект. Третий снимается только через анализ времён жизни.">
+  <div class="top"><span><span class="part">01</span> Стоимость динамики</span><span class="count"></span></div>
+  <h2 class="slide-title">Три источника расходов</h2>
+  <div class="rule"></div>
+  <ol class="rows">
+    <li>
+      <span class="n">01</span>
+      <h3>Диспетчеризация</h3>
+      <p>Прыжок на обработчик опкода стоит дороже самой операции.</p>
+      <span class="mark ok">снимается</span>
+    </li>
+    <li>
+      <span class="n">02</span>
+      <h3>Динамика типов</h3>
+      <p>Тип известен только в рантайме — проверка на каждом шаге.</p>
+      <span class="mark ok">снимается</span>
+    </li>
+    <li>
+      <span class="n">03</span>
+      <h3>Учёт ссылок</h3>
+      <p>Refcount меняется почти на каждом присваивании.</p>
+      <span class="mark warn">частично</span>
+    </li>
+  </ol>
+  <p class="note">// третий снимается только через анализ времён жизни</p>
+</section>
+
+<section class="slide" data-label="Что уже сняли OPcache и JIT"
+  data-speaker-notes="Кэш опкодов снимает разбор и компиляцию, JIT — часть диспетчеризации. Числа чужие: первые два — из заявки самого JIT, третье — замер php.watch. Вывод произносится вслух: JIT ускоряет счёт, а не приложение.">
+  <div class="top"><span><span class="part">01</span> Стоимость динамики</span><span class="count"></span></div>
+  <h2 class="slide-title">Что уже сняли OPcache и JIT</h2>
+  <div class="rule"></div>
+  <table class="table">
+    <tr>
+      <th>Что мерили</th><th>Без JIT</th><th>С JIT</th><th>Чей замер</th>
+    </tr>
+    <tr class="lead-row">
+      <td>bench.php</td>
+      <td class="num">0,320 с</td>
+      <td class="num">0,140 с</td>
+      <td class="src">заявка JIT</td>
+    </tr>
+    <tr>
+      <td>WordPress, запросов в секунду</td>
+      <td class="num">315</td>
+      <td class="num">326</td>
+      <td class="src">заявка JIT</td>
+    </tr>
+    <tr>
+      <td>Laravel</td>
+      <td class="num">100 %</td>
+      <td class="num">98 %</td>
+      <td class="src">php.watch</td>
+    </tr>
+  </table>
+  <p class="note">// JIT ускоряет счёт, а не приложение</p>
+</section>
+
+<section class="slide" data-label="Разбор одного foreach"
+  data-speaker-notes="Дамп снимается командой opcache.jit_debug=0x144000. Видно три вещи: JIT знает тип операнда, держит накопитель в регистре — и всё равно видит четыре команды, а не цикл. Плюс пять точек выхода, каждую надо восстанавливать. Дословный дамп на слайд ещё не перенесён.">
+  <div class="top"><span><span class="part">01</span> Стоимость динамики</span><span class="count"></span></div>
+  <h2 class="slide-title">Разбор одного foreach</h2>
+  <div class="rule"></div>
+  <pre class="plate">$ php -d opcache.jit_debug=0x144000 loop.php
+<span class="out">op1(packed array)      — тип известен</span>
+<span class="out">CV1($s):int(rbx)       — накопитель в регистре</span>
+<span class="hi">FE_FETCH_R             — вызов функции движка</span>
+<span class="out">side exit x5           — каждую надо восстанавливать</span></pre>
+  <p class="note">// данные-заглушки: дословный дамп трассы на слайд ещё не перенесён</p>
+</section>
+
+<section class="slide statement" data-label="Почему так"
+  data-speaker-notes="Ядро доклада. Говорить как наблюдение, а не как закон: JIT знает семантику своих помощников, но в нынешней реализации после FE_FETCH_R ярлык типа читается заново. Причина вызова — массив бывает дырявым, кто-то должен пропускать пустые ячейки.">
+  <div class="top"><span><span class="part">01</span> Стоимость динамики</span><span class="count"></span></div>
+  <p class="after">FE_FETCH_R — вызов функции движка: массив бывает дырявым, и пустые ячейки
+     кто-то должен пропускать.</p>
+  <span class="label">Что видно в трассе</span>
+  <p class="lead">Ярлык типа читается<br />трижды за виток.</p>
+  <p class="note">// перевод идёт по одной команде — цикла как целого на этом уровне не видно</p>
+</section>
+
+<section class="slide" data-label="Если цикл узнать"
+  data-speaker-notes="Двадцать инструкций против двадцати семи: ярлык читается один раз, вызова нет, адрес не вычисляется — идёт курсор. Числа наши и пока без методики: единицы, машина, число прогонов и разброс на слайде не названы. Про C говорить «паритет», а не «быстрее на 4%»: разница внутри шума.">
+  <div class="top"><span><span class="part">01</span> Стоимость динамики</span><span class="count"></span></div>
+  <h2 class="slide-title">Если цикл узнать</h2>
+  <div class="rule"></div>
+  <table class="table">
+    <tr>
+      <th>Как исполняется</th><th>Время</th><th>Чей замер</th>
+    </tr>
+    <tr>
+      <td>интерпретатор</td>
+      <td class="num">10,91</td>
+      <td class="src">наш, методика не записана</td>
+    </tr>
+    <tr>
+      <td>штатный JIT, 8.4.1</td>
+      <td class="num">1,80</td>
+      <td class="src">наш, методика не записана</td>
+    </tr>
+    <tr>
+      <td>штатный JIT, 8.6.0-dev</td>
+      <td class="num">1,72</td>
+      <td class="src">наш, методика не записана</td>
+    </tr>
+    <tr class="lead-row">
+      <td>ext/mlir — в разработке</td>
+      <td class="num">0,73</td>
+      <td class="src">наш, методика не записана</td>
+    </tr>
+    <tr>
+      <td>тот же цикл на C</td>
+      <td class="num">0,76</td>
+      <td class="src">наш, методика не записана</td>
+    </tr>
+  </table>
+  <p class="note">// данные-заглушки: единицы, машина, прогоны и разброс не указаны · паритет с C</p>
+</section>
+
+<section class="slide" data-label="Границы эксперимента"
+  data-speaker-notes="Оптимизирующих проходов не писали: работу делает штатный LLVM. Но пилот не держит модификацию массива во время foreach, ссылки, исключения, IS_UNDEF и хуки свойств — назвать это вслух до того, как спросят из зала.">
+  <div class="top"><span><span class="part">01</span> Стоимость динамики</span><span class="count"></span></div>
+  <h2 class="slide-title">Границы эксперимента</h2>
+  <div class="rule"></div>
+  <ol class="rows plain">
+    <li>
+      <span class="n">01</span>
+      <h3>Только эта форма цикла</h3>
+      <p>С ключом — паритет: 2,04 против 2,02. Тело с if не поднимается.</p>
+    </li>
+    <li>
+      <span class="n">02</span>
+      <h3>Семантику пилот не держит</h3>
+      <p>Правка массива во время foreach, ссылки, исключения, IS_UNDEF, хуки свойств.</p>
+    </li>
+    <li>
+      <span class="n">03</span>
+      <h3>Наблюдение косвенное</h3>
+      <p>Ассемблер штатного JIT в обычной сборке не снять: разбор опирается
+         на структуру трассы и замеры.</p>
+    </li>
+  </ol>
+  <p class="note">// ext/mlir — проект в разработке, числа предварительные</p>
+</section>
