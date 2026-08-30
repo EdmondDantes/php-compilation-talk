@@ -182,6 +182,25 @@ the general case as issue #623.
 
 ## TypePHP without the directive reaches Zend by another road
 
+`objdump` of the compiled `php_main()` first. The loop body is 78 instructions
+and **13 calls**, every one of them through the PLT into `libphpx.so`:
+
+```
+Variant::operator*   Variant::operator+   Variant::operator&
+Variant::operator=   Variant::operator++  Variant::operator<=
+Variant::~Variant()  x6
+```
+
+Six source operators become thirteen calls, because every intermediate value is
+a C++ object with a lifetime. `$h * 31` returns a `Variant` by value; so does
+`+ $i`; so does `& mask`. Each is constructed, passed, and destroyed, and the
+destructor is a call of its own.
+
+That is the part PHP's own VM does not pay. A `TMP_VAR` holding a long lives in
+a preallocated slot on the VM stack: nothing is constructed, and freeing it is a
+no-op because a long is not refcounted. The interpreter's 112 instructions per
+iteration buy six opcodes with no object lifetimes at all.
+
 `perf` on the compiled binary:
 
 ```
@@ -208,12 +227,24 @@ straight to the generic path, through a PLT, constructing and destroying a
 `Variant` for each temporary on the way.
 
 That is the answer to the number that surprises people — why an AOT compiler is
-**six times slower than the plain interpreter** on the same source. Removing the
-interpreter is not the win. The interpreter's value is not its loop but its
-specialization: 300-odd handlers, one per opcode-and-operand-type combination,
-each with the common case inlined. The JIT keeps that and drops the dispatch.
-TypePHP drops the dispatch and the specialization together, and pays C++ object
-lifetimes on top.
+**six times slower than the plain interpreter** on the same source. Three costs
+stack, and none of them is the dispatch loop it removed:
+
+1. **An object lifetime per intermediate value.** Thirteen calls for six
+   operators, six of them destructors. The VM has none of this.
+2. **The generic function instead of the specialized handler.**
+   `Variant::operator*` is one function for every type combination, so it lands
+   on `mul_function`, which dispatches on both operands. `ZEND_MUL_SPEC_…` tests
+   for two longs and multiplies inline.
+3. **A shared-object boundary around every one of them.** All thirteen calls go
+   through the PLT, so g++ cannot inline any of it, cannot keep `$h` in a
+   register across an operator, and cannot learn that the type never changes.
+
+Removing the interpreter is not the win. The interpreter's value is not its loop
+but its specialization — 300-odd handlers, one per opcode-and-operand-type
+combination, each with the common case inlined. The JIT keeps that and drops the
+dispatch. TypePHP drops the dispatch and the specialization together, and pays
+C++ object lifetimes on top.
 
 ## What the four engines share
 
