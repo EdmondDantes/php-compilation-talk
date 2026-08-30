@@ -22,37 +22,49 @@ the default and the only optimization switch it has — with `--ir-opt=off` the
 int loop takes 7.06 s instead of 4.79 s, so the measured column is the
 optimized one. C baseline: `gcc -O2`. Talk repo at `713abd0` plus this file.
 
-**Reading.** Minimum of 11 runs, process startup of the same engine
-subtracted. Every engine printed the same checksum except in `int_overflow`,
-where disagreement is the result; `run.py` now checks that and warns when an
-engine's median stands more than 10 % above its minimum.
+**Reading.** Startup is subtracted from every sample first, then the shape of
+the samples decides what is reported: a minimum where there is one mode, both
+modes with their shares where there are two. The tracing JIT is bimodal on all
+four loops, so **its column is the slow mode** — a ratio quoted against it
+holds for a reader whose own run lands in either mode. Every sample is kept in
+`bench/results.json` as `samples_s`. The PHP columns ran 31 times, the compiled
+ones 7.
 
 | case | php-interp | php-opcache | php-jit | typephp | typephp-native | typephp-std | elephc | c-gcc-O2 |
 |---|---|---|---|---|---|---|---|---|
-| int_arith | 625.6 | 575.5 | 438.5 | 3755.3 | **85.3** | — | 4809.1 | 86.4 |
-| array_foreach | 229.4 | 231.1 | 74.9 | 462.6 | 386.9 | **12.8** | 794.9 | 7.9 |
-| array_index | 273.0 | 274.0 | 60.4 | 1007.9 | 193.1 | **18.0** | 1996.0 | 7.9 |
-| array_write | 287.6 | 293.9 | 148.5 | 1355.2 | 291.7 | **17.6** | 790.5 | 6.1 |
+| int_arith | 651.8 | 587.0 | **683.3** | 3995.7 | **90.4** | — | 5202.2 | 88.9 |
+| array_foreach | 239.4 | 240.6 | **246.4** | 509.9 | 417.4 | **14.1** | 856.2 | 8.0 |
+| array_index | 287.4 | 287.0 | **338.1** | 1098.7 | 208.7 | **18.7** | 2116.9 | 8.1 |
+| array_write | 298.2 | 298.1 | **300.5** | 1420.8 | 307.9 | **18.7** | 815.8 | 6.2 |
 
 Milliseconds. `int_arith` is 10^8 iterations of a loop-carried
-`$h = ($h * 31 + $i) & 0x3fffffff`; the array cases are 2000 elements
-traversed 20 000 times. The `php-jit` figure for `array_write` is the fast
-half of a bimodal distribution — see "The JIT's array result is bimodal".
+`$h = ($h * 31 + $i) & 0x3fffffff`; the array cases are 2000 elements traversed
+20 000 times.
+
+The JIT's other mode, which is the majority of runs:
+
+| case | fast mode | share of 31 runs | slow mode, as tabled |
+|---|---|---|---|
+| int_arith | 483.3 | 90 % | 683.3 |
+| array_foreach | 80.8 | 74 % | 246.4 |
+| array_index | 68.4 | 84 % | 338.1 |
+| array_write | 159.2 | 84 % | 300.5 |
 
 ### What the numbers say
 
-**Compiling PHP as PHP loses to the JIT.** Both compilers, fed source that
-keeps full PHP semantics, run the int loop 8.6× and 11× slower than PHP 8.4
-with its tracing JIT: TypePHP 3755 ms and elephc 4809 ms against 438 ms.
-Compiling, by itself, buys nothing here.
+**Compiling PHP as PHP loses to the JIT.** Fed source that keeps full PHP
+semantics, TypePHP runs the int loop 5.9× and elephc 7.6× slower than PHP 8.4
+with its tracing JIT — and those are the multiples against the JIT's *worst*
+mode. Against its usual one they are 8.3× and 10.8×. Compiling, by itself,
+buys nothing here.
 
 **What buys the 44× is a different arithmetic, not an annotation.** `use
-native_types` takes TypePHP's int loop from 3755 ms to 85.3 ms, level with
-the C baseline's 86.4 ms. The directive does not annotate the program — it
-changes what the program computes: `$h` becomes an `int64_t` that wraps,
-where PHP's int promotes to float on overflow. The overflow probe below is
-the same change seen from the other side, and TypePHP files it as an
-intentional rule rather than as an optimization.
+native_types` takes TypePHP's int loop from 3995.7 ms to 90.4 ms, level with
+the C baseline's 88.9 ms and 7.6× faster than the JIT. The directive does not
+annotate the program — it changes what the program computes: `$h` becomes an
+`int64_t` that wraps, where PHP's int promotes to float on overflow. The
+overflow probe below is the same change seen from the other side, and TypePHP
+files it as an intentional rule rather than as an optimization.
 
 The distinction matters because the alternative reading fails its own test.
 Annotating elephc's source (`function work(int $n): int`) changes nothing —
@@ -61,45 +73,53 @@ semantics bought 44×.
 
 **Replacing the container buys more than either.** Held against the same
 compiled, natively typed program, `std::vector` instead of a PHP array takes
-`array_foreach` from 386.9 ms to 12.8 ms — 30×, one change at a time. The
-comparison against the JIT (74.9 → 12.8, 5.9×) mixes three changes and is
-the wrong number to quote for the container alone.
+`array_foreach` from 417.4 ms to 14.1 ms — 29.6×, one change at a time;
+`array_write` 16.4× and `array_index` 11.2×. Comparing against the JIT instead
+mixes three changes and is the wrong number to quote for the container alone.
 
 This is the same experiment the TypePHP authors publish as 10.6×, but it is
 not a reproduction of it: our ratio is three times theirs, and their baseline
 and machine are not ours. Same shape of result, different measurement.
 
 **C is not a fair floor for the array cases.** gcc auto-vectorizes the sum —
-7.9 ms for 4·10^7 additions is well under a cycle per element — and
-`std::vector<int64_t>` vectorizes too, which is why 12.8 ms is within reach
-of it. Zend does not vectorize a packed array; whether it could is not
-something this measurement answers.
+8.0 ms for 4·10^7 additions is well under a cycle per element — and
+`std::vector<int64_t>` vectorizes too, which is why 14.1 ms is within reach of
+it. Zend does not vectorize a packed array; whether it could is not something
+this measurement answers.
 
-### The JIT's array result is bimodal
+### The JIT lands in one of two modes per process
 
-On the array cases the tracing JIT lands in one of two modes per process,
-and the mode holds for that process's whole run. On `array_foreach`, 31
-fresh processes on an idle machine gave 24 runs at 80 ms and 7 at 240 ms —
-the second mode being exactly the no-JIT time.
+On every one of the four loops the tracing JIT runs either fast or slow, the
+mode is decided once per process and holds for that process, and the slow mode
+is close to running without the JIT at all. On `int_arith` it is *worse* than
+that: 683.3 ms against the interpreter's 651.8 and opcache's 587.0.
 
-This cost us a wrong published claim. A first run of the suite on
-2026-08-30 took seven repeats of `array_foreach` that all landed slow, and
-the table said the JIT gives nothing on `foreach` and nothing on indexed
-reads. It does: 231 → 75 and 274 → 60. The claim was retracted the same day.
-The lesson is the one review.md rule 16.2 already states and this run
-ignored: a minimum is only an estimator when the distribution has one mode,
-and the median was in `results.json` saying otherwise.
+This is why the table reports the slow mode. A talk's number gets re-run by
+the people who heard it; a ratio computed against the fast mode is refuted by
+any run that lands slow, while one computed against the slow mode holds either
+way.
 
-What is established about the cause: it is not machine load. Under eight
-busy cores every one of 15 runs was fast. What is not established: anything
-else. Disabling ASLR and pinning `opcache.mmap_base` both produced 15 fast
-runs, but the unchanged control stopped producing the slow mode during the
-same test, so that comparison shows nothing. `array_write` still carries the
-split at the time of writing — min 156.7 ms against median 298.8 ms.
+**It has already cost one published claim.** A first run of the suite on
+2026-08-30 took seven repeats of `array_foreach` that all landed slow, and the
+table said the JIT gives nothing on `foreach` and nothing on indexed reads. It
+does, in three runs out of four. The claim was retracted the same day. The
+runner now keeps every sample, splits modes itself, and exits non-zero when it
+finds two — the summary that hid this was computed inside `measure()` and the
+evidence for it was gone by the time a human saw a number.
 
-For the talk this is a result rather than a nuisance: the deck already
-quotes TypePHP's own comparison table, whose row "Deterministic performance"
-reads *No* for a JIT. Here that row is measured.
+What is established about the cause: it is not machine load. Under eight busy
+cores every one of 15 runs was fast, and a deliberate attempt to provoke it
+with 14 parallel `g++ -O2` compiles produced 28 fast runs before, during and
+after. It is not memory pressure: under 3 GB of pressure the JIT stayed on with
+a full buffer, at 0.48–0.55 s. What is not established: anything else.
+Disabling ASLR and pinning `opcache.mmap_base` each produced 15 fast runs, but
+the unchanged control stopped producing the slow mode during the same test, so
+that comparison shows nothing. The cause is unknown, and the fact that the
+mode exists is measured.
+
+For the talk this is a result rather than a nuisance: the deck already quotes
+TypePHP's own comparison table, whose row "Deterministic performance" reads
+*No* for a JIT. Here that row is measured.
 
 ### Why elephc is slow here, from its own IR
 
@@ -120,10 +140,12 @@ shows the unboxed path exists and is not reached here. Annotating the source
 does not reach it either, and neither does `--strict-locals`.
 
 The semantics require a check; they do not require an allocation. PHP's JIT
-obeys the same rule and pays a branch on a value in a register. In this
-particular loop `$h` is masked to 30 bits every iteration, so the product is
-statically bounded below 2^35 and a range analysis would remove the box
-altogether. elephc's own tracker files the general case as issue #623.
+obeys the same rule by calling its own specialized opcode handler, which writes
+a zval into a stack slot — see `dev/research/hot-loop-anatomy.md`, where both
+sides are read off the machine code. In this particular loop `$h` is masked to
+30 bits every iteration, so the product is statically bounded below 2^35 and a
+range analysis would remove the box altogether. elephc's own tracker files the
+general case as issue #623.
 
 ### Overflow: one program, three answers
 
@@ -205,3 +227,17 @@ The `FE_FETCH_R` reading on the deck's earlier slide comes from the
   all three array cases. Kept here because the failure mode — a minimum over
   too few repeats of a bimodal distribution, agreeing with the story we
   already believed — is the one worth remembering.
+- `measure()` originally returned a minimum and a median and discarded the
+  samples. That is the root of the whole episode: by the time a number reached
+  a file, the evidence for the one precondition the minimum needs was gone.
+  Samples are now kept, and `run.py --from-json` re-summarizes them, so a
+  correction to the rule costs no machine time.
+- The first mode detector split on a fixed ratio of 1.5 between neighbouring
+  samples. It caught the array cases, which separate by 3×, and missed
+  `int_arith`, which separates by 1.28×. Replaced by a test against the
+  distribution's own spread — the widest step must dwarf the typical one —
+  which then had to be given a floor of two samples per group, because a
+  single descheduled process was being reported as a mode.
+- Provoking the slow mode on demand: 14 parallel `g++ -O2` compiles, before,
+  during and after, gave 28 fast runs. 3 GB of memory pressure gave 8 fast
+  runs. Neither reproduces it.

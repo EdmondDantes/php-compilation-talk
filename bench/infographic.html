@@ -199,32 +199,35 @@
   <h2>Целочисленный цикл</h2>
   <p class="sub">10⁸ итераций <code>$h = ($h * 31 + $i) &amp; 0x3fffffff</code>. Связь по данным
   между итерациями, поэтому свернуть цикл в константу не может ни один компилятор.
-  Шкала линейная, отсчёт — штатный JIT.</p>
+  Шкала линейная. У штатного JIT две моды, отсчёт взят по медленной.</p>
 
   <div class="chart">
     <div class="row"><span class="name">Интерпретатор</span>
-      <span class="track"><span class="fill" style="width:13.0%"></span></span>
-      <span class="val">626 мс</span></div>
+      <span class="track"><span class="fill" style="width:12.5%"></span></span>
+      <span class="val">652 мс</span></div>
     <div class="row"><span class="name">opcache без JIT</span>
-      <span class="track"><span class="fill" style="width:12.0%"></span></span>
-      <span class="val">575 мс</span></div>
-    <div class="row"><span class="name"><b>PHP 8.4 + tracing JIT</b></span>
-      <span class="track"><span class="fill" style="width:9.1%"></span></span>
-      <span class="val">438 мс <em>отсчёт</em></span></div>
+      <span class="track"><span class="fill" style="width:11.3%"></span></span>
+      <span class="val">587 мс</span></div>
+    <div class="row"><span class="name"><b>JIT, медленная мода</b></span>
+      <span class="track"><span class="fill" style="width:13.1%"></span></span>
+      <span class="val">683 мс <em>отсчёт</em></span></div>
+    <div class="row"><span class="name">JIT, быстрая мода</span>
+      <span class="track"><span class="fill" style="width:9.3%"></span></span>
+      <span class="val">483 мс <em>90% прогонов</em></span></div>
     <div class="row"><span class="name">TypePHP без директивы</span>
-      <span class="track"><span class="fill bad" style="width:78.1%"></span></span>
-      <span class="val">3755 мс <em>×8,6</em></span></div>
+      <span class="track"><span class="fill bad" style="width:76.8%"></span></span>
+      <span class="val">3996 мс <em>×5,9</em></span></div>
     <div class="row"><span class="name">elephc</span>
-      <span class="track"><span class="fill bad" style="width:100%"></span></span>
-      <span class="val">4809 мс <em>×11</em></span></div>
+      <span class="track"><span class="fill bad" style="width:100.0%"></span></span>
+      <span class="val">5202 мс <em>×7,6</em></span></div>
     <div class="row"><span class="name"><b>TypePHP native_types</b></span>
-      <span class="track"><span class="fill lead" style="width:1.8%"></span></span>
-      <span class="val">85 мс <em>÷5,1</em></span></div>
+      <span class="track"><span class="fill lead" style="width:1.7%"></span></span>
+      <span class="val">90 мс <em>÷7,6</em></span></div>
     <div class="row"><span class="name">Тот же цикл на C</span>
-      <span class="track"><span class="fill floor" style="width:1.8%"></span></span>
-      <span class="val">86 мс <em>пол</em></span></div>
+      <span class="track"><span class="fill floor" style="width:1.7%"></span></span>
+      <span class="val">89 мс <em>пол</em></span></div>
   </div>
-  <p class="note">// компиляция без типов проигрывает JIT · паритет с C даёт директива, а не компилятор</p>
+  <p class="note">// множители считаны от медленной моды JIT — они держатся, в какую бы моду ни попал ваш прогон</p>
 </section>
 
 <section>
@@ -240,7 +243,7 @@
     <div class="row"><span class="name"><b>TypePHP native_types</b></span>
       <span class="track"><span class="fill lead" style="width:31.0%"></span></span>
       <span class="val">8,3 <em>4,2 цикла</em></span></div>
-    <div class="row"><span class="name">PHP 8.4 + tracing JIT</span>
+    <div class="row"><span class="name">PHP 8.4 + JIT, быстрая мода</span>
       <span class="track"><span class="fill" style="width:65.1%"></span></span>
       <span class="val">85,2 <em>20,9 цикла</em></span></div>
     <div class="row"><span class="name">Интерпретатор</span>
@@ -253,7 +256,7 @@
       <span class="track"><span class="fill bad" style="width:100%"></span></span>
       <span class="val">925,0 <em>229,2 цикла</em></span></div>
   </div>
-  <p class="note">// IPC у elephc — 4,04, самый высокий в таблице. Конвейер загружен работой, которой не нужно было быть</p>
+  <p class="note">// IPC у elephc — 4,04, самый высокий здесь, и он же самый медленный · строка JIT — быстрая мода, медленную под perf поймать не удалось</p>
 </section>
 
 <section>
@@ -375,30 +378,30 @@ call __rt_php_float_to_int</span>
 
   <table>
     <tr><th>исполнение</th><th>foreach</th><th>чтение</th><th>запись</th></tr>
-    <tr><td class="name">opcache без JIT</td><td class="num">231</td><td class="num">274</td><td class="num">294</td></tr>
-    <tr><td class="name">PHP 8.4 + tracing JIT</td><td class="num">75</td><td class="num">60</td><td class="num">149</td></tr>
-    <tr><td class="name">elephc</td><td class="num">795</td><td class="num">1996</td><td class="num">791</td></tr>
-    <tr><td class="name">TypePHP native_types</td><td class="num">387</td><td class="num">193</td><td class="num">292</td></tr>
-    <tr><td class="name">TypePHP std::vector</td><td class="num">13</td><td class="num">18</td><td class="num">18</td></tr>
-    <tr><td class="name">тот же цикл на C</td><td class="num">8</td><td class="num">8</td><td class="num">6</td></tr>
+    <tr><td class="name">opcache без JIT</td><td class="num">241</td><td class="num">287</td><td class="num">298</td></tr>
+    <tr><td class="name">JIT, медленная мода</td><td class="num">246</td><td class="num">338</td><td class="num">301</td></tr>
+    <tr><td class="name">JIT, быстрая мода</td><td class="num">81</td><td class="num">68</td><td class="num">159</td></tr>
+    <tr><td class="name">elephc</td><td class="num">856</td><td class="num">2117</td><td class="num">816</td></tr>
+    <tr><td class="name">TypePHP native_types</td><td class="num">417</td><td class="num">209</td><td class="num">308</td></tr>
+    <tr><td class="name">TypePHP std::vector</td><td class="num">14</td><td class="num">19</td><td class="num">19</td></tr>
   </table>
-  <p class="note">// 387 → 13 на обходе, это 30 раз · C здесь не честный пол: gcc векторизует сумму</p>
+  <p class="note">// 417 → 14 на обходе, это 29,6 раза · C здесь не честный пол и потому убран: gcc векторизует сумму</p>
 </section>
 
 <section>
   <h2>У JIT два режима</h2>
-  <p class="sub">31 запуск одного и того же foreach на простаивающей машине. Режим выбирается
-  на процесс и держится до конца. От загрузки не зависит: под восемью занятыми ядрами
-  все пятнадцать запусков были быстрыми. Причину установить не удалось.</p>
+  <p class="sub">По 31 свежему процессу на цикл, машина простаивает. Мода выбирается на процесс
+  и держится до конца. Под нагрузкой медленная мода не воспроизвелась: ни под восемью
+  занятыми ядрами, ни под четырнадцатью параллельными <code>g++</code>, ни под давлением
+  памяти. Причину установить не удалось.</p>
 
-  <div class="chart">
-    <div class="row"><span class="name">80 мс</span>
-      <span class="track"><span class="fill lead" style="width:77.4%"></span></span>
-      <span class="val">24 запуска</span></div>
-    <div class="row"><span class="name">240 мс</span>
-      <span class="track"><span class="fill bad" style="width:22.6%"></span></span>
-      <span class="val">7 запусков <em>как без JIT</em></span></div>
-  </div>
+  <table>
+    <tr><th>цикл</th><th>быстрая мода</th><th>доля из 31</th><th>медленная мода</th><th></th></tr>
+    <tr><td class="name">foreach</td><td class="num">81</td><td class="num">74 %</td><td class="num">246</td><td></td></tr>
+    <tr><td class="name">чтение по индексу</td><td class="num">68</td><td class="num">84 %</td><td class="num">338</td><td>хуже, чем без JIT</td></tr>
+    <tr><td class="name">запись по индексу</td><td class="num">159</td><td class="num">84 %</td><td class="num">301</td><td></td></tr>
+    <tr><td class="name">целочисленный</td><td class="num">483</td><td class="num">90 %</td><td class="num">683</td><td>хуже, чем без JIT</td></tr>
+  </table>
   <p class="note">// первый наш прогон поймал семь медленных подряд — и мы напечатали, что JIT не помогает. Вывод снят</p>
 </section>
 

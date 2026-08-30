@@ -13,6 +13,20 @@ $h = ($h * 31 + $i) & 0x3fffffff;
 Everything below is per iteration, measured on the machine `dev/BENCHMARKS.md`
 names.
 
+## Which binaries these numbers come from
+
+Two PHP builds appear below and the difference matters. The times in
+`dev/BENCHMARKS.md` are the packaged `/usr/bin/php8.4`, which is stripped, so
+`perf` can name nothing in it. The disassembly and the named profiles come from
+a PHP 8.4.22 built here from the same release with `--enable-opcache
+--with-capstone --disable-cgi --disable-all`, which keeps its symbol table and
+can print JIT'd machine code.
+
+They are the same JIT: both report `opcache.jit=tracing` at `opt_level=4`, and
+timed side by side on this loop they agree — 0,47/0,51/0,49 s against
+0,50/0,51/0,49 s. Everything below that names a symbol was measured on the
+capstone build.
+
 ## The instrument, checked first
 
 `perf` on this kernel needs the binary from `linux-tools-6.8.0-134` invoked
@@ -30,7 +44,7 @@ used on engines where only one of them is available.
 |---|---|---|---|
 | C, `gcc -O2` | 8.0 | 4.1 | 1.95 |
 | TypePHP `use native_types` | 8.3 | 4.2 | 1.95 |
-| PHP 8.4 + tracing JIT | 85.2 | 20.9 | 4.07 |
+| PHP 8.4 + tracing JIT, fast mode | 85.2 | 20.9 | 4.07 |
 | PHP 8.4 interpreter | 112.2 | 30.2 | 3.71 |
 | TypePHP, no directive | 491.3 | 187.3 | 2.62 |
 | elephc 0.26.5 | 925.0 | 229.2 | 4.04 |
@@ -39,6 +53,13 @@ Read the IPC column against the cycles column before drawing any comfort from
 it: elephc retires four instructions per cycle and is the slowest thing in the
 table. High IPC on 925 instructions is a well-fed pipeline doing work that did
 not need doing.
+
+The JIT row is its fast mode. Instructions per iteration are the same in every
+run that could be caught — 85.2 in each of 15 — while cycles vary, so the two
+modes `dev/BENCHMARKS.md` describes differ in cycles rather than in the code
+that runs. That is as far as this goes: 45 further runs under `perf` produced no
+slow one, so the slow mode's counters are unmeasured. Whether `perf` suppresses
+it or the machine simply did not produce it that hour is unknown.
 
 ## C and TypePHP `native_types` emit the same loop
 
@@ -73,18 +94,40 @@ So the JIT inlines the bitwise AND and calls out for `*` and `+`. `perf`
 names the callees:
 
 ```
-38.80%  ZEND_MUL_SPEC_TMPVARCV_CONST_HANDLER
-18.86%  ZEND_ADD_SPEC_TMPVARCV_TMPVARCV_HANDLER
+40.99%  ZEND_MUL_SPEC_TMPVARCV_CONST_HANDLER
+19.14%  ZEND_ADD_SPEC_TMPVARCV_TMPVARCV_HANDLER
+ 4.69%  [JIT] 0x…af9        ← the trace itself, and twenty more entries like it
 ```
 
-Those are the interpreter's own opcode handlers. The JIT removed the dispatch
-loop and kept the handlers, and 58 % of the JIT'd program's time is spent
-inside them.
+Those first two are the interpreter's own opcode handlers, and 60 % of the
+program's time is inside them.
 
-### The one-variable experiment
+**The interpreter is not running.** `execute_ex` does not appear in this
+profile at all — zero samples at any threshold. That excludes the reading a
+compiler person reaches for first, that a guard fails each iteration and the
+work happens back in the VM. The dispatch loop is gone; the handlers it used to
+dispatch to are still being called, from the trace.
 
-Take the multiply out — `$h = ($h + $i) & 0x3fffffff` — and change nothing
-else:
+### Why those two and not the AND — the JIT says so itself
+
+`opcache.jit_debug=0x80000` prints the trace's type inference:
+
+```
+0004 #8.T3  [!long] = MUL     #5.CV0($h) int(31)
+0005 #9.T4  [!long] = ADD     #8.T3 #6.CV2($i)
+0006 #10.T3 [long]  = BW_AND  #9.T4 int(1073741823)
+```
+
+`!long` reads "not necessarily a long". The JIT cannot prove the product stays
+an integer — an overflow makes it a double — so it will not emit a bare `imul`
+and calls the handler that copes with both. The AND's result is provably a
+long, and it becomes one `andq`. The rule is named by the compiler, in its own
+dump, and not inferred from a profile.
+
+### The operator experiment, as corroboration
+
+The type dump above is the evidence; this is a second, cruder check of it.
+Take the multiply out — `$h = ($h + $i) & 0x3fffffff`:
 
 | | instr/iter | cycles/iter | calls in the trace | MUL handler in the profile |
 |---|---|---|---|---|
@@ -92,13 +135,14 @@ else:
 | `($h + $i) & …` | 55.8 | 16.4 | 1 | absent |
 
 One operator removed, one call removed, 30 instructions and 8.2 cycles saved.
-That prices a single arithmetic operation routed through a helper, and it
-identifies the two calls without having to resolve their addresses.
 
-The AND is inlined and the arithmetic is not, because only the arithmetic can
-leave the integer domain: `*` and `+` may overflow to float, `&` may not.
+Read that delta as an upper bound on one helper call, not as its price. Deleting
+the multiply also drops its own dependency-chain latency, which even gcc pays,
+and changes what the remaining ADD is specialized on. Four things moved, not
+one; what the experiment establishes cleanly is only that one of the two calls
+belongs to the multiply.
 
-## elephc pays the same rule with an allocation
+## elephc turns the same rule into an allocation
 
 `elephc --emit-asm` gives the loop directly. Body plus condition plus update
 is 87 instructions with **8 calls**:
@@ -112,7 +156,7 @@ Every local round-trips through the stack — there is no register allocation
 across the body — and two `mov`s per iteration rewrite a global for
 `concat_reset`, which this loop does not use.
 
-`perf` on a build with `--keep-symbols` says where the 925 instructions go:
+`perf record` on a build with `--keep-symbols` says where the *time* goes. These are cycle samples, not instruction counts — the allocator chases pointers while the loop body runs straight, so the two do not divide alike:
 
 | | share |
 |---|---|
@@ -122,16 +166,19 @@ across the body — and two `mov`s per iteration rewrite a global for
 
 The hot symbols are `__rt_heap_alloc_count`, `__rt_heap_alloc_small_bin_scan`,
 `__rt_heap_alloc_bump`, `__rt_decref_mixed`, `__rt_object_handle_release`,
-`__rt_mixed_free_deep_box`. Six sevenths of the program's time is spent
-allocating and freeing a box for a number that fits in a register.
+`__rt_mixed_free_deep_box`. Five sixths of the time — 83,5 %, the allocator
+and the boxing together — goes on housing a number that fits in a register.
 
-The rule being obeyed is the same one the JIT obeys. The implementation
-differs: PHP's JIT calls a handler that writes a zval into a stack slot;
-elephc calls a handler that takes a heap object. Nothing in the semantics
-demands the heap, and in this particular loop `$h` is masked to 30 bits every
-iteration, so the product is provably below 2^35 and a range analysis would
-delete the box outright. elephc's own tracker carries the general case as
-issue #623.
+**The rule is not what puts it in the heap.** PHP's JIT obeys the same rule and
+calls a handler that writes a zval into a stack slot. What the semantics demand
+is a check; the heap is elephc's own choice of a Mixed box per temporary,
+served by a bin-scanning allocator. Four things here are compiler immaturity
+rather than PHP: the box per temporary, the allocator, the absence of register
+allocation across the loop body, and two `mov`s an iteration maintaining a
+`concat_reset` global this loop never touches. And in this particular loop `$h`
+is masked to 30 bits every iteration, so the product is provably below 2^35 and
+a range analysis would delete the box outright. elephc's own tracker carries
+the general case as issue #623.
 
 ## TypePHP without the directive reaches Zend by another road
 
@@ -153,22 +200,33 @@ holding a zval — and the Zend functions its operators call:
 `increment_function`, `zend_compare`, `bitwise_and_function`, and
 `zval_ptr_dtor` on every temporary.
 
-This explains the one number that surprises people: why the AOT compiler is
-**slower** than the JIT on the same source. The JIT removes the dispatch loop
-and keeps the handlers. TypePHP without the directive also removes the
-dispatch loop and also keeps the handlers — but reaches them through C++
-operator overloads with a destructor per temporary, which the JIT does not
-pay. Removing the interpreter is not the win; removing the helper is, and
-neither of them does that.
+Note which Zend functions those are. `increment_function`, `zend_compare` and
+`bitwise_and_function` are the **generic** API, not the specialized opcode
+handlers the JIT calls: `ZEND_ADD_SPEC_…` starts with an inline fast path for
+two longs and mostly never reaches `add_function`. TypePHP's operators go
+straight to the generic path, through a PLT, constructing and destroying a
+`Variant` for each temporary on the way.
+
+That is the answer to the number that surprises people — why an AOT compiler is
+**six times slower than the plain interpreter** on the same source. Removing the
+interpreter is not the win. The interpreter's value is not its loop but its
+specialization: 300-odd handlers, one per opcode-and-operand-type combination,
+each with the common case inlined. The JIT keeps that and drops the dispatch.
+TypePHP drops the dispatch and the specialization together, and pays C++ object
+lifetimes on top.
 
 ## What the four engines share
 
 Every row above except the last two obeys one rule of the language: an `int`
-that overflows becomes a `float`. Four different systems pay for it four
-ways — dispatch plus handler, handler alone, C++ operator plus handler, heap
-box plus handler — and the only row that escapes is the one that stops obeying
-the rule. `use native_types` does not make the arithmetic faster; it makes it
-a different arithmetic, and `bench/cases/int_overflow` is the receipt.
+that overflows becomes a `float`. None of them can put the arithmetic in a
+register, and each pays differently — dispatch plus specialized handler, the
+specialized handler alone, the generic function plus a C++ temporary, a heap
+box plus its own handler. Only the last is more expensive than the rule
+requires, and that is elephc's implementation rather than PHP's semantics.
+
+The row that escapes is the one that stops obeying. `use native_types` does not
+make the arithmetic faster; it makes it a different arithmetic, and
+`bench/cases/int_overflow` is the receipt.
 
 That is the sentence the performance block of the talk exists to earn.
 
@@ -179,6 +237,11 @@ That is the sentence the performance block of the talk exists to earn.
   identification is an inference from a controlled change, and a strong one,
   but it is not a symbol table.
 - Instruction counts per iteration come from whole-process counters divided by
-  the iteration count; process startup is in them, at roughly one part in 10^5.
+  the iteration count, so process startup is in them. For the C row it is
+  133 165 instructions of 800 133 165, or 1,7 parts in 10^4; for the PHP rows,
+  where boot is tens of millions of instructions, it is nearer 10^-3. That is
+  why 85,2 and 85,8 for the same loop are one number, not two.
 - One loop, one shape of arithmetic, one machine. The array cases have their
   own anatomy and it is not written up here.
+- Everything here describes the JIT's fast mode. The slow mode was never caught
+  under a profiler, so nothing in this file explains it.

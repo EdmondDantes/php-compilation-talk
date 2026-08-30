@@ -36,10 +36,14 @@ class Engine:
     cannot express this case — a skip, never a zero.
     """
 
-    def __init__(self, name, kind, build, body_file="body.php"):
+    def __init__(self, name, kind, build, body_file="body.php", repeats=None):
         self.name = name
         self.kind = kind
         self.build = build
+
+        # None means "take the run's default"; a column known to be bimodal names
+        # its own count, because two modes cannot be told apart from few samples.
+        self.repeats = repeats
 
         # A variant that rewrites the source names its own body; a case without that
         # file is reported unsupported rather than silently measured on the shared one.
@@ -65,10 +69,11 @@ def run_once(argv, cwd=None):
 
 
 def measure(argv, repeats, cwd=None):
-    """Returns (min seconds, median seconds, stdout, returncode) over `repeats` runs.
+    """Returns (samples, stdout, returncode) — every timing, not a summary of them.
 
-    The minimum is the estimate used for reporting — noise on a shared machine
-    only ever adds time. The median travels with it so a wide spread is visible.
+    Summarising here was the original defect: a minimum estimates a time only
+    when the distribution has one mode, and by the time the caller saw one number
+    the evidence for that precondition was gone.
     """
     samples = []
     output = ""
@@ -81,7 +86,7 @@ def measure(argv, repeats, cwd=None):
         if code != 0:
             break
 
-    return min(samples), statistics.median(samples), output, code
+    return samples, output, code
 
 
 def make_php_engine(name, binary, extra_args):
@@ -91,7 +96,7 @@ def make_php_engine(name, binary, extra_args):
 
         return [binary, *extra_args, str(source)]
 
-    return Engine(name, "php", build)
+    return Engine(name, "php", build, repeats=PHP_REPEATS)
 
 
 EMPTY_C = '#include <stdio.h>\n\nint main(void)\n{\n    printf("0\\n");\n    return 0;\n}\n'
@@ -177,10 +182,58 @@ def build_argv(engine, body, workdir, case_dir):
 
 DIVERGENCE_MARKER = "divergence.md"
 
-# A run whose median is this much above its minimum is not one number with noise
-# on it. The tracing JIT reaches its fast mode in some fresh processes and not in
-# others, and a minimum alone would report only the lucky half.
-SPREAD_LIMIT = 1.10
+# A split is judged against the distribution's own spread, not against a fixed
+# ratio: the arrays separate by 3x and the int loop by 1.28x, and both are two
+# modes. What distinguishes a split from a tail is that the widest step between
+# neighbouring samples dwarfs the typical step.
+MODE_STEP_FACTOR = 8.0
+
+# Floors, so that a flat distribution and jitter near zero are not split. The
+# widest step must be a real fraction of the value and worth real time.
+MODE_MIN_STEP = 0.15
+MODE_MIN_GAP_S = 0.005
+
+# A group of one is an outlier — a descheduled process, a stray interrupt. A mode
+# is a state the program lands in repeatedly.
+MODE_MIN_GROUP = 2
+MODE_MIN_SHARE = 0.05
+
+# Modes cannot be told apart from a handful of samples. The PHP columns are the
+# ones observed to be bimodal, and they are cheap to repeat.
+PHP_REPEATS = 31
+
+
+def split_modes(samples):
+    """Returns (fast, slow) when the samples fall in two groups, else None.
+
+    The split is taken at the widest step between adjacent sorted samples, and
+    only when that step dwarfs the typical step by MODE_STEP_FACTOR — a tail
+    rises gradually, a second mode does not — and when both groups are large
+    enough to be states rather than accidents. Fewer than eight samples cannot
+    show the shape of a distribution and are never split.
+    """
+    if len(samples) < 8:
+        return None
+
+    ordered = sorted(samples)
+    steps = [(ordered[i] / ordered[i - 1] - 1.0) if ordered[i - 1] > 0 else 0.0
+             for i in range(1, len(ordered))]
+    widest = max(steps)
+    at = steps.index(widest) + 1
+    typical = statistics.median(steps)
+
+    if widest < MODE_MIN_STEP or ordered[at] - ordered[at - 1] < MODE_MIN_GAP_S:
+        return None
+
+    if widest < MODE_STEP_FACTOR * typical:
+        return None
+
+    smaller = min(at, len(ordered) - at)
+
+    if smaller < MODE_MIN_GROUP or smaller / len(ordered) < MODE_MIN_SHARE:
+        return None
+
+    return ordered[:at], ordered[at:]
 
 
 def check_outputs(case_dir, rows):
@@ -205,6 +258,9 @@ def check_outputs(case_dir, rows):
 def run_case(case_dir, engines, repeats, startup, keep):
     rows = {}
 
+    # A case carrying divergence.md exists to compare answers, not times.
+    timed = not (case_dir / DIVERGENCE_MARKER).exists()
+
     for engine in engines:
         body_path = case_dir / engine.body_file
 
@@ -222,25 +278,57 @@ def run_case(case_dir, engines, repeats, startup, keep):
                 rows[engine.name] = {"status": "unsupported"}
                 continue
 
-            best, median, output, code = measure(argv, repeats)
+            samples, output, code = measure(argv, engine.repeats or repeats)
 
             if code != 0:
                 rows[engine.name] = {"status": "failed", "output": output}
                 continue
 
             overhead = startup.get(engine.name, 0.0)
-            rows[engine.name] = {
-                "status": "ok",
-                "total_s": round(best, 6),
-                "loop_s": round(max(best - overhead, 0.0), 6),
-                "median_s": round(median, 6),
-                "output": output,
-            }
+            rows[engine.name] = summarize(samples, overhead, output, timed)
         finally:
             if not keep:
                 shutil.rmtree(workdir, ignore_errors=True)
 
     return rows
+
+
+def summarize(samples, overhead, output, timed=True):
+    """Describes one engine's timings on one case, in loop seconds.
+
+    Startup is removed from every sample before anything is computed, so the
+    minimum, the median and the mode split all speak about the loop. A bimodal
+    set is reported as two modes and a share; a unimodal one as a minimum, which
+    is a fair estimator there because noise only ever adds time. `timed` is
+    false for a case that exists to compare answers rather than times; splitting
+    jitter around zero into modes would say nothing there.
+    """
+    loops = [max(s - overhead, 0.0) for s in samples]
+    row = {
+        "status": "ok",
+        "n": len(loops),
+        "samples_s": [round(v, 6) for v in sorted(loops)],
+        "median_s": round(statistics.median(loops), 6),
+        "output": output,
+    }
+    modes = split_modes(loops) if timed else None
+
+    if modes is None:
+        row["bimodal"] = False
+        row["loop_s"] = round(min(loops), 6)
+        return row
+
+    fast, slow = modes
+    row["bimodal"] = True
+    row["fast_mode_s"] = round(statistics.median(fast), 6)
+    row["slow_mode_s"] = round(statistics.median(slow), 6)
+    row["fast_share"] = round(len(fast) / len(loops), 3)
+
+    # The slow mode is the reported figure: a ratio computed against it survives a
+    # reader whose own run lands in either mode.
+    row["loop_s"] = row["slow_mode_s"]
+
+    return row
 
 
 def measure_startup(engines, repeats):
@@ -256,10 +344,10 @@ def measure_startup(engines, repeats):
             if argv is None:
                 continue
 
-            best, _, _, code = measure(argv, repeats)
+            samples, _, code = measure(argv, repeats)
 
             if code == 0:
-                startup[engine.name] = best
+                startup[engine.name] = min(samples)
         finally:
             shutil.rmtree(workdir, ignore_errors=True)
 
@@ -315,6 +403,31 @@ def format_table(results, engines):
     return "\n".join(lines)
 
 
+def resummarize(source, target):
+    """Recomputes every row from its stored samples under the current rules.
+
+    Startup is already subtracted in `samples_s`, so summarizing them again is
+    exact. This is what storing the samples buys: a rule about distributions can
+    be corrected without the machine time, and without the temptation to keep a
+    number whose evidence has been thrown away.
+    """
+    payload = json.loads(source.read_text())
+
+    for case, rows in payload["results"].items():
+        timed = not (CASES / case / DIVERGENCE_MARKER).exists()
+
+        for name, row in rows.items():
+            if row.get("status") != "ok":
+                continue
+
+            rows[name] = summarize(row["samples_s"], 0.0, row["output"], timed)
+
+    target.write_text(json.dumps(payload, indent=2))
+    print(f"re-summarized {source} -> {target}")
+
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--php", default=os.environ.get("BENCH_PHP", "/usr/bin/php8.4"),
@@ -327,7 +440,11 @@ def main():
     parser.add_argument("--repeats", type=int, default=5, help="timed runs per engine and case")
     parser.add_argument("--json", help="write machine-readable results here")
     parser.add_argument("--keep", action="store_true", help="keep the per-run scratch directories")
+    parser.add_argument("--from-json", help="re-summarize the samples in this file instead of measuring")
     args = parser.parse_args()
+
+    if args.from_json:
+        return resummarize(Path(args.from_json), Path(args.json or args.from_json))
 
     engines = collect_engines(args)
     names = sorted(p.name for p in CASES.iterdir() if (p / "body.php").exists())
@@ -357,9 +474,11 @@ def main():
             detail = f"{row['loop_s'] * 1000:.1f} ms  out={row['output']}" if row["status"] == "ok" else row["status"]
             print(f"  {engine.name:16} {detail}", flush=True)
 
-            if row["status"] == "ok" and row["total_s"] > 0 and row["median_s"] / row["total_s"] > SPREAD_LIMIT:
-                print(f"  {'':16} SPREAD median {row['median_s'] * 1000:.1f} ms is "
-                      f"{row['median_s'] / row['total_s']:.2f}x the minimum", flush=True)
+            if row.get("bimodal"):
+                print(f"  {'':16} BIMODAL fast {row['fast_mode_s'] * 1000:.1f} ms in "
+                      f"{row['fast_share'] * 100:.0f}% of {row['n']} runs, "
+                      f"slow {row['slow_mode_s'] * 1000:.1f} ms — reporting the slow mode",
+                      flush=True)
 
         disagreement = check_outputs(CASES / name, results[name])
 
@@ -377,7 +496,13 @@ def main():
         }
         Path(args.json).write_text(json.dumps(payload, indent=2))
 
-    return 0
+    bimodal = [f"{case}/{name}" for case, rows in results.items()
+               for name, row in rows.items() if row.get("bimodal")]
+
+    if bimodal:
+        print(f"\nbimodal, reported as the slow mode: {', '.join(bimodal)}", flush=True)
+
+    return 1 if bimodal else 0
 
 
 if __name__ == "__main__":

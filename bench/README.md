@@ -41,11 +41,31 @@ and carries its own `body-std.php`; the other columns all run the same
 
 ## Reporting
 
-Each engine runs `--repeats` times and the **minimum** is reported: noise on a
-shared machine only adds time. The median travels with it in `results.json` so
-a wide spread stays visible. Process startup is measured separately, with an
-empty program of the same engine, and subtracted — a native binary starts in a
-millisecond and a PHP process does not, and that gap says nothing about a loop.
+Process startup is measured separately, with an empty program of the same
+engine, and subtracted from every sample before anything else is computed — a
+native binary starts in a millisecond and a PHP process does not, and that gap
+says nothing about a loop. Every sample survives into `results.json` as
+`samples_s`.
+
+What is reported then depends on the shape of the samples, and the runner
+decides, not the reader:
+
+- **One mode** — the minimum. Noise on an idle machine only adds time, so the
+  minimum is the closest thing to the loop's own cost.
+- **Two modes** — both, with the share of runs in each and the count. The
+  reported figure is the **slow** mode, and every ratio quoted against it is
+  therefore one that survives a reader whose own run lands in either mode.
+
+A run is called bimodal when two adjacent sorted samples stand apart by half
+again, and by at least 5 ms so that jitter near zero is not mistaken for a
+split. A bimodal row makes `run.py` exit non-zero: it is a result that needs
+reading, not a warning to scroll past.
+
+This is not a precaution in the abstract. PHP's tracing JIT picks a mode per
+process on these loops and holds it, a minimum over seven repeats of it put a
+wrong claim into the deck, and `dev/BENCHMARKS.md` records what that cost.
+The PHP columns therefore run 31 times regardless of `--repeats`; two modes
+cannot be told apart from a handful of samples.
 
 Output is compared across engines rather than against a stored expectation.
 Where engines disagree, the disagreement is the result; see `int_overflow`.
@@ -60,7 +80,7 @@ built, and at an elephc binary.
 ```bash
 cd bench
 . ./env.sh
-python3 run.py --repeats 7 --json results.json
+python3 run.py --repeats 7 --json results.json   # the PHP columns run 31 times regardless
 ```
 
 Override `BENCH_SCRATCH`, `TYPEPHP_ROOT`, `ELEPHC_BIN` or `PHP_HOME` before
