@@ -297,9 +297,10 @@ def summarize(samples, overhead, output, timed=True):
     """Describes one engine's timings on one case, in loop seconds.
 
     Startup is removed from every sample before anything is computed, so the
-    minimum, the median and the mode split all speak about the loop. A bimodal
-    set is reported as two modes and a share; a unimodal one as a minimum, which
-    is a fair estimator there because noise only ever adds time. `timed` is
+    minimum, the median and the split all speak about the loop. A unimodal set
+    is reported as a minimum, a fair estimator where noise only adds time. A
+    split set gets no single figure: both groups with their spreads and the
+    share, and the median of everything beside them. `timed` is
     false for a case that exists to compare answers rather than times; splitting
     jitter around zero into modes would say nothing there.
     """
@@ -320,13 +321,14 @@ def summarize(samples, overhead, output, timed=True):
 
     fast, slow = modes
     row["bimodal"] = True
-    row["fast_mode_s"] = round(statistics.median(fast), 6)
-    row["slow_mode_s"] = round(statistics.median(slow), 6)
+    row["fast_group_s"] = [round(statistics.median(fast), 6), round(min(fast), 6), round(max(fast), 6)]
+    row["slow_group_s"] = [round(statistics.median(slow), 6), round(min(slow), 6), round(max(slow), 6)]
     row["fast_share"] = round(len(fast) / len(loops), 3)
 
-    # The slow mode is the reported figure: a ratio computed against it survives a
-    # reader whose own run lands in either mode.
-    row["loop_s"] = row["slow_mode_s"]
+    # No `loop_s` here on purpose. Which figure represents a split row is a
+    # decision for whoever writes the claim, and burying it in the summary is the
+    # mistake this function already made once. `median_s` is above it, and it
+    # needs no faith in the split being the right description.
 
     return row
 
@@ -395,6 +397,8 @@ def format_table(results, engines):
 
             if row["status"] != "ok":
                 cells.append(row["status"])
+            elif row.get("bimodal"):
+                cells.append(f"{row['median_s'] * 1000:.1f} ms *")
             else:
                 cells.append(f"{row['loop_s'] * 1000:.1f} ms")
 
@@ -471,14 +475,16 @@ def main():
 
         for engine in engines:
             row = results[name].get(engine.name, {"status": "unsupported"})
-            detail = f"{row['loop_s'] * 1000:.1f} ms  out={row['output']}" if row["status"] == "ok" else row["status"]
+            figure = row.get("loop_s", row.get("median_s"))
+            detail = f"{figure * 1000:.1f} ms  out={row['output']}" if row["status"] == "ok" else row["status"]
             print(f"  {engine.name:16} {detail}", flush=True)
 
             if row.get("bimodal"):
-                print(f"  {'':16} BIMODAL fast {row['fast_mode_s'] * 1000:.1f} ms in "
+                fast, slow = row["fast_group_s"], row["slow_group_s"]
+                print(f"  {'':16} SPLIT {fast[1] * 1000:.0f}–{fast[2] * 1000:.0f} ms in "
                       f"{row['fast_share'] * 100:.0f}% of {row['n']} runs, "
-                      f"slow {row['slow_mode_s'] * 1000:.1f} ms — reporting the slow mode",
-                      flush=True)
+                      f"{slow[1] * 1000:.0f}–{slow[2] * 1000:.0f} ms in the rest; "
+                      f"median of all {row['median_s'] * 1000:.1f} ms", flush=True)
 
         disagreement = check_outputs(CASES / name, results[name])
 
@@ -500,7 +506,8 @@ def main():
                for name, row in rows.items() if row.get("bimodal")]
 
     if bimodal:
-        print(f"\nbimodal, reported as the slow mode: {', '.join(bimodal)}", flush=True)
+        print(f"\n* two groups of samples, tabled as the median of all runs: {', '.join(bimodal)}",
+              flush=True)
 
     return 1 if bimodal else 0
 

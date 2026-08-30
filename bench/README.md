@@ -50,22 +50,29 @@ says nothing about a loop. Every sample survives into `results.json` as
 What is reported then depends on the shape of the samples, and the runner
 decides, not the reader:
 
-- **One mode** — the minimum. Noise on an idle machine only adds time, so the
+- **One group** — the minimum. Noise on an idle machine only adds time, so the
   minimum is the closest thing to the loop's own cost.
-- **Two modes** — both, with the share of runs in each and the count. The
-  reported figure is the **slow** mode, and every ratio quoted against it is
-  therefore one that survives a reader whose own run lands in either mode.
+- **Two groups** — each group's median and spread, the share of runs in each,
+  and the median of everything. No single figure is picked: a split row carries
+  no `loop_s` at all, because which number represents it is a decision for
+  whoever writes the claim, not for the summary.
 
-A run is called bimodal when two adjacent sorted samples stand apart by half
-again, and by at least 5 ms so that jitter near zero is not mistaken for a
-split. A bimodal row makes `run.py` exit non-zero: it is a result that needs
-reading, not a warning to scroll past.
+A run is called split when the widest step between adjacent sorted samples
+dwarfs the typical step by a factor of eight — a tail rises gradually, a second
+state does not — and when that step is at least 15 % and 5 ms, and each group
+holds at least two samples and 5 % of the runs. Fewer than eight samples are
+never split. A split row makes `run.py` exit non-zero: it is a result that
+needs reading, not a warning to scroll past.
 
-This is not a precaution in the abstract. PHP's tracing JIT picks a mode per
-process on these loops and holds it, a minimum over seven repeats of it put a
-wrong claim into the deck, and `dev/BENCHMARKS.md` records what that cost.
-The PHP columns therefore run 31 times regardless of `--repeats`; two modes
-cannot be told apart from a handful of samples.
+This is not a precaution in the abstract. PHP's tracing JIT settles into one of
+two states per process on these loops, a minimum over seven repeats of it put a
+wrong claim into the deck, and `dev/BENCHMARKS.md` records what that cost. The
+PHP columns therefore run 31 times regardless of `--repeats`; two states cannot
+be told apart from a handful of samples.
+
+`run.py --from-json results.json` re-summarizes stored samples under the current
+rules without measuring again. That is what keeping them buys: the split test
+here has already been corrected twice, and neither correction cost machine time.
 
 Output is compared across engines rather than against a stored expectation.
 Where engines disagree, the disagreement is the result; see `int_overflow`.

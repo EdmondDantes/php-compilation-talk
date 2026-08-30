@@ -133,10 +133,17 @@
         "median_s": 0.082364,
         "output": "19980000000",
         "bimodal": true,
-        "fast_mode_s": 0.080778,
-        "slow_mode_s": 0.246365,
-        "fast_share": 0.742,
-        "loop_s": 0.246365
+        "fast_group_s": [
+          0.080778,
+          0.076472,
+          0.100094
+        ],
+        "slow_group_s": [
+          0.246365,
+          0.23554,
+          0.253912
+        ],
+        "fast_share": 0.742
       },
       "typephp": {
         "status": "ok",
@@ -346,10 +353,17 @@
         "median_s": 0.071544,
         "output": "19980000000",
         "bimodal": true,
-        "fast_mode_s": 0.068363,
-        "slow_mode_s": 0.33811,
-        "fast_share": 0.839,
-        "loop_s": 0.33811
+        "fast_group_s": [
+          0.068363,
+          0.063111,
+          0.122497
+        ],
+        "slow_group_s": [
+          0.33811,
+          0.301856,
+          0.372223
+        ],
+        "fast_share": 0.839
       },
       "typephp": {
         "status": "ok",
@@ -559,10 +573,17 @@
         "median_s": 0.162556,
         "output": "41997000",
         "bimodal": true,
-        "fast_mode_s": 0.159218,
-        "slow_mode_s": 0.300516,
-        "fast_share": 0.839,
-        "loop_s": 0.300516
+        "fast_group_s": [
+          0.159218,
+          0.148754,
+          0.196109
+        ],
+        "slow_group_s": [
+          0.300516,
+          0.296432,
+          0.329345
+        ],
+        "fast_share": 0.839
       },
       "typephp": {
         "status": "ok",
@@ -772,10 +793,17 @@
         "median_s": 0.484914,
         "output": "1058791553",
         "bimodal": true,
-        "fast_mode_s": 0.483314,
-        "slow_mode_s": 0.683342,
-        "fast_share": 0.903,
-        "loop_s": 0.683342
+        "fast_group_s": [
+          0.483314,
+          0.461799,
+          0.530866
+        ],
+        "slow_group_s": [
+          0.683342,
+          0.681398,
+          0.69112
+        ],
+        "fast_share": 0.903
       },
       "typephp": {
         "status": "ok",
