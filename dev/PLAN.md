@@ -1,6 +1,6 @@
 # PLAN
 
-Updated: 2026-08-25 · Active: S3
+Updated: 2026-08-30 · Active: S4
 
 Destination: a 40–45 minute talk that answers one question — why PHP
 compilers keep getting written, and whether a working developer should
@@ -62,6 +62,9 @@ Goal: the deck exists end to end and runs in a browser.
 - [ ] S4.2 Write part 3 (landscape) from S2.2.
 - [ ] S4.3 Write parts 4 and 5 (business case, what to expect).
 - [ ] S4.4 Write speaker notes into `data-speaker-notes` for every slide.
+- [x] S4.5 Rebuild the post-landscape technical block by semantic
+      obstacle: JIT speculation, int-to-float overflow, method dispatch,
+      then performance. Implemented in `player/deck/04-next.html`.
 
 ## S5. Rehearsal
 

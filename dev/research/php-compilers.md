@@ -117,6 +117,14 @@ PDO/mysqli, 500+ builtins — plus non-PHP extensions (`packed class`,
 linked interpreter. Headline demo: a DOOM-style renderer compiled from
 PHP. No independent benchmarks.
 
+Arithmetic checked again against the project changelog on 2026-08-30:
+non-constant integer `+`, `-` and `*` use checked lowering and preserve
+PHP's overflow promotion to float. The current fast path can avoid a
+temporary boxed `Mixed` value when every consumer observes an integer,
+while preserving overflow-to-float-to-int behavior. This is a useful
+contrast to Manticore's documented wrapping overflow, but remains a
+moving target in an experimental project.
+
 **Manticore (ManticorePHP compiler)** — <https://github.com/manticorephp/compiler>
 Taras Chornyi. Self-hosted AOT compiler **written in PHP**: lexer →
 Pratt parser → AST lowering → MIR passes → LLVM IR → static binary
