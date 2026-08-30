@@ -65,7 +65,7 @@ Goal: the deck exists end to end and runs in a browser.
       obstacle: JIT speculation, int-to-float overflow, method dispatch,
       then performance. Implemented in `player/deck/04-next.html`.
 
-## S7. Our own measurement of TypePHP and elephc
+## S7. Our own measurement of TypePHP and elephc [done]
 
 Goal: the deck stops quoting only other people's numbers. One machine, one
 PHP release build, four workloads — int arithmetic, foreach over an array,
@@ -80,8 +80,19 @@ indexed read, indexed write — plus the int-overflow semantics probe.
       Edmond, 2026-08-30. The finding stays in dev/BENCHMARKS.md and on
       the slide.
 - [x] S7.5 Put the results on slides in `player/deck/04-next.html`, next to
-      the authors' own benchmark rather than merged into it. Six slides,
+      the authors' own benchmark rather than merged into it. Seven slides,
       rendered and checked at 1920x1080.
+- [x] S7.6 Explain the times from machine code and profiles —
+      `dev/research/hot-loop-anatomy.md`. perf, objdump, the JIT's own
+      disassembly on a capstone build, elephc `--emit-asm`.
+- [x] S7.7 Draw the comparison as a page of its own —
+      `bench/infographic.html`.
+- [x] S7.8 Two rounds of Critic and two of Sage over S7. One published claim
+      retracted, the JIT baseline changed twice, four defects found that were
+      never asked about. Recorded in `dev/BENCHMARKS.md`.
+
+Stage closed. What outlives it: `dev/BENCHMARKS.md`, `dev/research/hot-loop-anatomy.md`,
+`bench/`. Open question left behind: the cause of the JIT's two states.
 
 ## S5. Rehearsal
 
