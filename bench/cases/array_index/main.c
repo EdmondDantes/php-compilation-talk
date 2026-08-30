@@ -4,6 +4,9 @@
 #define SIZE 2000
 #define REPS 20000
 
+/* Identical to array_foreach/main.c on purpose: C has no foreach, so the two
+   PHP cases share one baseline. Change both or neither. */
+
 int main(void)
 {
     static int64_t a[SIZE];

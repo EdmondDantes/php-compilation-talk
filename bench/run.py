@@ -256,6 +256,13 @@ def check_outputs(case_dir, rows):
 
 
 def run_case(case_dir, engines, repeats, startup, keep):
+    """Builds and times one case on every engine, returning a row per engine name.
+
+    A row is `unsupported` when the engine cannot express the case or its build
+    failed, `failed` when the program ran and exited non-zero, and otherwise the
+    summary `summarize` produces. Nothing here decides which figure represents a
+    row that split — see `summarize`.
+    """
     rows = {}
 
     # A case carrying divergence.md exists to compare answers, not times.
