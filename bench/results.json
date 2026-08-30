@@ -1,0 +1,297 @@
+{
+  "host": "EdmondDnepr",
+  "startup_s": {
+    "php-interp": 0.005095276996144094,
+    "php-opcache": 0.006286855001235381,
+    "php-jit": 0.0067085810005664825,
+    "typephp": 0.007451217003108468,
+    "typephp-native": 0.0075609270061249845,
+    "typephp-std": 0.007585432998894248,
+    "elephc": 0.00038659800338791683,
+    "c-gcc-O2": 0.0004685660023824312
+  },
+  "results": {
+    "array_foreach": {
+      "php-interp": {
+        "status": "ok",
+        "total_s": 0.219726,
+        "loop_s": 0.214631,
+        "median_s": 0.222364,
+        "output": "19980000000"
+      },
+      "php-opcache": {
+        "status": "ok",
+        "total_s": 0.220197,
+        "loop_s": 0.21391,
+        "median_s": 0.222205,
+        "output": "19980000000"
+      },
+      "php-jit": {
+        "status": "ok",
+        "total_s": 0.216837,
+        "loop_s": 0.210128,
+        "median_s": 0.221201,
+        "output": "19980000000"
+      },
+      "typephp": {
+        "status": "ok",
+        "total_s": 0.434677,
+        "loop_s": 0.427226,
+        "median_s": 0.443176,
+        "output": "19980000000"
+      },
+      "typephp-native": {
+        "status": "ok",
+        "total_s": 0.360469,
+        "loop_s": 0.352908,
+        "median_s": 0.362367,
+        "output": "19980000000"
+      },
+      "typephp-std": {
+        "status": "ok",
+        "total_s": 0.019672,
+        "loop_s": 0.012086,
+        "median_s": 0.020003,
+        "output": "19980000000"
+      },
+      "elephc": {
+        "status": "ok",
+        "total_s": 0.743026,
+        "loop_s": 0.74264,
+        "median_s": 0.745257,
+        "output": "19980000000"
+      },
+      "c-gcc-O2": {
+        "status": "ok",
+        "total_s": 0.007854,
+        "loop_s": 0.007385,
+        "median_s": 0.007965,
+        "output": "19980000000"
+      }
+    },
+    "array_index": {
+      "php-interp": {
+        "status": "ok",
+        "total_s": 0.261787,
+        "loop_s": 0.256692,
+        "median_s": 0.271565,
+        "output": "19980000000"
+      },
+      "php-opcache": {
+        "status": "ok",
+        "total_s": 0.259738,
+        "loop_s": 0.253451,
+        "median_s": 0.260617,
+        "output": "19980000000"
+      },
+      "php-jit": {
+        "status": "ok",
+        "total_s": 0.259771,
+        "loop_s": 0.253063,
+        "median_s": 0.261729,
+        "output": "19980000000"
+      },
+      "typephp": {
+        "status": "ok",
+        "total_s": 0.920836,
+        "loop_s": 0.913384,
+        "median_s": 0.923423,
+        "output": "19980000000"
+      },
+      "typephp-native": {
+        "status": "ok",
+        "total_s": 0.180018,
+        "loop_s": 0.172457,
+        "median_s": 0.181963,
+        "output": "19980000000"
+      },
+      "typephp-std": {
+        "status": "ok",
+        "total_s": 0.024537,
+        "loop_s": 0.016952,
+        "median_s": 0.024616,
+        "output": "19980000000"
+      },
+      "elephc": {
+        "status": "ok",
+        "total_s": 1.846309,
+        "loop_s": 1.845922,
+        "median_s": 1.851131,
+        "output": "19980000000"
+      },
+      "c-gcc-O2": {
+        "status": "ok",
+        "total_s": 0.00799,
+        "loop_s": 0.007521,
+        "median_s": 0.00807,
+        "output": "19980000000"
+      }
+    },
+    "array_write": {
+      "php-interp": {
+        "status": "ok",
+        "total_s": 0.272588,
+        "loop_s": 0.267493,
+        "median_s": 0.274782,
+        "output": "41997000"
+      },
+      "php-opcache": {
+        "status": "ok",
+        "total_s": 0.273877,
+        "loop_s": 0.26759,
+        "median_s": 0.275485,
+        "output": "41997000"
+      },
+      "php-jit": {
+        "status": "ok",
+        "total_s": 0.145553,
+        "loop_s": 0.138845,
+        "median_s": 0.275481,
+        "output": "41997000"
+      },
+      "typephp": {
+        "status": "ok",
+        "total_s": 1.233639,
+        "loop_s": 1.226188,
+        "median_s": 1.246954,
+        "output": "41997000"
+      },
+      "typephp-native": {
+        "status": "ok",
+        "total_s": 0.278684,
+        "loop_s": 0.271123,
+        "median_s": 0.281689,
+        "output": "41997000"
+      },
+      "typephp-std": {
+        "status": "ok",
+        "total_s": 0.024364,
+        "loop_s": 0.016778,
+        "median_s": 0.025218,
+        "output": "41997000"
+      },
+      "elephc": {
+        "status": "ok",
+        "total_s": 0.726418,
+        "loop_s": 0.726031,
+        "median_s": 0.735555,
+        "output": "41997000"
+      },
+      "c-gcc-O2": {
+        "status": "ok",
+        "total_s": 0.006197,
+        "loop_s": 0.005728,
+        "median_s": 0.006309,
+        "output": "41997000"
+      }
+    },
+    "int_arith": {
+      "php-interp": {
+        "status": "ok",
+        "total_s": 0.596009,
+        "loop_s": 0.590914,
+        "median_s": 0.599554,
+        "output": "1058791553"
+      },
+      "php-opcache": {
+        "status": "ok",
+        "total_s": 0.547686,
+        "loop_s": 0.541399,
+        "median_s": 0.558268,
+        "output": "1058791553"
+      },
+      "php-jit": {
+        "status": "ok",
+        "total_s": 0.431002,
+        "loop_s": 0.424293,
+        "median_s": 0.437467,
+        "output": "1058791553"
+      },
+      "typephp": {
+        "status": "ok",
+        "total_s": 3.513365,
+        "loop_s": 3.505913,
+        "median_s": 3.53108,
+        "output": "1058791553"
+      },
+      "typephp-native": {
+        "status": "ok",
+        "total_s": 0.089723,
+        "loop_s": 0.082162,
+        "median_s": 0.089879,
+        "output": "1058791553"
+      },
+      "typephp-std": {
+        "status": "unsupported"
+      },
+      "elephc": {
+        "status": "ok",
+        "total_s": 4.490056,
+        "loop_s": 4.489669,
+        "median_s": 4.508623,
+        "output": "1058791553"
+      },
+      "c-gcc-O2": {
+        "status": "ok",
+        "total_s": 0.081805,
+        "loop_s": 0.081336,
+        "median_s": 0.081969,
+        "output": "1058791553"
+      }
+    },
+    "int_overflow": {
+      "php-interp": {
+        "status": "ok",
+        "total_s": 0.005094,
+        "loop_s": 0.0,
+        "median_s": 0.005229,
+        "output": "1.844674407371E+19"
+      },
+      "php-opcache": {
+        "status": "ok",
+        "total_s": 0.006224,
+        "loop_s": 0.0,
+        "median_s": 0.006391,
+        "output": "1.844674407371E+19"
+      },
+      "php-jit": {
+        "status": "ok",
+        "total_s": 0.006796,
+        "loop_s": 8.8e-05,
+        "median_s": 0.007037,
+        "output": "1.844674407371E+19"
+      },
+      "typephp": {
+        "status": "ok",
+        "total_s": 0.007558,
+        "loop_s": 0.000106,
+        "median_s": 0.007647,
+        "output": "1.844674407371E+19"
+      },
+      "typephp-native": {
+        "status": "ok",
+        "total_s": 0.007401,
+        "loop_s": 0.0,
+        "median_s": 0.007662,
+        "output": "0"
+      },
+      "typephp-std": {
+        "status": "unsupported"
+      },
+      "elephc": {
+        "status": "ok",
+        "total_s": 0.000388,
+        "loop_s": 2e-06,
+        "median_s": 0.000394,
+        "output": "-1.844674407371E+19"
+      },
+      "c-gcc-O2": {
+        "status": "ok",
+        "total_s": 0.000486,
+        "loop_s": 1.7e-05,
+        "median_s": 0.000531,
+        "output": "0"
+      }
+    }
+  }
+}

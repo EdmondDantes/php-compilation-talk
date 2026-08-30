@@ -49,6 +49,8 @@ buy, what they cost, and whether to expect one in production.
 ## Working documents
 
 - `dev/PLAN.md` — stages and steps; the task list is rebuilt from it.
+- `dev/BENCHMARKS.md` — our own measurements, with the method and the
+  machine. `bench/` holds the cases and the runner that produced them.
 - `dev/WORKFLOW.md` — rules specific to this project.
 - `dev/DECISIONS.md` — why the talk and the deck are shaped this way.
 - `dev/POSTMORTEM.md` — mistakes that cost time.

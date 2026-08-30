@@ -377,8 +377,95 @@ $object->$method();   <span class="hi">// имя известно только �
     <tr><td>Рукописный C++</td><td>std::vector</td><td class="num">6,2 с</td></tr>
   </table>
   <p class="closing"><b>10,6× — </b>компиляция вместе с заменой контейнера.</p>
-  <p class="note">// замер авторов TypePHP · не сравнивать напрямую с нашим foreach</p>
+  <p class="note">// замер авторов TypePHP · наше воспроизведение — на следующих слайдах</p>
 </section>
+
+<section class="slide" data-label="Как мы замеряли"
+  data-speaker-notes="Методика называется до чисел, иначе числа нечем защищать. Одна машина, i7-11700K, ничего постороннего. PHP 8.4.22 release из пакета. TypePHP 0.6.7 поверх приватного PHP 8.4.22, собранного с --enable-embed=shared, потому что пакетный PHP везёт только CLI, а TypePHP нужен Embed SAPI; сгенерированный C++ проходит через g++ 13.3 с -O2. elephc 0.26.5 собран cargo build --release. Эталон на C — тот же gcc -O2. Тело цикла написано один раз и оборачивается под каждый движок, так что измеряется один и тот же исходник. Семь прогонов, берём минимум: шум на общей машине только добавляет время. Старт процесса замеряется отдельно пустой программой того же движка и вычитается — нативный бинарник стартует за миллисекунду, процесс PHP нет, и эта разница о цикле ничего не говорит.">
+  <div class="top"><span><span class="part">Наш замер</span> Методика</span><span class="count"></span></div>
+  <h2 class="slide-title">Как мы замеряли</h2>
+  <ol class="rows plain compact">
+    <li><span class="n">01</span><h3>Одна машина, один исходник</h3><p>i7-11700K. Тело цикла написано один раз и обёрнуто под каждый движок.</p></li>
+    <li><span class="n">02</span><h3>Восемь способов исполнения</h3><p>Интерпретатор, opcache, JIT, TypePHP в трёх режимах, elephc, C.</p></li>
+    <li><span class="n">03</span><h3>Минимум из семи прогонов</h3><p>Старт процесса замерен отдельно и вычтен.</p></li>
+  </ol>
+  <p class="note">// PHP 8.4.22 · TypePHP 0.6.7 · elephc 0.26.5 · gcc 13.3 -O2</p>
+</section>
+
+<section class="slide" data-label="Целочисленный цикл"
+  data-speaker-notes="Первый и самый неожиданный результат. Цикл на сто миллионов итераций, тело h = (h * 31 + i) &amp; 0x3fffffff — связь по данным между итерациями, поэтому свернуть цикл в константу не может ни один компилятор. Оба AOT-компилятора, которым скормили обычный PHP, проигрывают штатному JIT в восемь и десять раз. Выигрыш в этом семействе проектов — это отдача от типизации, а не от компиляции; ровно к этому выводу приходит и материал VK про KPHP, он записан в HANDOFF. Как только у TypePHP появляется директива native_types, тот же цикл встаёт вровень с C: 82,2 против 81,3 миллисекунды, и это в 5,2 раза быстрее JIT.">
+  <div class="top"><span><span class="part">Наш замер</span> Целые числа</span><span class="count"></span></div>
+  <h2 class="slide-title">Типы важнее компиляции</h2>
+  <table class="table">
+    <tr><th>Исполнение</th><th>Время</th><th></th></tr>
+    <tr><td>PHP 8.4 + tracing JIT</td><td class="num">424 мс</td><td>отсчёт</td></tr>
+    <tr><td>TypePHP, без директивы</td><td class="num">3506 мс</td><td>в 8,3 раза медленнее</td></tr>
+    <tr><td>elephc</td><td class="num">4490 мс</td><td>в 10,6 раза медленнее</td></tr>
+    <tr class="lead-row"><td>TypePHP <b>use native_types</b></td><td class="num">82 мс</td><td>в 5,2 раза быстрее</td></tr>
+    <tr><td>Тот же цикл на C</td><td class="num">81 мс</td><td>паритет</td></tr>
+  </table>
+  <p class="note">// 10⁸ итераций · $h = ($h * 31 + $i) &amp; 0x3fffffff · связь по данным</p>
+</section>
+
+<section class="slide" data-label="Одно слово в объявлении"
+  data-speaker-notes="Здесь видно, за что платят те 43 раза. Это сгенерированный TypePHP C++ для одного и того же PHP-цикла. Строка с арифметикой совпадает символ в символ. Отличается объявление: php::Var — это динамическое значение со всей семантикой zval, а php::Int — это typedef zend_long, то есть обычный int64_t, и дальше g++ компилирует ровно тот цикл, что и из C. Директива не меняет ни одной строки логики; она меняет тип хранения, и этого достаточно.">
+  <div class="top"><span><span class="part">Наш замер</span> Откуда 43 раза</span><span class="count"></span></div>
+  <h2 class="slide-title">Разница — в объявлении</h2>
+  <pre class="plate"><span class="out">// сгенерированный TypePHP C++, один и тот же PHP-цикл</span>
+
+<span class="hi">php::Var h = 1L;</span>             <span class="out">// без директивы — 3506 мс</span>
+h = (((h) * (31L)) + (i)) &amp; (1073741823L);
+
+<span class="hi">php::Int h = php::toInt(1L);</span> <span class="out">// native_types  —   82 мс</span>
+h = php::toInt((((h) * (31L)) + (i)) &amp; (1073741823L));</pre>
+  <p class="closing">Выражение то же. Отличается <b>тип хранения</b>.</p>
+  <p class="note">// php::Int — это typedef zend_long, то есть int64_t</p>
+</section>
+
+<section class="slide" data-label="Массивы: обход, чтение, запись"
+  data-speaker-notes="Массив из 2000 целых, обход двадцать тысяч раз. Первое: JIT на foreach не даёт ничего — 210 против 214 без него, и на чтении по индексу тоже ничего, 253 против 254. Трасса строится, в ней два опкода, и FE_FETCH_R остаётся вызовом помощника движка — это ровно тот тезис, который мы разбирали на слайде про трассу. На записи JIT помогает, 268 превращаются в 139. Второе: замена PHP-массива на std::vector даёт больше, чем всё остальное вместе — 17 раз на обходе и 8 на записи. Это и есть воспроизведение опубликованного авторами замера, только замена контейнера отделена от компиляции. Третье: C на массивах не честный пол — gcc векторизует сумму, и std::vector векторизуется тоже, а PHP-массив не может ни при каком компиляторе.">
+  <div class="top"><span><span class="part">Наш замер</span> Массивы</span><span class="count"></span></div>
+  <h2 class="slide-title">Контейнер решает больше</h2>
+  <table class="table">
+    <tr><th>Исполнение</th><th>foreach</th><th>чтение</th><th>запись</th></tr>
+    <tr><td>opcache без JIT</td><td class="num">214</td><td class="num">254</td><td class="num">268</td></tr>
+    <tr><td>PHP 8.4 + tracing JIT</td><td class="num">210</td><td class="num">253</td><td class="num">139</td></tr>
+    <tr><td>elephc</td><td class="num">743</td><td class="num">1846</td><td class="num">726</td></tr>
+    <tr><td>TypePHP <b>native_types</b></td><td class="num">353</td><td class="num">173</td><td class="num">271</td></tr>
+    <tr class="lead-row"><td>TypePHP <b>std::vector</b></td><td class="num">12</td><td class="num">17</td><td class="num">17</td></tr>
+    <tr><td>Тот же цикл на C</td><td class="num">7</td><td class="num">8</td><td class="num">6</td></tr>
+  </table>
+  <p class="note">// мс · 2000 элементов × 20 000 обходов · JIT на foreach ничего не даёт</p>
+</section>
+
+<section class="slide" data-label="Почему elephc медленнее"
+  data-speaker-notes="Причина не в кодогенераторе, а в семантике, и она видна в собственном IR elephc — команда --emit-ir. Произведение h на 31 может переполниться и стать float, поэтому результат кладётся в кучу как Mixed; сложение идёт через общий mixed_numeric_binop; дальше приведение обратно к I64 и два освобождения по счётчику ссылок. Две аллокации и два release на итерацию. Счётчик цикла, диапазон которого известен, остаётся в регистре — ichecked_add_to_int. Типизация исходника не помогает: объявили work(int $n): int — те же 4,49 секунды, --strict-locals тоже ничего не меняет. В их собственном трекере это issue 623. Важно, как это сопоставляется: правило одно и то же в обоих движках, но JIT платит ветвлением на значении в регистре, а elephc — аллокацией.">
+  <div class="top"><span><span class="part">Наш замер</span> Механизм</span><span class="count"></span></div>
+  <h2 class="slide-title">Переполнение стоит аллокации</h2>
+  <pre class="plate">$ elephc loop.php --emit-ir
+<span class="hi">v7:  Heap(Mixed) = ichecked_mul v5 v6              ; alloc_heap</span>
+<span class="hi">v9:  Heap(Mixed) = mixed_numeric_binop v7 v8 add</span>
+<span class="out">release v7</span>
+<span class="out">v11: I64 = cast v9 I64</span>
+<span class="out">release v9</span></pre>
+  <p class="closing">Правило одно: <b>JIT платит ветвлением, elephc — аллокацией.</b></p>
+  <p class="note">// $h * 31 может стать float, поэтому произведение боксируется</p>
+</section>
+
+<section class="slide" data-label="Одна программа — три ответа"
+  data-speaker-notes="Последний слайд блока — про то, что подмножество это не только урезанный список возможностей. Семь строк: единица, шестьдесят четыре удвоения. PHP отвечает 1,8e19, потому что при переполнении int становится float. TypePHP с native_types отвечает 0, потому что там int64_t, который заворачивается, — и это заявлено в их документе PHP_INCOMPATIBILITY_CLASSIFICATION как намеренное правило: нативные типы меняют совместимость на способ хранения. А elephc отвечает тем же числом с минусом, и вот это уже баг: их документация обещает поведение как в PHP. Причина та же, что в их открытом issue 548: float, лежащий в Mixed, приводится через cvttsd2si, и на x86-64 значение вне диапазона даёт INT64_MIN. В 548 это про операторы сравнения, у нас — про умножение. Наверх пока не сообщено.">
+  <div class="top"><span><span class="part">Наш замер</span> Семантика</span><span class="count"></span></div>
+  <h2 class="slide-title">Одна программа — три ответа</h2>
+  <pre class="plate">$h = 1;
+for ($i = 1; $i &lt;= 64; $i++) { $h = $h * 2; }
+
+<span class="out">PHP 8.4                  1.844674407371E+19</span>
+<span class="out">TypePHP native_types     0                     — заявленное расхождение</span>
+<span class="hi">elephc                  -1.844674407371E+19    — баг</span></pre>
+  <p class="closing">Подмножество меняет не только список возможностей.</p>
+  <p class="note">// elephc.dev/docs/php/operators: «Integer overflow promotes to double»</p>
+</section>
+
 
 <section class="slide" data-label="Цикл, который измеряли"
   data-speaker-notes="Один и тот же минимальный цикл используется для разбора штатного JIT, пилота ext/mlir и варианта на C. Массив содержит 2000 целых, обход без ключа, тело только суммирует элементы. Именно эта узость делает результат объяснимым и одновременно ограничивает вывод.">

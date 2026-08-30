@@ -16,8 +16,7 @@ folklore.
 - Limelight stays in the talk as a live example, but there is little to
   say about it yet; how much room it gets is undecided.
 - Which visual direction the deck takes is open — four are drafted.
-- No benchmark of our own is planned; whether the talk needs one is
-  undecided.
+- How much of part 3 survives the cut once S5.1 times a full run.
 
 ## S1. Structure of the talk
 
@@ -65,6 +64,24 @@ Goal: the deck exists end to end and runs in a browser.
 - [x] S4.5 Rebuild the post-landscape technical block by semantic
       obstacle: JIT speculation, int-to-float overflow, method dispatch,
       then performance. Implemented in `player/deck/04-next.html`.
+
+## S7. Our own measurement of TypePHP and elephc
+
+Goal: the deck stops quoting only other people's numbers. One machine, one
+PHP release build, four workloads — int arithmetic, foreach over an array,
+indexed read, indexed write — plus the int-overflow semantics probe.
+
+- [x] S7.1 Build the three toolchains from source: PHP 8.4.22 with
+      `--enable-embed=shared`, PHPX, TypePHP 0.6.7, elephc 0.26.5.
+- [x] S7.2 Write the cases and the runner — `bench/`. One body per case,
+      wrapped per engine, so the measured source is identical everywhere.
+- [x] S7.3 Run the suite and file the numbers in `dev/BENCHMARKS.md`.
+- [-] S7.4 Report the elephc overflow divergence upstream. Declined by
+      Edmond, 2026-08-30. The finding stays in dev/BENCHMARKS.md and on
+      the slide.
+- [x] S7.5 Put the results on slides in `player/deck/04-next.html`, next to
+      the authors' own benchmark rather than merged into it. Six slides,
+      rendered and checked at 1920x1080.
 
 ## S5. Rehearsal
 
