@@ -175,6 +175,33 @@ def build_argv(engine, body, workdir, case_dir):
     return engine.build(body, workdir)
 
 
+DIVERGENCE_MARKER = "divergence.md"
+
+# A run whose median is this much above its minimum is not one number with noise
+# on it. The tracing JIT reaches its fast mode in some fresh processes and not in
+# others, and a minimum alone would report only the lucky half.
+SPREAD_LIMIT = 1.10
+
+
+def check_outputs(case_dir, rows):
+    """Returns the disagreeing outputs, or an empty dict when the engines agree.
+
+    A case that is expected to disagree declares it by carrying a
+    `divergence.md` saying why; for those the disagreement is the result and no
+    complaint is raised.
+    """
+    if (case_dir / DIVERGENCE_MARKER).exists():
+        return {}
+
+    seen = {}
+
+    for name, row in rows.items():
+        if row.get("status") == "ok":
+            seen.setdefault(row["output"], []).append(name)
+
+    return seen if len(seen) > 1 else {}
+
+
 def run_case(case_dir, engines, repeats, startup, keep):
     rows = {}
 
@@ -306,6 +333,11 @@ def main():
     names = sorted(p.name for p in CASES.iterdir() if (p / "body.php").exists())
 
     if args.case:
+        unknown = sorted(set(args.case) - set(names))
+
+        if unknown:
+            parser.error(f"no such case: {', '.join(unknown)}; have {', '.join(names)}")
+
         names = [n for n in names if n in args.case]
 
     print("measuring startup", flush=True)
@@ -324,6 +356,15 @@ def main():
             row = results[name].get(engine.name, {"status": "unsupported"})
             detail = f"{row['loop_s'] * 1000:.1f} ms  out={row['output']}" if row["status"] == "ok" else row["status"]
             print(f"  {engine.name:16} {detail}", flush=True)
+
+            if row["status"] == "ok" and row["total_s"] > 0 and row["median_s"] / row["total_s"] > SPREAD_LIMIT:
+                print(f"  {'':16} SPREAD median {row['median_s'] * 1000:.1f} ms is "
+                      f"{row['median_s'] / row['total_s']:.2f}x the minimum", flush=True)
+
+        disagreement = check_outputs(CASES / name, results[name])
+
+        for output, who in disagreement.items():
+            print(f"  DISAGREEMENT {', '.join(who)} printed {output!r}", flush=True)
 
     print()
     print(format_table(results, engines))
