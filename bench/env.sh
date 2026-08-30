@@ -12,11 +12,14 @@
 : "${PHP_HOME:=$HOME/.typephp}"
 : "${TYPEPHP_ROOT:=$BENCH_SCRATCH/typephp}"
 : "${ELEPHC_BIN:=$BENCH_SCRATCH/elephc/target/release/elephc}"
-: "${MPFR_PREFIX:=$BENCH_SCRATCH/localdev/root/usr}"
+: "${LOCALDEV:=$BENCH_SCRATCH/localdev}"
 
 PHPX_HOME="${PHPX_HOME:-$TYPEPHP_ROOT/vendor/swoole/phpx}"
 
 export BENCH_PHP TYPEPHP_ROOT ELEPHC_BIN PHP_HOME PHPX_HOME
-export CPATH="$MPFR_PREFIX/include${CPATH:+:$CPATH}"
-export LIBRARY_PATH="$MPFR_PREFIX/lib/x86_64-linux-gnu${LIBRARY_PATH:+:$LIBRARY_PATH}"
+export CPATH="$LOCALDEV/root/usr/include${CPATH:+:$CPATH}"
+# Shared-object symlinks only. Never point this at the unpacked .deb tree: it also
+# holds the static libmpfr.a, ld prefers the archive, and a non-PIC archive breaks
+# the link of libphpx with an error that names gmp instead of mpfr.
+export LIBRARY_PATH="$LOCALDEV/lib${LIBRARY_PATH:+:$LIBRARY_PATH}"
 export LD_LIBRARY_PATH="$PHPX_HOME/lib:$PHP_HOME/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
