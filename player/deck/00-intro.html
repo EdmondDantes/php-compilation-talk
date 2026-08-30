@@ -32,7 +32,6 @@
   data-speaker-notes="Ряд имён работает сам: зал ждёт увидеть здесь PHP, а видит рядом Rust. Дальше можно ничего не объяснять. Про отчёт Meta не говорить — источника нет, это личное наблюдение.">
   <div class="top"><span><span class="part">2026</span> Неопределённость</span><span class="count"></span></div>
   <h2 class="slide-title">Красная книга</h2>
-  <div class="rule"></div>
   <p class="names">PHP <span class="sep">·</span> Python <span class="sep">·</span> C
      <span class="sep">·</span> C++ <span class="sep">·</span> Rust</p>
   <p class="stack low">Языки связаны логикой прошлого — решениями,<br />принятыми по причинам, которых больше нет.</p>
@@ -43,7 +42,6 @@
   data-speaker-notes="Один и тот же PHP: четвёртый у RedMonk, двенадцатый у Stack Overflow, восемнадцатый у TIOBE — и семьдесят процентов сайтов, у которых известен серверный язык. Восемнадцатое место — низшая позиция PHP с 2001 года, в марте 2010-го он был третьим. Разброс объясняется тем, что считают: код и обсуждения, ответы разработчиков, поисковую выдачу и живые сайты. Знаменатели у всех разные, и ни один не меряет устройство языка. Все четыре числа проверены по первоисточникам 29 августа 2026 года.">
   <div class="top"><span><span class="part">2026</span> Неопределённость</span><span class="count"></span></div>
   <h2 class="slide-title">Что меряют рейтинги</h2>
-  <div class="rule"></div>
   <table class="table">
     <tr>
       <th>Рейтинг</th><th>Что считает</th><th>PHP</th>
@@ -102,7 +100,6 @@
   data-speaker-notes="Противопоставление, ради которого стоит держать оба числа рядом: семь из десяти сайтов с известным серверным языком — на PHP, а вакансий с ним среди языков три с половиной процента. У Python там же 37,58 процента. Медиана зарплаты по PHP в Британии 47 500 фунтов против 65 000 по всем вакансиям, где нужен код. В США за 800 тысяч объявлений PHP вообще не попал в первую десятку. Сказать вслух осторожно: проверка показала, что PHP почти отсутствует в венчурно-продуктовом найме вообще, а не именно в финансах. Контрпримеры есть и они лицензированные: secupay — платёжный институт в реестре BaFin, ищет PHP; Pay.nl с лицензией DNB держит на PHP платёжную платформу; Nexi публикует вакансию PHP Developer. На PHP же работают CHECK24 и ABOUT YOU. Утверждать «вымывается из финтеха» нельзя — только «его не берут в новые продуктовые команды».">
   <div class="top"><span><span class="part">2026</span> Рынок труда</span><span class="count"></span></div>
   <h2 class="slide-title">Сайты и вакансии</h2>
-  <div class="rule"></div>
 
   <div class="figures">
     <div>
@@ -129,7 +126,6 @@
   data-speaker-notes="Ведомость читается за секунду. Закрыть строкой вслух: ровно эту инфраструктуру компилятору и приходится выбрасывать.">
   <div class="top"><span><span class="part">2026</span> Неопределённость</span><span class="count"></span></div>
   <h2 class="slide-title">Ценность — в инфраструктуре</h2>
-  <div class="rule"></div>
   <div class="columns">
     <div>
       <span class="label">Получает</span>
@@ -155,7 +151,6 @@
   data-speaker-notes="Четыре свидетельства, что дело в инфраструктуре, а не во вкусах. Мейерович и Рабкин, OOPSLA 2013 — единственная большая работа, где это измеряли: 213 471 проект SourceForge, 590 000 Ohloh, опросы до 13 000 человек. Deno: два с половиной года от «мы несовместимы с npm» до «переписать экосистему нереально». KPHP: авторы сами перечисляют, что отваливается. Четвёртое — размер отрезаемого. Обратное свидетельство назвать вслух: в опросе JetBrains 2026 (8837 ответов) главной причиной смены языка называют требования проекта, а уходящие с PHP — производительность.">
   <div class="top"><span><span class="part">2026</span> Ценность языка</span><span class="count"></span></div>
   <h2 class="slide-title">Что об этом известно</h2>
-  <div class="rule"></div>
   <ol class="rows plain compact tight">
     <li data-more="01">
       <span class="n">01</span>
@@ -221,11 +216,57 @@
   </ul>
 </section>
 
+<section class="slide" data-label="Гибкий отказ от VM"
+  data-speaker-notes="Гибкий отказ от VM начался не с сегодняшнего AOT. В реализации Smalltalk-80 Дойча и Шиффмана 1984 года процедура при первом вызове переводилась из v-code в native n-code и результат кэшировался. Self в конце восьмидесятых и девяностых сделал следующий шаг: профилирование, агрессивная специализация под наблюдавшиеся типы и динамическая деоптимизация, когда предположение перестаёт выполняться. Эту линию продолжили HotSpot, CLR и V8. Поэтому современная VM — не синоним постоянной интерпретации: горячий код работает как native, а bytecode и interpreter нужны для быстрого старта, холодных путей и восстановления. GraalVM Native Image и .NET Native AOT сдвигают решение ещё раньше, в build time. PHP-компиляторы повторяют этот последний шаг, пока на гораздо более ранней стадии.">
+  <div class="top"><span><span class="part">Тенденция</span> VM остаётся</span><span class="count"></span></div>
+  <h2 class="slide-title">Гибкий отказ от VM</h2>
+  <ol class="rows plain compact">
+    <li><span class="n">60–70-е</span><h3>Interpreter и переносимый bytecode</h3><p>VM исполняет компактные инструкции одну за другой.</p></li>
+    <li><span class="n">1984</span><h3>Smalltalk-80: native по требованию</h3><p>v-code переводится в машинный код при вызове и кэшируется.</p></li>
+    <li><span class="n">1990-е</span><h3>Self: adaptive JIT</h3><p>Профиль → специализация → проверка предположений → deoptimization.</p></li>
+    <li><span class="n">Сегодня</span><h3>JIT в runtime или AOT при сборке</h3><p>HotSpot, CLR и V8 компилируют горячее; GraalVM и .NET умеют native AOT.</p></li>
+  </ol>
+  <p class="note">// Deutsch &amp; Schiffman, POPL 1984 · Self → HotSpot · VM стала страховочной сеткой</p>
+</section>
+
+<section class="slide infrastructure-aot" data-label="Инфраструктура сделала AOT практичным"
+  data-speaker-notes="Это не буквальная смена, после которой shared hosting исчез: все модели существуют одновременно. Но изменилась единица поставки backend. На shared hosting разработчик загружал исходники в чужой PHP и не контролировал версию движка, расширения и процессы — переносимый исходный код был преимуществом, нативный бинарник почти негде было запускать. VPS и аппаратная виртуализация дали root, собственный runtime и долгоживущий daemon. Контейнер добавил воспроизводимый образ: Docker рекомендует компилировать в build stage, а в runtime stage копировать только артефакт. Наконец, orchestration и serverless начали часто создавать новые экземпляры. AWS раскладывает cold start на загрузку пакета, запуск runtime и initialization; его стоимость зависит от размера и объёма стартовой работы. Поэтому startup, RSS и размер образа стали экономическими параметрами. Компилятор теперь продаёт не только скорость цикла, но маленький автономный артефакт, быстрый старт и больше реплик на узле. Для PHP это видно по шкале source плюс php-fpm, затем preload и workers, затем standalone package FrankenPHP и экспериментальные AOT-компиляторы.">
+  <div class="top"><span><span class="part">Инфраструктура</span> Единица поставки</span><span class="count"></span></div>
+  <h2 class="slide-title">Инфраструктура сделала AOT практичным</h2>
+  <ol class="rows plain compact">
+    <li><span class="n">Shared</span><h3>Исходники внутри чужого runtime</h3><p>Нет root и контроля ABI: выигрывает переносимость PHP-кода.</p></li>
+    <li><span class="n">VPS</span><h3>Приложение получает собственный процесс</h3><p>Можно выбрать runtime, расширения, daemon и модель памяти.</p></li>
+    <li><span class="n">Docker</span><h3>Build отделён от runtime</h3><p>Компилятор остаётся в builder; в образ попадает готовый артефакт.</p></li>
+    <li><span class="n">Scale</span><h3>Каждую реплику надо запустить</h3><p>Startup, RSS и размер image становятся частью стоимости backend.</p></li>
+  </ol>
+  <p class="note">// source deployment → immutable image · throughput → ещё и startup, memory, density</p>
+</section>
+
+<section class="slide" data-label="Абстракции переносятся в build time"
+  data-speaker-notes="Вторая причина интереса к компиляции — она может оставить удобную декларативную модель автору, но удалить её механизм из runtime. DI показывает это особенно ясно. Слева разработчик описывает зависимости. На этапе сборки контейнер строит граф, проверяет отсутствующие сервисы и генерирует специализированный PHP-класс. В запросе уже не нужны reflection, сканирование или поиск конструктора: остаются прямые вызовы фабрик и обычный new. Symfony прямо пишет, что у autowiring нет performance penalty благодаря compiled container. Это почти нулевая, но не буквально нулевая цена: создание объектов и вызовы методов остаются.">
+  <div class="top"><span><span class="part">Build time</span> Цена абстракции</span><span class="count"></span></div>
+  <h2 class="slide-title">Абстракция остаётся, поиск исчезает</h2>
+  <div class="code-compare">
+    <pre class="plate"><span class="out"># описание зависимостей</span>
+Checkout:
+  arguments:
+    - Payment
+    - Logger</pre>
+    <pre class="plate"><span class="out">// сгенерированный контейнер</span>
+function getCheckout() {
+    return new Checkout(
+        $this->getPayment(),
+        $this->getLogger()
+    );
+}</pre>
+  </div>
+  <p class="note">// runtime: без сканирования и reflection · остаются прямые вызовы и new</p>
+</section>
+
 <section class="slide" data-label="Переписать всё на Rust"
   data-speaker-notes="На этом слайде — четыре примера переписывания больших систем. Bun перенесли с Zig на Rust за одиннадцать дней, потому что команда могла проверять каждое изменение набором из 1,4 миллиона тестов. Phargo использовал похожий подход для PHP, но через месяц остановился на 18,3 процента тестового корпуса. Turbopack и новый компилятор TypeScript показывают более обычный срок: полтора-два года. При этом TypeScript перенесли не на Rust, а на Go — циклические структуры компилятора плохо сочетались с моделью владения Rust. Последний пример — Android: Google сократил долю уязвимостей памяти с 76 до 24 процентов без массового переписывания старого кода. Подробности и ссылки открываются по нажатию на строки.">
   <div class="top"><span><span class="part">2026</span> Переписывание</span><span class="count"></span></div>
   <h2 class="slide-title">Переписать всё на Rust</h2>
-  <div class="rule"></div>
   <ol class="rows plain cards">
     <li data-more="01">
       <span class="n">01</span>

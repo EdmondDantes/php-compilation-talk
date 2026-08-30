@@ -63,6 +63,11 @@
   letter-spacing: var(--head-ls);
 }
 
+/* The infrastructure title is deliberately quieter and needs no divider. */
+.infrastructure-aot .slide-title {
+  font-size: 70px;
+}
+
 /* Rule under the title, with a short accent segment over its left end. */
 .rule {
   position: absolute;
@@ -213,6 +218,32 @@
   font-size: var(--type-lede);
   line-height: 1.4;
   color: var(--dim);
+}
+
+/* This divider has a two-line question; keep its lede clear of the title. */
+.mechanics-divider .slide-title {
+  top: 400px;
+  max-width: 1320px;
+  font-size: 86px;
+  line-height: 1.04;
+}
+
+.mechanics-divider .lede {
+  top: 680px;
+  width: 1260px;
+}
+
+/* The extensions chapter has a long heading and a deliberately short deck. */
+.extensions-divider .slide-title {
+  top: 410px;
+  max-width: 1320px;
+  font-size: 88px;
+  line-height: 1.04;
+}
+
+.extensions-divider .lede {
+  top: 680px;
+  width: 1320px;
 }
 
 /* --- statement -------------------------------------------------------- */
@@ -1109,4 +1140,72 @@
 
 .plate .hi {
   color: var(--accent);
+}
+
+/* Source beside its SSA form: both plates share the normal code baseline. */
+.code-compare {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 372px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--gap-size);
+}
+
+.code-compare .plate {
+  position: static;
+  padding: 32px 38px;
+  font-size: 27px;
+}
+
+/* A short runtime pipeline: four stages must read as one mechanism, not as
+   four unrelated cards. */
+.pipeline {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 390px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr) 58px) minmax(0, 1.25fr);
+  align-items: stretch;
+}
+
+.pipeline .node {
+  min-height: 230px;
+  padding: 36px 24px;
+  border: 1px solid var(--panel-border);
+  background: var(--panel);
+  text-align: center;
+}
+
+.pipeline .node.hot {
+  border-color: var(--accent);
+}
+
+.pipeline .node b {
+  display: block;
+  margin-bottom: 24px;
+  font-family: var(--font-head);
+  font-size: 34px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.pipeline .node.hot b {
+  color: var(--accent);
+}
+
+.pipeline .node small {
+  font-size: 25px;
+  line-height: 1.35;
+  color: var(--dim);
+}
+
+.pipeline .arrow {
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 36px;
+  color: var(--dim);
 }
