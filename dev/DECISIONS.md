@@ -121,3 +121,20 @@ timeline's last two rows were under it in all three directions. The slide at
 rest is clean; the slide the room looks at for a minute was not.
 
 Cost: three passes over 62 slides in three directions, about twenty seconds.
+
+## 2026-08-31 — The integer-loop result is a bar chart, not four cards
+
+Decided: slide 48 draws each engine's time as a horizontal bar on one linear
+scale, zero to the slowest engine, with the figure direct-labelled beside it.
+The bar carries the verdict colour and the figure stays in the body ink.
+
+Why: the four numbers span 58x — 90 ms against 5202 — and the slide drew them
+as four boxes of equal height with a coloured rule on top, which reads as a
+column chart whose columns were never given a height. The room saw four equal
+things and had to get the comparison from the digits.
+
+Rejected: a log scale, which would have made 90 and 485 comparable to the eye
+and hidden the size of the gap the slide is about.
+
+Cost: at a linear scale the fastest bar is a 17px stub. That is the finding,
+but it carries no length a reader can compare — the number beside it does.

@@ -396,13 +396,31 @@ $object->$method();   <span class="hi">// имя известно только �
   data-speaker-notes="Цикл на сто миллионов итераций, тело h = (h * 31 + i) &amp; 0x3fffffff — связь по данным между итерациями, поэтому свернуть цикл в константу не может ни один компилятор. Сразу оговорка про отсчёт: у штатного JIT на этом цикле две группы времён — примерно 480 миллисекунд в девяти прогонах из десяти и 683 в остальных. В таблице стоит медиана всех тридцати одного прогона, 485; про сами группы будет отдельный слайд. Отсюда и вилка в множителях: она не от нашей неуверенности, а от разброса самого JIT. Оба AOT-компилятора, которым скормили обычный PHP, проигрывают ему в шесть-восемь и в восемь-одиннадцать раз — и это верно при любом конце вилки. Компиляция сама по себе здесь не покупает ничего. Покупает директива native_types: 90 миллисекунд против 89 у C, вровень. На следующем слайде — что именно она меняет, и это не то, что кажется.">
   <div class="top"><span><span class="part">Наш замер</span> Целые числа</span><span class="count"></span></div>
   <h2 class="slide-title">Ускоряет не компиляция</h2>
+  <!-- --w is the time as a share of the longest, 5202 ms: 485/5202, 3996/5202,
+       5202/5202, 90/5202. -->
   <div class="bench-hero">
-    <div class="result base"><span class="engine">PHP 8.4<br>tracing JIT</span><strong>485</strong><span class="delta">мс · медиана</span></div>
-    <div class="result bad"><span class="engine">TypePHP<br>PHP semantics</span><strong>3996</strong><span class="delta">мс · в 6–8× медленнее</span></div>
-    <div class="result bad"><span class="engine">elephc</span><strong>5202</strong><span class="delta">мс · в 8–11× медленнее</span></div>
-    <div class="result lead"><span class="engine">TypePHP<br>native_types</span><strong>90</strong><span class="delta">мс · C даёт 89</span></div>
+    <div class="result base" style="--w: 9.3">
+      <span class="engine">PHP 8.4 tracing JIT</span>
+      <span class="track"><i></i></span>
+      <span class="value"><strong>485</strong> мс · медиана</span>
+    </div>
+    <div class="result bad" style="--w: 76.8">
+      <span class="engine">TypePHP PHP semantics</span>
+      <span class="track"><i></i></span>
+      <span class="value"><strong>3996</strong> мс · в 6–8× медленнее</span>
+    </div>
+    <div class="result bad" style="--w: 100">
+      <span class="engine">elephc</span>
+      <span class="track"><i></i></span>
+      <span class="value"><strong>5202</strong> мс · в 8–11× медленнее</span>
+    </div>
+    <div class="result lead" style="--w: 1.7">
+      <span class="engine">TypePHP native_types</span>
+      <span class="track"><i></i></span>
+      <span class="value"><strong>90</strong> мс · C даёт 89</span>
+    </div>
   </div>
-  <p class="note">// 10⁸ итераций · 10 % прогонов JIT дают 683 мс · opcache без JIT — 587 · вилка отсюда</p>
+  <p class="note">// 10⁸ итераций · шкала линейная, 0—5202 мс · 10 % прогонов JIT дают 683 мс · opcache без JIT — 587 · вилка отсюда</p>
 </section>
 
 <section class="slide" data-label="Одно слово в объявлении"
