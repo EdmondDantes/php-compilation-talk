@@ -53,3 +53,59 @@ Why: the draft sets Barlow, which has no Cyrillic, so every Russian word
 silently renders in Fira — two faces on one slide, unmatched metrics.
 
 Cost: rules out most of the display faces the draft was built around.
+
+## 2026-08-31 — The slide body is centred on a band, not hung from the title
+
+Decided: a slide's body block is centred between the rule under the title
+and the closing note (`--band-top`, `--band-bottom`, `--band-mid` in
+`player/css/theme.css`). The running head moves up to 56px and the title
+to 108px. Slides that carry two body blocks keep the band's top edge.
+
+Why: with every block anchored at a fixed 372px, 17 slides of 62 ended
+more than 250px above the foot, one of them 497px — the head read as
+hanging low and the field as unfinished.
+
+Cost: a body shorter than the band now floats between two smaller voids
+instead of sitting under the title, and a body taller than the band
+overflows it symmetrically rather than downwards.
+
+## 2026-08-31 — The part number moves to the corner
+
+Decided: on a divider the oversized part number sits in the bottom right
+corner instead of behind the title.
+
+Why: set beside the title it overlapped every heading longer than two
+words — five dividers, 84 to 166px of overlap — and the heading is the
+half of the pair that has to be read.
+
+Cost: the number stops reading as a watermark behind the title, which is
+what the direction's artboard drew.
+
+## 2026-08-31 — Notes reach the reader through the slide's own detail line
+
+Decided: hovering a project name or a chip writes its note into the
+slide's `.detail` line; the CSS hover tooltip is gone. A click still pins
+the full note with its link.
+
+Why: the tooltip covered the three timeline rows under the name — the
+rows being compared — could not be dismissed, and never appeared on a
+touch screen.
+
+Cost: the note is read at the foot of the slide rather than next to the
+cursor, so the eye travels further.
+
+## 2026-08-31 — The centred body is a default with no specificity
+
+Decided: the rule that centres a slide's body is written through `:where()`,
+so it carries no specificity at all, and every layout with geometry of its own
+outranks it whatever the order in `slides.css`. A body that declares its own
+`top` declares `transform: none` beside it.
+
+Why: the first version of the rule sat at the end of the file and tied on
+specificity with the layouts it was meant to leave alone, so it won on line
+order and silently took `.rows.cards`, `.stack.low`, `.stack.after-figures`
+and the statement's stack. Four slides were destroyed and the cause was
+invisible in the rule itself.
+
+Cost: the contract between `top` and `transform` is held by a comment and by
+`player/tools/sweep-layout.mjs`, not by the language.

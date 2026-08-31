@@ -41,7 +41,13 @@
 </div>
 
 <!-- Speaker's own text over the slide, for a talk given from one screen. -->
-<aside class="script"><p></p></aside>
+<aside class="script">
+  <div class="bar">
+    <span class="label">Что говорить</span>
+    <button type="button" class="close" aria-label="Закрыть заметки">закрыть ✕</button>
+  </div>
+  <p data-empty="Заметок к этому слайду нет"></p>
+</aside>
 
 <div class="progress" aria-hidden="true"><i></i></div>
 
@@ -63,26 +69,31 @@
       <span class="label">Дальше</span>
       <div class="shot"></div>
     </div>
-    <div class="notes"></div>
+    <div class="notes" data-empty="Заметок нет"></div>
   </div>
 </div>
 
 <div class="help">
-  <dl>
-    <dt>→ ␣ ↓</dt><dd>вперёд</dd>
-    <dt>← ↑</dt><dd>назад</dd>
-    <dt>цифры, Enter</dt><dd>перейти к слайду</dd>
-    <dt>N</dt><dd>что говорить: заметки поверх слайда</dd>
-    <dt>O</dt><dd>обзор слайдов</dd>
-    <dt>T</dt><dd>тема: Терминал / Чертёж / Слон</dd>
-    <dt>P</dt><dd>докладчицкий экран</dd>
-    <dt>F</dt><dd>во весь экран</dd>
-    <dt>B</dt><dd>затемнить</dd>
-    <dt>R</dt><dd>сбросить таймер</dd>
-    <dt>Esc</dt><dd>закрыть слой</dd>
-  </dl>
+  <div class="card">
+    <dl>
+      <dt>→ ␣ ↓</dt><dd>вперёд</dd>
+      <dt>← ↑</dt><dd>назад</dd>
+      <dt>цифры, Enter</dt><dd>перейти к слайду</dd>
+      <dt>N</dt><dd>что говорить: заметки поверх слайда</dd>
+      <dt>O</dt><dd>обзор слайдов</dd>
+      <dt>T</dt><dd>тема: Терминал / Чертёж / Слон</dd>
+      <dt>P</dt><dd>докладчицкий экран</dd>
+      <dt>F</dt><dd>во весь экран</dd>
+      <dt>B</dt><dd>затемнить</dd>
+      <dt>R</dt><dd>сбросить таймер</dd>
+      <dt>H</dt><dd>эта справка</dd>
+      <dt>Esc</dt><dd>закрыть слой</dd>
+    </dl>
+    <p class="hint">Esc или H — закрыть</p>
+  </div>
 </div>
 
+<script src="js/highlight.js"></script>
 <script src="js/player.js"></script>
 </body>
 </html>

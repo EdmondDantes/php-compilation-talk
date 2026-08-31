@@ -35,7 +35,7 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 92px;
+  top: 56px;
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
@@ -53,7 +53,7 @@
 .slide-title {
   position: absolute;
   left: calc(var(--pad) - 4px);
-  top: 168px;
+  top: 108px;
   margin: 0;
   width: calc(var(--stage-w) - 2 * var(--pad));
   font-family: var(--font-head);
@@ -73,7 +73,7 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 300px;
+  top: 232px;
   height: 1px;
   background: var(--rule);
 }
@@ -91,7 +91,7 @@
 .note {
   position: absolute;
   left: var(--pad);
-  bottom: 88px;
+  bottom: 76px;
   margin: 0;
   width: 1300px;
   font-family: var(--font-mono);
@@ -105,7 +105,7 @@
 .cover .kicker {
   position: absolute;
   left: var(--pad);
-  top: 100px;
+  top: 56px;
   font-family: var(--font-mono);
   font-weight: 600;
   font-size: var(--type-kicker);
@@ -117,7 +117,7 @@
 .cover h1 {
   position: absolute;
   left: calc(var(--pad) - 4px);
-  top: 248px;
+  top: 208px;
   margin: 0;
   width: 1560px;
   font-family: var(--font-head);
@@ -130,7 +130,7 @@
 .cover .sub {
   position: absolute;
   left: var(--pad);
-  top: 560px;
+  top: 524px;
   margin: 0;
   width: 1200px;
   font-size: var(--type-lede);
@@ -180,7 +180,7 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  bottom: 88px;
+  bottom: 76px;
   display: flex;
   justify-content: space-between;
   font-family: var(--font-mono);
@@ -190,11 +190,13 @@
 
 /* --- divider ---------------------------------------------------------- */
 
-/* Part opener: an oversized number behind the part's title. */
+/* Part opener: an oversized number in the corner the title never reaches.
+   The corner is what keeps a heading of any length readable, and between the
+   two the heading is what the room reads. */
 .divider .ghost {
   position: absolute;
   right: var(--pad);
-  top: 180px;
+  bottom: 60px;
   font-family: var(--font-head);
   font-weight: var(--head-weight);
   font-size: 420px;
@@ -203,47 +205,41 @@
   opacity: 0.16;
 }
 
+/* The number sits in the bottom right corner, so the title keeps the left
+   1120 of the field and starts high enough that three lines still clear the
+   lede anchored to the foot. The size is capped rather than taken from the
+   direction: at the 168px the paper directions set, a three-word heading
+   takes a third line and lands on the lede. */
 .divider .slide-title {
-  top: 420px;
-  font-size: var(--type-display);
+  top: 300px;
+  max-width: 1120px;
+  font-size: min(var(--type-display), 152px);
   letter-spacing: var(--display-ls);
 }
 
+/* Anchored to the foot rather than to the title: a two-line title otherwise
+   grows down into it. */
 .divider .lede {
   position: absolute;
   left: var(--pad);
-  top: 720px;
+  bottom: 196px;
   margin: 0;
-  width: 1180px;
+  width: 1160px;
   font-size: var(--type-lede);
   line-height: 1.4;
   color: var(--dim);
 }
 
-/* This divider has a two-line question; keep its lede clear of the title. */
+/* This divider has a two-line question, which the smaller size keeps to two. */
 .mechanics-divider .slide-title {
-  top: 400px;
-  max-width: 1320px;
   font-size: 86px;
   line-height: 1.04;
 }
 
-.mechanics-divider .lede {
-  top: 680px;
-  width: 1260px;
-}
-
 /* The extensions chapter has a long heading and a deliberately short deck. */
 .extensions-divider .slide-title {
-  top: 410px;
-  max-width: 1320px;
   font-size: 88px;
   line-height: 1.04;
-}
-
-.extensions-divider .lede {
-  top: 680px;
-  width: 1320px;
 }
 
 /* --- statement -------------------------------------------------------- */
@@ -312,28 +308,34 @@
 }
 
 /* On its own the stack holds the slide's field; inside a statement it
-   follows the sentence in flow. The low variant leaves room for a line of
-   names above it. */
+   follows the sentence in flow. */
 .slide > .stack {
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 372px;
 }
 
+/* Lines read after a row of names, so they start below it. */
 .slide > .stack.low {
-  top: 620px;
+  top: calc(var(--band-top) + 248px);
+  transform: none;
 }
 
 /* Lines read after a pair of large figures, so they start below them. */
 .slide > .stack.after-figures {
-  top: 740px;
+  top: calc(var(--band-top) + 420px);
+  transform: none;
   gap: 20px;
   font-size: 30px;
 }
 
+/* Inside a statement the stack is laid out in flow, under the sentence, so
+   it takes neither the band's centre line nor the translation that holds
+   it: both belong to the absolutely placed variant above. */
 .statement > .stack {
-  position: static;
+  position: relative;
+  top: auto;
+  transform: none;
   font-size: 42px;
 }
 
@@ -347,7 +349,7 @@
   position: absolute;
   left: calc(var(--pad) - 4px);
   right: var(--pad);
-  top: 372px;
+  top: var(--band-top);
   margin: 0;
   font-family: var(--font-head);
   font-weight: var(--head-weight);
@@ -367,7 +369,6 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 372px;
   display: flex;
   flex-direction: column;
   gap: var(--gap-size);
@@ -379,7 +380,9 @@
 
 .rows li {
   display: grid;
-  grid-template-columns: 120px 460px minmax(0, 1fr) 220px;
+  /* The first column carries a number on most slides and a project name on
+     some, so it grows to the widest one instead of clipping into the heading. */
+  grid-template-columns: minmax(120px, max-content) 460px minmax(0, 1fr) 220px;
   gap: 40px;
   align-items: baseline;
   padding: 44px 48px;
@@ -438,13 +441,13 @@
 
 /* A row list without the verdict column. */
 .rows.plain li {
-  grid-template-columns: 120px 460px minmax(0, 1fr);
+  grid-template-columns: minmax(120px, max-content) 460px minmax(0, 1fr);
 }
 
 /* Six rows and up: the field holds them only at this height, which is why
    the type here is smaller than anywhere else on a slide. */
 .rows.compact li {
-  grid-template-columns: 100px 560px minmax(0, 1fr);
+  grid-template-columns: minmax(100px, max-content) 560px minmax(0, 1fr);
   padding: 22px 48px;
 }
 
@@ -463,32 +466,35 @@
 /* Four claims as a two-by-two field: each gets room for a heading, a
    sentence and its source, which four stacked rows cannot give. */
 .rows.cards {
-  top: 336px;
-  bottom: 150px;
+  top: 236px;
+  bottom: 160px;
+  transform: none;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--gap-size);
+  /* Capped: the paper directions set a 20-24px gap, which on two rows of
+     cards is height the field does not have. */
+  gap: min(var(--gap-size), 10px);
 }
 
 .rows.cards li {
   display: block;
-  padding: 24px 30px;
+  padding: 16px 30px;
 }
 
 .rows.cards .n {
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 6px;
   font-size: 32px;
 }
 
 .rows.cards h3 {
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   font-size: 32px;
 }
 
 .rows.cards p {
-  font-size: 24px;
-  line-height: 1.35;
+  font-size: 21px;
+  line-height: 1.3;
   color: var(--dim);
 }
 
@@ -513,7 +519,6 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 372px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 96px;
@@ -566,8 +571,8 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 340px;
-  bottom: 120px;
+  top: var(--band-top);
+  bottom: var(--band-bottom);
   display: none;
   padding: 36px 44px;
   background: var(--panel);
@@ -654,7 +659,6 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 372px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 80px;
@@ -697,7 +701,6 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 372px;
   border-collapse: collapse;
   width: calc(var(--stage-w) - 2 * var(--pad));
   font-size: var(--type-body);
@@ -744,8 +747,8 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 340px;
-  bottom: 276px;
+  top: var(--band-top);
+  bottom: 320px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 26px 40px;
@@ -836,7 +839,7 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  bottom: 150px;
+  bottom: 168px;
   margin: 0;
   padding-top: 20px;
   border-top: 1px solid var(--rule);
@@ -855,8 +858,8 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  bottom: 120px;
-  min-height: 150px;
+  bottom: 168px;
+  min-height: 132px;
   margin: 0;
   padding-top: 20px;
   border-top: 1px solid var(--rule);
@@ -865,8 +868,17 @@
   color: var(--ink);
 }
 
+/* A hovered note reads as a preview and recedes; a clicked one is the
+   slide's statement and keeps the full ink. */
+.detail[data-preview] {
+  color: var(--dim);
+}
+
+/* The prompt for an empty detail line is written in the slide markup, where
+   the rest of the deck's Russian is, rather than in this stylesheet: a
+   translation of the deck should not have to touch the layout. */
 .detail:empty::before {
-  content: 'Нажмите на проект — здесь появится его судьба';
+  content: attr(data-empty);
   color: var(--faint);
 }
 
@@ -959,7 +971,7 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 300px;
+  top: var(--band-top);
 }
 
 .timeline .scale {
@@ -1012,8 +1024,8 @@
   position: static;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin: 24px 0 0;
+  gap: 4px;
+  margin: 16px 0 0;
   padding: 0;
   list-style: none;
   background: none;
@@ -1046,25 +1058,6 @@
 .timeline .who:hover,
 .timeline li[data-open] .who {
   color: var(--accent);
-}
-
-/* Hover tip: the one-line version of the note, for reading the row without
-   committing the detail line to it. */
-.timeline .who[data-tip]:hover::after {
-  content: attr(data-tip);
-  position: absolute;
-  left: 0;
-  top: 40px;
-  z-index: 2;
-  width: 560px;
-  padding: 16px 20px;
-  background: var(--panel);
-  border: 1px solid var(--accent);
-  font-family: var(--font-body);
-  font-size: var(--type-min);
-  line-height: 1.4;
-  color: var(--ink);
-  white-space: normal;
 }
 
 /* The bar itself: --at and --span are set per row, in track pixels. */
@@ -1121,12 +1114,15 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 372px;
   margin: 0;
   padding: 40px 48px;
   background: var(--panel);
-  border: 1px solid var(--panel-border);
+  border: 1px solid var(--rule);
   font-family: var(--font-mono);
+  /* JetBrains Mono ligates -> into an arrow, which is wrong on a slide whose
+     subject is PHP source: the operator has to read as the two characters
+     the audience types. */
+  font-variant-ligatures: none;
   font-size: var(--type-body);
   line-height: 1.5;
   color: var(--ink);
@@ -1142,12 +1138,35 @@
   color: var(--accent);
 }
 
+/* Syntax colouring, written by js/highlight.js into plates marked
+   data-lang="php". A variable keeps the body ink: it is the commonest token
+   in PHP, and colouring it would tint the whole plate. */
+.plate .tok-key {
+  color: var(--code-key);
+}
+
+.plate .tok-fn {
+  color: var(--code-fn);
+}
+
+.plate .tok-str,
+.plate .tok-num {
+  color: var(--code-lit);
+}
+
+.plate .tok-attr {
+  color: var(--code-attr);
+}
+
+.plate .tok-com {
+  color: var(--faint);
+}
+
 /* Source beside its SSA form: both plates share the normal code baseline. */
 .code-compare {
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 372px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--gap-size);
@@ -1165,7 +1184,6 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 390px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr) 58px) minmax(0, 1.25fr);
   align-items: stretch;
@@ -1216,8 +1234,8 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 360px;
-  bottom: 154px;
+  top: var(--band-top);
+  bottom: var(--band-bottom);
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
@@ -1264,7 +1282,6 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 354px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
@@ -1299,7 +1316,6 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 370px;
   display: grid;
   grid-template-columns: 3fr 1fr;
   gap: 18px;
@@ -1322,7 +1338,6 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: 352px;
   display: grid;
   grid-template-columns: 1.05fr 1.4fr;
   gap: 44px;
@@ -1348,3 +1363,46 @@
 .profile-legend div { display: grid; grid-template-columns: 18px 1fr auto; gap: 14px; align-items: center; font-size: 23px; }
 .profile-legend i { width: 18px; height: 18px; }
 .profile-legend b { font-family: var(--font-mono); font-weight: 500; color: var(--dim); }
+
+/* --- vertical rhythm -------------------------------------------------- */
+
+/* The body of a slide is centred on the band between the title and the
+   closing line: most bodies are shorter than the field, and the space they
+   leave is split above and below rather than gathered at the foot. Height
+   stays automatic, so the centre line is held by a translation rather than by
+   a stretched box.
+
+   Written through :where(), which has no specificity at all: any rule below
+   that names a body outranks it, whatever the order in this file. That is
+   what makes the default safe — a layout with geometry of its own takes it
+   without having to win a tie.
+
+   The contract for such a layout: a body that declares its own `top`
+   declares `transform: none` beside it, or it is drawn half its height above
+   where it says it is. `player/tools/sweep-layout.mjs` catches the ones that
+   collide; the rest is this line. */
+:where(.slide) > :where(.rows, .columns, .figures, .table, .plate, .code-compare,
+    .pipeline, .stack, .ratio-field, .mode-compare, .work-profile) {
+  top: var(--band-mid);
+  transform: translateY(-50%);
+}
+
+/* Two bodies on one slide are placed against each other and keep the band's
+   top edge: centring each of them independently would overlap them. */
+.slide:has(.stack.after-figures) > .figures,
+.slide:has(.bars) > .table {
+  top: var(--band-top);
+  transform: none;
+}
+
+/* A line under the body shortens the field: --band-bottom describes the
+   ground under the closing note, and centring against it would put the body
+   below the middle of the space it actually has. The two figures are the top
+   edges those lines reach — .closing at two lines, .detail at its minimum. */
+.slide:has(.closing) {
+  --band-mid: calc((var(--band-top) + 805px) / 2);
+}
+
+.slide:has(.detail) {
+  --band-mid: calc((var(--band-top) + 780px) / 2);
+}

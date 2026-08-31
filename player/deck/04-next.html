@@ -37,7 +37,7 @@
   data-speaker-notes="Это принципиальная граница AOT. Имя переменной, функции, класса или метода может прийти из данных. eval создаёт новый PHP-код уже после выпуска бинарника. Такой код нельзя заранее включить в граф программы: его надо запретить или передать интерпретатору.">
   <div class="top"><span><span class="part">Динамика</span> Код неизвестен заранее</span><span class="count"></span></div>
   <h2 class="slide-title">Код появляется при исполнении</h2>
-  <pre class="plate">$$name = 42;
+  <pre class="plate" data-lang="php">$$name = 42;
 $result = $function($argument);
 $object = new $class();
 $object->$method();
@@ -129,7 +129,7 @@ eval($source);</pre>
   data-speaker-notes="TypePHP использует компиляцию не только для скорости чисел. std::array, vector, map и ordered_map несут тип элементов, которого PHP-массив не имеет. Immutable — compile-time контракт, похожий на C++ const: компилятор запрещает запись через this или параметр, но не генерирует wrapper, Zend metadata или runtime branch. Attributes Getter, Setter, With, Constructor, Printer и Arrayable генерируют методы из свойств. Есть и специальные функции any, refval, objval, expected и unexpected. Это уже собственная compile-time семантика поверх PHP.">
   <div class="top"><span><span class="part">TypePHP</span> Compile time</span><span class="count"></span></div>
   <h2 class="slide-title">Контракты можно стереть до runtime</h2>
-  <pre class="plate"><span class="hi">#[Immutable]</span>
+  <pre class="plate" data-lang="php"><span class="hi">#[Immutable]</span>
 public function name(): string {
     return $this->name;
 }
@@ -147,7 +147,7 @@ function inspect(<span class="hi">#[Immutable]</span> User $user): string {
   data-speaker-notes="Это настоящий синтаксис elephc, а не псевдокод. ptr берёт адрес локальной переменной, ptr_get читает значение через указатель. buffer создаёт непрерывный типизированный массив вместо PHP HashTable. packed class задаёт плоскую запись с известными при компиляции смещениями полей. extern объявляет функцию C ABI — здесь системный write. Флаг strict-php все эти расширения запрещает, а файлы lfc включают их всегда. Поэтому демонстрация DOOM важна как доказательство зрелости кодогенератора и рантайма, но не как доказательство совместимости произвольного PHP: горячие структуры используют buffer и packed class, SDL вызывается через extern.">
   <div class="top"><span><span class="part">elephc</span> Не только PHP</span><span class="count"></span></div>
   <h2 class="slide-title">elephc добавляет системные примитивы</h2>
-  <pre class="plate">$x = 42;
+  <pre class="plate" data-lang="php">$x = 42;
 $p = <span class="hi">ptr</span>($x);
 echo ptr_get($p);                 <span class="out">// 42</span>
 
@@ -163,7 +163,7 @@ $xs[0] = 10;                     <span class="out">// не PHP-массив</spa
   data-speaker-notes="KPHP расширяет PHP на другом уровне. fork и wait выглядят как обычные функции и имеют синхронный polyfill для PHP, но компилятор превращает их в green-thread coroutine: пока запрос ждёт сеть, выполняется другая работа. Job workers выносят CPU-задачу в отдельный процесс и передают запрос и ответ через заранее выделенную shared memory. Аннотации добавляют проверяемые контракты: immutable class, checked exceptions, pure function, should-not-throw. Это не переносимые возможности Zend — они осмыслены собственным сервером и runtime KPHP.">
   <div class="top"><span><span class="part">KPHP</span> Свой backend runtime</span><span class="count"></span></div>
   <h2 class="slide-title">PHP получает coroutines и workers</h2>
-  <pre class="plate">$userFuture = <span class="hi">fork</span>(loadUser($userId));
+  <pre class="plate" data-lang="php">$userFuture = <span class="hi">fork</span>(loadUser($userId));
 $fingerprint = calculateFingerprint();
 $user = <span class="hi">wait</span>($userFuture);
 
@@ -255,7 +255,7 @@ return tuple($user, $fingerprint);
   <div class="top"><span><span class="part">Оптимизация</span> Static Single Assignment</span><span class="count"></span></div>
   <h2 class="slide-title">Одно имя — одно определение</h2>
   <div class="code-compare">
-    <pre class="plate">$x = 1;
+    <pre class="plate" data-lang="php">$x = 1;
 if ($flag) {
     $x = 2;
 }
@@ -286,7 +286,7 @@ echo x₃ + 1</pre>
   data-speaker-notes="В PHP результат сложения двух int при переполнении становится float. В C++ знаковое переполнение — неопределённое поведение; простая машинная инструкция не является корректной заменой. Даже доказанный входной тип ещё не доказывает тип результата.">
   <div class="top"><span><span class="part">Арифметика</span> int → float</span><span class="count"></span></div>
   <h2 class="slide-title">Сумма двух int может стать float</h2>
-  <pre class="plate"><span class="out">$x = PHP_INT_MAX;</span>
+  <pre class="plate" data-lang="php"><span class="out">$x = PHP_INT_MAX;</span>
 $x = $x + 1;
 
 <span class="hi">// PHP: float</span>
@@ -312,7 +312,7 @@ $x = $x + 1;
   data-speaker-notes="Сначала показываем исходный PHP, а уже на следующем слайде — машинный механизм. Внешне это один оператор стрелки, но компилятору доступны разные сведения: final закрывает наследование, интерфейс требует сопоставления с конкретным классом, а динамическое имя появляется только в рантайме.">
   <div class="top"><span><span class="part">Методы</span> Исходный код</span><span class="count"></span></div>
   <h2 class="slide-title">Четыре формы вызова метода</h2>
-  <pre class="plate">$final->run();        <span class="out">// final class</span>
+  <pre class="plate" data-lang="php">$final->run();        <span class="out">// final class</span>
 $object->run();       <span class="out">// обычный класс</span>
 $service->run();      <span class="out">// переменная типа Interface</span>
 $object->$method();   <span class="hi">// имя известно только в рантайме</span></pre>
@@ -481,7 +481,7 @@ h = php::toInt(((((((h) * (31L))) + (i))) &amp; (1073741823L)));</pre>
   data-speaker-notes="Последний слайд блока — и он же обратная сторона слайда про 44 раза. Семь строк: единица, шестьдесят четыре удвоения. PHP отвечает 1,8e19, потому что при переполнении int становится float. TypePHP с native_types отвечает 0 — это тот самый int64_t, за который получен паритет с C, увиденный со стороны ответа. Расхождение заявлено самим проектом, дословно: Native std::int overflow and integer division behavior — Intentional Rule — Native numeric types trade PHP compatibility for performance and C++ storage. Цена названа теми, кто её берёт. А elephc отвечает тем же числом с минусом, и это уже дефект: их сайт обещает промоцию в double. Про причину скажу честно, что она выведена, а не снята: их открытый issue 548 описывает для операторов сравнения, что float в коробке Mixed приводится через cvttsd2si и на x86-64 даёт INT64_MIN; арифметика нашего случая сходится с этой историей точно, но IR именно этого кейса мы не смотрели. Наверх не сообщали.">
   <div class="top"><span><span class="part">Наш замер</span> Семантика</span><span class="count"></span></div>
   <h2 class="slide-title">Одна программа — три ответа</h2>
-  <pre class="plate">$h = 1;
+  <pre class="plate" data-lang="php">$h = 1;
 for ($i = 1; $i &lt;= 64; $i++) { $h = $h * 2; }
 
 <span class="out">PHP 8.4                  1.844674407371E+19</span>
@@ -495,7 +495,7 @@ for ($i = 1; $i &lt;= 64; $i++) { $h = $h * 2; }
   data-speaker-notes="Один и тот же минимальный цикл используется для разбора штатного JIT, пилота ext/mlir и варианта на C. Массив содержит 2000 целых, обход без ключа, тело только суммирует элементы. Именно эта узость делает результат объяснимым и одновременно ограничивает вывод.">
   <div class="top"><span><span class="part">Производительность</span> Исходный код</span><span class="count"></span></div>
   <h2 class="slide-title">Цикл, который измеряли</h2>
-  <pre class="plate">$sum = 0;
+  <pre class="plate" data-lang="php">$sum = 0;
 
 foreach ($array as $value) {
     $sum += $value;

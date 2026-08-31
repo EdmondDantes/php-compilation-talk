@@ -17,6 +17,9 @@ buy, what they cost, and whether to expect one in production.
 - `mock/css/deck.css` — slide layouts built on those tokens.
 - `mock/js/deck-stage.js` — the `<deck-stage>` element: scaling,
   navigation, thumbnail rail, speaker notes, print.
+- `player/tools/sweep-layout.mjs` — drives a headless Chrome over the whole
+  deck and reports any two pieces of text that collide, or anything that
+  leaves the 1920x1080 field. Run it after touching `player/css/`.
 - `design/*.dc.html` — design-direction artboards (Poster, Terminal,
   Blueprint, Editorial). `design/canvas.json` lays them out.
   `design/php-compilation-deck-directions.html` is the generated,

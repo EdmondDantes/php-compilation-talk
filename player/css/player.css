@@ -143,12 +143,13 @@ body[data-script='yes'] .control .prompter {
 
 /* --- theme menu ------------------------------------------------------- */
 
-/* Top right, out of the slide's field: the look is chosen once before the
-   talk, so it does not belong next to the controls used during it. */
+/* Bottom left, diagonally away from the controls used during the talk: the
+   look is chosen once before it. The top right corner belongs to the slide's
+   own running head, which carries the slide number there. */
 .themes {
   position: absolute;
-  right: calc(var(--gutter-x, 0px) + 28px);
-  top: calc(var(--gutter-y, 0px) + 22px);
+  left: calc(var(--gutter-x, 0px) + 28px);
+  bottom: calc(var(--gutter-y, 0px) + 22px);
   font-family: var(--font-mono);
   opacity: 1;
   transition: opacity 200ms ease-out;
@@ -159,8 +160,11 @@ body[data-idle='yes'] .themes {
   pointer-events: none;
 }
 
+/* The prompter panel occupies the same corner and is drawn over it, so the
+   menu is taken away rather than left as a target that cannot be hit. */
 body[data-overview='yes'] .themes,
 body[data-blackout='yes'] .themes,
+body[data-script='yes'] .themes,
 body[data-mode='presenter'] .themes {
   display: none;
 }
@@ -203,8 +207,8 @@ body[data-mode='presenter'] .themes {
 .themes .menu {
   display: none;
   position: absolute;
-  right: 0;
-  top: calc(100% + 6px);
+  left: 0;
+  bottom: calc(100% + 6px);
   min-width: 100%;
   margin: 0;
   padding: 0;
@@ -245,15 +249,17 @@ body[data-mode='presenter'] .themes {
 /* --- prompter --------------------------------------------------------- */
 
 /* The speaker's own text, on the same screen as the slide: a talk given
-   from one machine has no second monitor for the presenter window. */
+   from one machine has no second monitor for the presenter window. Held to
+   the slide's own edges — --gutter-* is the letterbox the player measures —
+   so on a window that is not 16:9 it does not spill into the black bars. */
 .script {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: var(--gutter-x, 0px);
+  right: var(--gutter-x, 0px);
+  bottom: var(--gutter-y, 0px);
   display: none;
-  max-height: 34vh;
-  padding: 24px 32px 32px;
+  max-height: 30vh;
+  padding: 16px 32px 26px;
   background: var(--panel);
   border-top: 1px solid var(--accent);
   overflow-y: auto;
@@ -268,10 +274,12 @@ body[data-overview='yes'] .script {
   display: none;
 }
 
-.script::before {
-  content: 'Что говорить';
-  display: block;
-  margin-bottom: 12px;
+.script .bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 10px;
   font-family: var(--font-mono);
   font-size: 13px;
   letter-spacing: 0.18em;
@@ -279,22 +287,50 @@ body[data-overview='yes'] .script {
   color: var(--accent);
 }
 
+/* The panel covers the foot of the slide, so it carries its own way out: the
+   // button that opened it is off in the corner and fades with the cursor. */
+.script .close {
+  padding: 4px 10px;
+  background: none;
+  border: 1px solid var(--rule);
+  font: inherit;
+  color: var(--faint);
+  cursor: pointer;
+  transition: color 120ms ease-out, border-color 120ms ease-out;
+}
+
+.script .close:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .script p {
   margin: 0;
   max-width: 100ch;
   font-size: 24px;
-  line-height: 1.55;
+  line-height: 1.5;
   color: var(--ink);
 }
 
+/* Placeholder text comes from the markup, so the stylesheet carries no
+   language of its own. */
 .script p:empty::before {
-  content: 'Заметок к этому слайду нет';
+  content: attr(data-empty);
   color: var(--faint);
 }
 
-/* The bar rides above the panel instead of hiding behind it. */
+/* The bar rides above the panel instead of hiding behind it. --script-h is
+   the panel's measured height, written by the player: the notes run from one
+   line to a dozen, so the offset is only right when it is measured. */
 body[data-script='yes'] .control {
-  bottom: calc(34vh + 32px);
+  bottom: calc(var(--gutter-y, 0px) + var(--script-h, 30vh) + 20px);
+}
+
+/* While the prompter is open the pointer usually rests, and the control is
+   the only other way back out of it. */
+body[data-script='yes'][data-idle='yes'] .control {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* --- progress --------------------------------------------------------- */
@@ -455,7 +491,7 @@ body[data-mode='presenter'] .progress {
 }
 
 .presenter .notes:empty::before {
-  content: 'Заметок нет';
+  content: attr(data-empty);
   color: var(--faint);
 }
 
@@ -474,11 +510,18 @@ body[data-mode='presenter'] .progress {
   inset: 0;
   display: none;
   place-items: center;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  background: color-mix(in srgb, var(--bg) 97%, transparent);
 }
 
 body[data-help='yes'] .help {
   display: grid;
+}
+
+.help .card {
+  padding: 40px 56px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  font-size: 20px;
 }
 
 .help dl {
@@ -486,10 +529,17 @@ body[data-help='yes'] .help {
   grid-template-columns: auto auto;
   gap: 14px 32px;
   margin: 0;
-  padding: 40px 56px;
-  background: var(--panel);
-  border: 1px solid var(--rule);
-  font-size: 20px;
+}
+
+.help .hint {
+  margin: 22px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
 }
 
 .help dt {
@@ -517,6 +567,7 @@ body[data-help='yes'] .help {
 
   .progress,
   .control,
+  .themes,
   .script,
   .overview,
   .presenter,

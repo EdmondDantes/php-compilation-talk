@@ -22,6 +22,17 @@
   --type-note: 26px;
 
   --step: 48px;
+
+  /* The band a slide's body occupies: below the title, above the closing
+     note. Bodies are centred on --band-mid, so a short body sits in the
+     optical middle of the field instead of hanging under the title.
+
+     --band-top clears a title of two lines: the title starts at 108px and
+     --type-h2 reaches 96px in the paper directions, so its second line ends
+     at 300px. */
+  --band-top: 316px;
+  --band-bottom: 148px;
+  --band-mid: calc((var(--band-top) + var(--stage-h) - var(--band-bottom)) / 2);
 }
 
 /* Терминал: dark ground, amber accent, monospaced headings. */
@@ -39,6 +50,15 @@
   --rule-accent: transparent;
   --ok: #4ec9b0;
   --warn: #d97757;
+
+  /* Syntax colours stay inside the direction's three hues: the accent marks
+     keywords, its lighter shade marks calls, the ok hue marks literals. A
+     variable keeps the body ink, because in PHP it is the commonest token
+     and colouring it would tint the whole plate. */
+  --code-key: #ffb000;
+  --code-fn: #ffcf5c;
+  --code-lit: #4ec9b0;
+  --code-attr: #d97757;
 
   --font-head: 'JetBrains Mono', ui-monospace, monospace;
   --font-body: 'IBM Plex Sans', system-ui, sans-serif;
@@ -76,6 +96,11 @@
   --rule-accent: #5980a6;
   --ok: #416180;
   --warn: #8a5a2b;
+
+  --code-key: #2f4a63;
+  --code-fn: #5980a6;
+  --code-lit: #3f6b4e;
+  --code-attr: #8a5a2b;
 
   --font-head: 'Fira Sans Condensed', system-ui, sans-serif;
   --font-body: 'Fira Sans', system-ui, sans-serif;
@@ -118,6 +143,11 @@
   --rule-accent: #777bb4;
   --ok: #2f7d5f;
   --warn: #b4581f;
+
+  --code-key: #4f5b93;
+  --code-fn: #777bb4;
+  --code-lit: #2f7d5f;
+  --code-attr: #b4581f;
 
   --font-head: 'Fira Sans Condensed', system-ui, sans-serif;
   --font-body: 'Fira Sans', system-ui, sans-serif;

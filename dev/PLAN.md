@@ -1,6 +1,6 @@
 # PLAN
 
-Updated: 2026-08-30 · Active: S4
+Updated: 2026-08-31 · Active: S4
 
 Destination: a 40–45 minute talk that answers one question — why PHP
 compilers keep getting written, and whether a working developer should
@@ -111,3 +111,18 @@ enough to present from.
       notes and a talk clock, print to one slide per page.
 - [ ] S6.2 Publish it as a GitHub Pages site.
 - [ ] S6.3 Move the real deck into it once S4 has written the slides.
+- [x] S6.4 Fix the chrome and the vertical rhythm after a full read at
+      1920x1080: head lifted, bodies centred on a band, five divider
+      collisions and two detail/note collisions removed, the prompter panel
+      given a close button and the stage's own edges, the timeline tooltip
+      replaced by the detail line, PHP plates coloured by `js/highlight.js`.
+      Verified by `player/tools/sweep-layout.mjs` across 62 slides x 3
+      directions: 0 collisions, nothing off the field. Critic ran over the
+      change and found twelve defects, of which the cascade tie that broke
+      `.rows.cards` was confirmed by measurement; ten are fixed, two are
+      recorded below.
+- [ ] S6.5 Two findings left from the S6.4 review: the fixed offsets that hold
+      a second body clear of the first carry about one line of slack
+      (`.stack.after-figures`, `.stack.low`, `.timeline`), and the player's own
+      chrome is in physical pixels while the stage scales, so the prompter text
+      reads half-size on a 4K screen.

@@ -126,6 +126,7 @@
 
     /** Wires the document up and shows the first slide. */
     start() {
+      highlightPhp(this.root);
       this.numberSlides();
       this.applyTheme(this.theme);
       this.fit();
@@ -258,6 +259,7 @@
 
       if (this.script) {
         this.script.textContent = this.slides[this.index].dataset.speakerNotes || '';
+        this.measureScript();
       }
 
       if (this.isPresenter) {
@@ -335,6 +337,10 @@
 
       if (flag === 'overview' && !on) {
         this.buildOverview();
+      }
+
+      if (flag === 'script' && this.scriptPanel) {
+        this.measureScript();
       }
     }
 
@@ -415,6 +421,7 @@
       }
 
       for (const detail of this.root.querySelectorAll('.detail')) {
+        delete detail.dataset.preview;
         detail.replaceChildren();
       }
 
@@ -792,6 +799,58 @@
           this.openNote(source);
         }
       });
+
+      /* Hovering a name shows its note in the slide's own detail line. An
+         overlay next to the cursor would cover the rows underneath, which on
+         the timeline are the rows being compared. */
+      this.root.addEventListener('mouseover', (event) => {
+        const source = event.target.closest('.chip, .timeline .who');
+
+        if (source) {
+          this.previewNote(source);
+        }
+      });
+
+      this.root.addEventListener('mouseout', (event) => {
+        const source = event.target.closest('.chip, .timeline .who');
+
+        if (source) {
+          this.clearPreview(source.closest('.slide'));
+        }
+      });
+    }
+
+    /**
+     * Writes a hovered element's note into the detail line, as a preview: a
+     * note pinned by a click stays until the click that pinned it is undone.
+     *
+     * @param {Element} source a chip, or a timeline row's name
+     */
+    previewNote(source) {
+      const slide = source.closest('.slide');
+      const detail = slide.querySelector('.detail');
+
+      if (!detail || slide.querySelector('[data-open]')) {
+        return;
+      }
+
+      const holder = source.closest('.chip, li');
+      detail.dataset.preview = '';
+      detail.replaceChildren();
+
+      const name = document.createElement('b');
+      name.textContent = `${source.textContent.trim()} — `;
+      detail.append(name, source.dataset.tip || holder.dataset.note || '');
+    }
+
+    /** Drops a preview when the pointer leaves; a pinned note is untouched. */
+    clearPreview(slide) {
+      const detail = slide && slide.querySelector('.detail[data-preview]');
+
+      if (detail) {
+        delete detail.dataset.preview;
+        detail.replaceChildren();
+      }
     }
 
     /**
@@ -864,6 +923,7 @@
       }
 
       holder.setAttribute('data-open', '');
+      delete detail.dataset.preview;
       detail.replaceChildren();
 
       const name = document.createElement('b');
@@ -918,7 +978,27 @@
       control.querySelector('.prompter').addEventListener('click', () => this.toggle('script'));
       this.buildThemeMenu();
       this.counter = control.querySelector('.at');
-      this.script = document.querySelector('.script p');
+      this.scriptPanel = document.querySelector('.script');
+      this.script = this.scriptPanel.querySelector('p');
+      this.scriptPanel.querySelector('.close')
+        .addEventListener('click', () => this.toggle('script'));
+
+      /* The control sits above the panel, and the panel is as tall as the
+         notes for the current slide: its height has to be measured rather
+         than assumed. The observer is the safety net for a resized window;
+         opening the panel and changing slide measure it themselves, because
+         the observer fires a frame late and the control would jump. */
+      new ResizeObserver(() => this.measureScript()).observe(this.scriptPanel);
+    }
+
+    /**
+     * Writes the prompter panel's height, which is what lifts the control
+     * bar clear of it. Reads zero while the panel is hidden, which is
+     * correct: the control then sits at its own place.
+     */
+    measureScript() {
+      document.documentElement.style.setProperty(
+        '--script-h', `${Math.round(this.scriptPanel.offsetHeight)}px`);
     }
 
     /** Shows the pointer and hides it again once the deck sits still. */
@@ -983,7 +1063,11 @@
 
   const stage = document.querySelector('.stage');
 
+  /* Only a failure to load replaces the stage. A throw inside start() is a
+     defect in the player, and answering it by deleting the slides that did
+     load costs the talk and points the diagnosis at the wrong place. */
   loadParts(stage)
-    .then(() => new DeckPlayer(stage).start())
-    .catch((error) => reportLoadFailure(stage, error));
+    .then(
+      () => new DeckPlayer(stage).start(),
+      (error) => reportLoadFailure(stage, error));
 })();
