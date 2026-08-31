@@ -109,3 +109,15 @@ invisible in the rule itself.
 
 Cost: the contract between `top` and `transform` is held by a comment and by
 `player/tools/sweep-layout.mjs`, not by the language.
+
+## 2026-08-31 — The layout sweep covers the states a slide is left in
+
+Decided: `player/tools/sweep-layout.mjs` checks each slide three times — at
+rest, with its longest note pinned, and with a row's panel open — and in the
+expanded state compares only what is outside the opaque panel.
+
+Why: a note pinned by a click fills the detail line from its top edge, and the
+timeline's last two rows were under it in all three directions. The slide at
+rest is clean; the slide the room looks at for a minute was not.
+
+Cost: three passes over 62 slides in three directions, about twenty seconds.

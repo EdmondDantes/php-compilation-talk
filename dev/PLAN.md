@@ -121,8 +121,11 @@ enough to present from.
       change and found twelve defects, of which the cascade tie that broke
       `.rows.cards` was confirmed by measurement; ten are fixed, two are
       recorded below.
-- [ ] S6.5 Two findings left from the S6.4 review: the fixed offsets that hold
-      a second body clear of the first carry about one line of slack
-      (`.stack.after-figures`, `.stack.low`, `.timeline`), and the player's own
-      chrome is in physical pixels while the stage scales, so the prompter text
-      reads half-size on a 4K screen.
+- [ ] S6.5 Two findings left from the S6.4 review. The offsets that hold a
+      second body clear of the first are fixed numbers with measured slack:
+      47px between `.figures` and `.stack.after-figures`, whose lines are 35px,
+      so one added line of the figure's caption closes it; 131px between
+      `.names` and `.stack.low`, whose lines are 64px. And the player's own
+      chrome is in physical pixels while the stage scales, so on a 3840x2160
+      screen the prompter's 24px text reads half the size of the 30px slide
+      text beside it.

@@ -263,6 +263,20 @@ body[data-mode='presenter'] .themes {
   background: var(--panel);
   border-top: 1px solid var(--accent);
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+}
+
+.script::-webkit-scrollbar {
+  width: 8px;
+}
+
+.script::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.script::-webkit-scrollbar-thumb {
+  background: var(--rule);
 }
 
 body[data-script='yes'] .script {

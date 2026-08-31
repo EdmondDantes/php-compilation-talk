@@ -30,13 +30,39 @@ const TOLERANCE = 2;
 /** How long the deck is given to fetch its parts and lay them out, in ms. */
 const SETTLE_MS = 3500;
 
+/* A slide is checked in each of the states the room is shown it: at rest,
+   with a note pinned into the detail line by a click, and with a row's panel
+   open over the list. A pinned note fills the detail line from its top edge,
+   which is the space a body above it can be sitting in. */
+const STATES = ['rest', 'note', 'expand'];
+
 /** Runs in the page: collects text-bearing elements and compares them. */
 const SWEEP = `
-(() => {
+((state) => {
   const report = [];
 
   document.querySelectorAll('.stage .slide').forEach((slide, index) => {
     slide.setAttribute('data-current', '');
+
+    if (state === 'note') {
+      const sources = [...slide.querySelectorAll('.chip, .timeline .who')];
+      const longest = sources
+        .map((el) => [el, (el.closest('.chip, li').dataset.note || '').length])
+        .sort((a, b) => b[1] - a[1])[0];
+
+      if (longest && longest[1]) {
+        longest[0].click();
+      }
+    }
+
+    if (state === 'expand') {
+      const row = slide.querySelector('.rows li[data-more]');
+
+      if (row) {
+        row.click();
+      }
+    }
+
     const field = slide.getBoundingClientRect();
     const leaves = [];
 
@@ -68,12 +94,28 @@ const SWEEP = `
       });
     });
 
+    /* An open detail panel is opaque and covers the list it was opened from:
+       what it hides is hidden on purpose, and only the panel's own text and
+       what stays outside it are compared. */
+    const panel = slide.querySelector('.expand');
+    const covered = slide.dataset.expanded !== undefined
+      ? panel.getBoundingClientRect()
+      : null;
+    const visible = leaves.filter((leaf) => {
+      if (!covered || panel.contains(leaf.element)) {
+        return true;
+      }
+
+      return leaf.box.right <= covered.left || leaf.box.left >= covered.right
+        || leaf.box.bottom <= covered.top || leaf.box.top >= covered.bottom;
+    });
+
     const hits = [];
 
-    for (let a = 0; a < leaves.length; a++) {
-      for (let b = a + 1; b < leaves.length; b++) {
-        const one = leaves[a];
-        const other = leaves[b];
+    for (let a = 0; a < visible.length; a++) {
+      for (let b = a + 1; b < visible.length; b++) {
+        const one = visible[a];
+        const other = visible[b];
 
         if (one.element.contains(other.element) || other.element.contains(one.element)) {
           continue;
@@ -96,7 +138,7 @@ const SWEEP = `
 
     const escaped = [];
 
-    for (const leaf of leaves) {
+    for (const leaf of visible) {
       const past = Math.round(Math.max(
         field.top - leaf.box.top, leaf.box.bottom - field.bottom,
         field.left - leaf.box.left, leaf.box.right - field.right));
@@ -110,11 +152,27 @@ const SWEEP = `
       report.push({ slide: index + 1, label: slide.dataset.label || '', hits, escaped });
     }
 
+    /* Put the slide back: the next state starts from a slide at rest. */
+    const detail = slide.querySelector('.detail');
+
+    if (detail) {
+      detail.replaceChildren();
+    }
+
+    for (const open of slide.querySelectorAll('[data-open]')) {
+      open.removeAttribute('data-open');
+    }
+
+    if (slide.dataset.expanded !== undefined) {
+      delete slide.dataset.expanded;
+      slide.querySelector('.expand').replaceChildren();
+    }
+
     slide.removeAttribute('data-current');
   });
 
   return report;
-})()
+})
 `;
 
 /**
@@ -184,13 +242,14 @@ for (const theme of THEMES) {
     { expression: `document.documentElement.dataset.theme = ${JSON.stringify(theme)}` });
   await wait(400);
 
+  for (const state of STATES) {
   const { result } = await session.send('Runtime.evaluate',
-    { expression: SWEEP, returnByValue: true });
+    { expression: `${SWEEP}(${JSON.stringify(state)})`, returnByValue: true });
   const report = result.value;
   broken += report.length;
 
   for (const slide of report) {
-    console.log(`[${theme}] slide ${slide.slide} — ${slide.label}`);
+    console.log(`[${theme}/${state}] slide ${slide.slide} — ${slide.label}`);
 
     for (const hit of slide.hits) {
       console.log(`  collision ${hit.across}x${hit.down}px: `
@@ -201,12 +260,14 @@ for (const theme of THEMES) {
       console.log(`  off the field by ${escape.past}px: ${escape.name} "${escape.text}"`);
     }
   }
+  }
 }
 
 session.close();
 
 console.log(broken === 0
-  ? `clean in ${THEMES.join(', ')}: no collisions, nothing off the field`
+  ? `clean in ${THEMES.join(', ')} at ${STATES.join(', ')}: `
+    + 'no collisions, nothing off the field'
   : `${broken} slide(s) with problems`);
 
 process.exit(broken === 0 ? 0 : 1);

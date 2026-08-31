@@ -569,6 +569,9 @@
 
 .expand {
   position: absolute;
+  /* Above the dimming layer, which is generated last and would otherwise
+     cover the panel along with the list. */
+  z-index: 1;
   left: var(--pad);
   right: var(--pad);
   top: var(--band-top);
@@ -577,11 +580,23 @@
   padding: 36px 44px;
   background: var(--panel);
   border: 1px solid var(--accent);
+  box-shadow: 0 28px 72px -16px rgba(0, 0, 0, 0.55);
   overflow-y: auto;
 }
 
 .slide[data-expanded] .expand {
   display: block;
+}
+
+/* The list under the panel is dimmed and the panel is lifted off it: one
+   thing is read at a time, and the edge of the panel has to be findable
+   against a field of the same colour. */
+.slide[data-expanded]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg) 74%, transparent);
+  pointer-events: none;
 }
 
 .expand h4 {
@@ -740,6 +755,35 @@
 
 /* --- map -------------------------------------------------------------- */
 
+/* Boxes that scroll on a slide wear the same bar: the browser default is a
+   light grey slab that reads as a defect on a dark field, and its width
+   changes what the box holds. */
+.expand,
+.map {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
+}
+
+.expand::-webkit-scrollbar,
+.map::-webkit-scrollbar {
+  width: 8px;
+}
+
+.expand::-webkit-scrollbar-track,
+.map::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.expand::-webkit-scrollbar-thumb,
+.map::-webkit-scrollbar-thumb {
+  background: var(--rule);
+}
+
+.expand::-webkit-scrollbar-thumb:hover,
+.map::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
 /* Inventory of attempts, grouped by what they compile to. Every chip is a
    project; clicking one writes its fate into the panel below. Scrolls
    inside its own box — the list is longer than one field. */
@@ -754,8 +798,6 @@
   gap: 26px 40px;
   overflow-y: auto;
   padding-right: 16px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--rule) transparent;
 }
 
 /* A group that reads as one line across the whole field. */
@@ -858,7 +900,7 @@
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  bottom: 168px;
+  bottom: 158px;
   min-height: 132px;
   margin: 0;
   padding-top: 20px;
@@ -966,12 +1008,15 @@
 /* Twenty-four years across the field: a row per project, the bar spanning
    from its start to its death or to today. Positions are computed from the
    scale below — 2002 at the left edge of the track, 2026 at the right —
-   and written as inline left/width, so a date change means one number. */
+   and written as inline left/width, so a date change means one number.
+
+   Starts above the band: eleven rows and the detail line under them need
+   more height than a body that shares the field with a two-line title. */
 .timeline {
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  top: var(--band-top);
+  top: 268px;
 }
 
 .timeline .scale {
@@ -1034,7 +1079,9 @@
 .timeline li {
   display: block;
   position: relative;
-  height: 36px;
+  /* Eleven rows at this height end above the detail line, which a pinned
+     note fills from its top edge. */
+  height: 32px;
   padding: 0;
   background: none;
   border: 0;
