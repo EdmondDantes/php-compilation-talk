@@ -245,7 +245,7 @@
 <section class="slide" data-label="Абстракции переносятся в build time"
   data-speaker-notes="Вторая причина интереса к компиляции — она может оставить удобную декларативную модель автору, но удалить её механизм из runtime. DI показывает это особенно ясно. Слева разработчик описывает зависимости. На этапе сборки контейнер строит граф, проверяет отсутствующие сервисы и генерирует специализированный PHP-класс. В запросе уже не нужны reflection, сканирование или поиск конструктора: остаются прямые вызовы фабрик и обычный new. Symfony прямо пишет, что у autowiring нет performance penalty благодаря compiled container. Это почти нулевая, но не буквально нулевая цена: создание объектов и вызовы методов остаются.">
   <div class="top"><span><span class="part">Build time</span> Цена абстракции</span><span class="count"></span></div>
-  <h2 class="slide-title">Compiled DI удаляет reflection из runtime</h2>
+  <h2 class="slide-title">Как AOT-компилятор может улучшить программу?</h2>
   <div class="code-compare">
     <pre class="plate"><span class="out"># описание зависимостей</span>
 Checkout:
