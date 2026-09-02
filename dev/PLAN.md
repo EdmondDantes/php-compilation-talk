@@ -64,6 +64,16 @@ Goal: the deck exists end to end and runs in a browser.
 - [x] S4.5 Rebuild the post-landscape technical block by semantic
       obstacle: JIT speculation, int-to-float overflow, method dispatch,
       then performance. Implemented in `player/deck/04-next.html`.
+- [x] S4.6 Extend the opening visual sequence after the first spoken
+      rehearsal: add an AI crossroads illustration to the existing
+      uncertainty slide, add the new-language paradox and a visual map of
+      four non-agent language motives, and surface the Rust question where
+      it is first spoken. Extend the AI thesis into a three-slide arc: cheap
+      code, measured change cost, and the guardrails that contain complexity.
+      Replace the ranking table with four measurements of one language,
+      add a project-choice diagram, and connect the ratings discussion to
+      the empirical adoption evidence. Implemented in
+      `player/deck/00-intro.html`.
 
 ## S7. Our own measurement of TypePHP and elephc [done]
 
