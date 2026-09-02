@@ -1,92 +1,165 @@
 <!-- После карты проектов повествование идёт по препятствиям, а не по проектам. -->
 
-<section class="slide divider mechanics-divider" data-label="Задачи компиляции PHP"
-  data-speaker-notes="После карты проектов меняем оптику. Дальше не каталог компиляторов, а препятствия, на которых сравниваются их решения. Компилятору мало перевести синтаксис: он обязан сохранить наблюдаемое поведение PHP.">
-  <div class="top"><span><span class="part">Механика</span> Что мешает</span><span class="count"></span></div>
+<section class="slide divider compatibility-divider" data-label="Совместимость с PHP"
+  data-speaker-notes="После карты проектов меняем оптику. Дальше вопрос не в том, способен ли компилятор выпустить машинный код, а в том, какую форму PHP-программы он способен принять и какое наблюдаемое поведение сохранить. Одни конструкции сохраняются буквально, другие уходят обратно в Zend или собственный интерпретатор, третьи запрещаются, а часть языка заменяется новым диалектом. Сначала разберём общие точки напряжения — арифметику, динамический код и массивы, — затем сравним границу у TypePHP, elephc и KPHP.">
+  <div class="top"><span><span class="part">Совместимость</span> Граница языка</span><span class="count"></span></div>
   <div class="ghost">02</div>
-  <h2 class="slide-title">Проблемы компиляции</h2>
-  <p class="lede">Сохранить арифметику и массивы PHP, обработать код, которого ещё нет.</p>
+  <h2 class="slide-title">Совместимость с PHP</h2>
+  <p class="lede">Что сохраняется буквально, что уходит в runtime, что приходится запретить.</p>
 </section>
 
-<section class="slide" data-label="Проблемы компиляции PHP"
-  data-speaker-notes="Четыре разных источника сложности. Арифметика PHP не совпадает с машинной; динамическое имя или код могут появиться только во время исполнения; foreach обязан сохранить семантику массива и ссылок; адрес метода зависит от класса и формы вызова. Не все четыре определяются только в runtime, но каждое мешает прямой механической трансляции PHP в машинный код.">
-  <div class="top"><span><span class="part">Механика</span> Четыре препятствия</span><span class="count"></span></div>
-  <h2 class="slide-title">Проблемы компиляции PHP</h2>
-  <ol class="rows plain compact tight">
-    <li><span class="n">01</span><h3>Целочисленная арифметика</h3><p>При переполнении результат операции с <b>int</b> становится <b>float</b>.</p></li>
-    <li><span class="n">02</span><h3>Динамические имена и код</h3><p><b>$$var</b>, имена функций и классов, <b>eval()</b> определяются только при исполнении.</p></li>
-    <li><span class="n">03</span><h3>Обход PHP-массива</h3><p><b>foreach</b> должен учитывать пустые ячейки, ссылки и изменение массива.</p></li>
-    <li><span class="n">04</span><h3>Вызов метода</h3><p>Способ вызова зависит от класса, интерфейса и формы имени метода.</p></li>
-  </ol>
-  <p class="note">// машинный код должен сохранить поведение исходной программы</p>
+<section class="slide" data-label="Переполнение int"
+  data-speaker-notes="Первая проблема видна в четырёх строках. На 64-битной платформе PHP_INT_MAX — последнее значение, которое помещается в int. При прибавлении единицы PHP не переходит к отрицательному числу: результат становится float. Компилятору недостаточно доказать, что оба операнда были целыми; он обязан проверить переполнение и сменить представление результата.">
+  <div class="top"><span><span class="part">Механика</span> Арифметика</span><span class="count"></span></div>
+  <h2 class="slide-title">При переполнении int становится float</h2>
+  <div class="problem-example">
+    <pre class="plate" data-lang="php">$a = PHP_INT_MAX;
+$b = $a + 1;
+
+var_dump($b);
+// float(9.2233720368548E+18)</pre>
+    <div class="obligation"><span>Компилятор обязан</span><p>обнаружить границу <b>int</b>, создать значение другого типа и сохранить правила PHP.</p></div>
+  </div>
+  <p class="note">// тип результата определяется не только типами операндов, но и их значениями</p>
+</section>
+
+<section class="slide" data-label="Динамические имена и код"
+  data-speaker-notes="Вторая проблема возникает до исполнения. Имя функции может прийти из запроса, имя класса — из конфигурации, а eval создаёт новый фрагмент программы после выпуска бинарника. У AOT-компилятора нет адреса вызова и нет тела функции. Конструкцию приходится запрещать или сохранять интерпретатор для таких участков.">
+  <div class="top"><span><span class="part">Механика</span> Код неизвестен заранее</span><span class="count"></span></div>
+  <h2 class="slide-title">Часть программы появляется при исполнении</h2>
+  <div class="problem-example">
+    <pre class="plate" data-lang="php">$handler = $_GET['handler'];
+$result = $handler($payload);
+
+$class = $config['class'];
+$object = new $class();
+
+eval($source);</pre>
+    <div class="obligation"><span>Компилятор обязан</span><p>запретить конструкцию либо передать этот участок интерпретатору.</p></div>
+  </div>
+  <p class="note">// при сборке неизвестны адрес вызова, класс объекта и сам текст eval()</p>
+</section>
+
+<section class="slide" data-label="Изменение массива в foreach"
+  data-speaker-notes="Третья проблема — PHP-массив во время обхода не обязан оставаться прежним. В этом примере удаляется ещё не посещённая ячейка, элементы доступны по ссылке, а в конце добавляется новая ячейка. Компилятор не может механически заменить такой foreach простым циклом по непрерывному буферу: он должен сохранить порядок обхода, пропуски, ссылки и правила изменения массива.">
+  <div class="top"><span><span class="part">Механика</span> PHP-массив</span><span class="count"></span></div>
+  <h2 class="slide-title">Массив может измениться во время foreach</h2>
+  <div class="problem-example">
+    <pre class="plate" data-lang="php">$items = [10, 20, 30];
+
+foreach ($items as $key =&gt; &amp;$value) {
+    if ($key === 0) unset($items[1]);
+    if ($key === 2) $items[] = 40;
+}</pre>
+    <div class="obligation"><span>Компилятор обязан</span><p>сохранить порядок обхода, пустые ячейки, ссылки и изменение контейнера.</p></div>
+  </div>
+  <p class="note">// foreach над PHP-массивом шире обычного цикла по непрерывному массиву</p>
+</section>
+
+<section class="slide" data-label="Вложенные функции в TypePHP"
+  data-speaker-notes="PHP разрешает объявить именованную функцию внутри другой функции. Важная деталь: inner появляется не при разборе файла, а только после вызова outer. До этого её нельзя вызвать; повторный вызов outer приведёт к попытке объявить inner ещё раз. Для TypePHP такая структура неудобна принципиально: компилятор заранее строит закрытый граф объявлений и поэтому запрещает функции и именованные классы внутри функций и методов. Решение — вынести функцию на верхний уровень или заменить её замыканием, если поддерживаемая семантика это допускает.">
+  <div class="top"><span><span class="part">TypePHP</span> Структура программы</span><span class="count"></span></div>
+  <h2 class="slide-title">Вложенная функция объявляется при вызове внешней</h2>
+  <div class="problem-example">
+    <pre class="plate" data-lang="php">function outer(): void {
+    function inner(): void {
+        echo 'ok';
+    }
+
+    inner();
+}
+
+outer();</pre>
+    <div class="obligation"><span>TypePHP требует</span><p>вынести именованную функцию на верхний уровень, чтобы граф объявлений был известен при сборке.</p></div>
+  </div>
+  <p class="note">// в PHP имя inner появляется только после исполнения outer()</p>
 </section>
 
 <section class="slide" data-label="Четыре подхода компиляции"
   data-speaker-notes="Названные проблемы можно принять по-разному. Штатный JIT компилирует горячую трассу внутри Zend и всегда имеет путь назад. KPHP переводит закрытую программу в C++ и поставляет собственный рантайм. TypePHP может собрать отдельный модуль в расширение обычного PHP. elephc и Manticore строят собственное IR и выпускают самостоятельный машинный код. Дальше смотрим, какие ограничения следуют из каждого выбора.">
   <div class="top"><span><span class="part">Проекты</span> Устройство систем</span><span class="count"></span></div>
   <h2 class="slide-title">Четыре подхода компиляции</h2>
-  <ol class="rows plain compact">
-    <li><span class="n">JIT</span><h3>PHP → трасса → машинный код</h3><p>Работает внутри Zend и всегда может вернуться в VM.</p></li>
-    <li><span class="n">KPHP</span><h3>PHP → C++ → бинарник</h3><p>Анализ всей программы и собственный рантайм.</p></li>
-    <li><span class="n">TypePHP</span><h3>PHP → C++ → расширение</h3><p>Скомпилированный модуль загружается в обычный PHP.</p></li>
-    <li><span class="n">AOT</span><h3>PHP → IR → машинный код</h3><p>elephc и Manticore не используют Zend при исполнении.</p></li>
-  </ol>
-</section>
-
-<section class="slide" data-label="Код появляется при исполнении"
-  data-speaker-notes="Это принципиальная граница AOT. Имя переменной, функции, класса или метода может прийти из данных. eval создаёт новый PHP-код уже после выпуска бинарника. Такой код нельзя заранее включить в граф программы: его надо запретить или передать интерпретатору.">
-  <div class="top"><span><span class="part">Динамика</span> Код неизвестен заранее</span><span class="count"></span></div>
-  <h2 class="slide-title">Динамическая природа</h2>
-  <pre class="plate" data-lang="php">$$name = 42;
-$result = $function($argument);
-$object = new $class();
-$object->$method();
-eval($source);</pre>
-  <p class="note">// AOT-компилятор должен запретить конструкцию или иметь интерпретатор</p>
+  <div class="compiler-tracks">
+    <div class="track-head"><span></span><span>Объём анализа</span><span></span><span>Промежуточная форма</span><span></span><span>Артефакт</span><span>Исполнение</span></div>
+    <div class="compiler-track">
+      <b>JIT</b><span>горячая трасса</span><i>→</i><span>Zend opcodes</span><i>→</i><span>машинный код</span><em class="zend">Zend VM + side exit</em>
+    </div>
+    <div class="compiler-track">
+      <b>KPHP</b><span>вся программа</span><i>→</i><span>C++</span><i>→</i><span>бинарник</span><em class="own">собственный runtime</em>
+    </div>
+    <div class="compiler-track">
+      <b>TypePHP</b><span>файл или модуль</span><i>→</i><span>C++</span><i>→</i><span>расширение .so</span><em class="zend">загружается в Zend</em>
+    </div>
+    <div class="compiler-track">
+      <b>AOT</b><span>программа</span><i>→</i><span>собственное IR</span><i>→</i><span>native-бинарник</span><em class="own">собственный runtime</em>
+    </div>
+  </div>
+  <p class="note">// JIT и TypePHP возвращаются в Zend · KPHP и самостоятельный AOT несут runtime с собой</p>
 </section>
 
 <section class="slide" data-label="Что происходит с динамическим кодом"
   data-speaker-notes="Здесь видно четыре разных решения одной задачи. JIT уже находится внутри Zend. TypePHP запрещает переменные переменные и оставляет поддерживаемые динамические вызовы движку. KPHP исключает eval, динамические имена и рефлексию из подмножества. elephc может встроить собственный интерпретатор EvalIR специально для eval; обычный код остаётся AOT.">
   <div class="top"><span><span class="part">Динамика</span> Решения проектов</span><span class="count"></span></div>
-  <h2 class="slide-title">Как решается?</h2>
-  <table class="table">
-    <tr><th>Система</th><th>$$var и динамические имена</th><th>eval()</th></tr>
-    <tr><td>PHP JIT</td><td>исполняет Zend</td><td>исполняет Zend</td></tr>
-    <tr><td>TypePHP</td><td>$$var запрещена; часть вызовов через Zend</td><td>поддержка не заявлена</td></tr>
-    <tr><td>KPHP</td><td>запрещены</td><td>запрещён</td></tr>
-    <tr><td>elephc</td><td>поддерживаемое подмножество</td><td>собственный EvalIR-интерпретатор</td></tr>
-  </table>
+  <h2 class="slide-title">Что происходит с динамическим кодом</h2>
+  <div class="dynamic-routes">
+    <div class="dynamic-source"><code>$$var · $function() · new $class · eval($source)</code><span>известно только при исполнении</span></div>
+    <div class="dynamic-route"><b>PHP JIT</b><strong>Оставить Zend</strong><p>VM исполняет конструкцию и принимает side exit.</p></div>
+    <div class="dynamic-route"><b>TypePHP</b><strong>Ограничить модуль</strong><p>$$var запрещена; поддержанные вызовы возвращаются в Zend.</p></div>
+    <div class="dynamic-route"><b>KPHP</b><strong>Сузить язык</strong><p>eval, динамические имена и рефлексия исключены.</p></div>
+    <div class="dynamic-route"><b>elephc</b><strong>Встроить интерпретатор</strong><p>Динамический eval исполняет собственный EvalIR.</p></div>
+  </div>
+  <p class="note">// одна конструкция — четыре разных границы между компилятором и runtime</p>
 </section>
 
 <section class="slide" data-label="Как это делает JIT"
   data-speaker-notes="Первый ответ — не решать динамику заранее. JIT запускает обычный PHP, наблюдает устойчивые типы на горячей трассе, компилирует вариант под эти предположения и оставляет выход обратно в Zend. После него рассматриваем два AOT-ответа: TypePHP ограничивает компилируемый модуль, elephc добавляет interpreter fallback.">
   <div class="top"><span><span class="part">JIT</span> Ответ на динамику</span><span class="count"></span></div>
-  <h2 class="slide-title">Как JIT обходит проблемы?</h2>
-  <ol class="rows plain compact">
-    <li><span class="n">01</span><h3>Интерпретация</h3><p>Сначала код исполняет виртуальная машина Zend.</p></li>
-    <li><span class="n">02</span><h3>Профилирование</h3><p>JIT записывает типы и цели вызовов на горячем участке.</p></li>
-    <li><span class="n">03</span><h3>Специализация</h3><p>Для наблюдавшегося сочетания строится машинный код.</p></li>
-    <li><span class="n">04</span><h3>Side exit</h3><p>Другой тип возвращает исполнение в Zend VM.</p></li>
-  </ol>
+  <h2 class="slide-title">JIT сохраняет путь обратно в VM</h2>
+  <div class="jit-cycle">
+    <div class="jit-node vm"><span>01</span><b>Zend VM</b><p>исполняет обычный PHP</p></div>
+    <i>→</i>
+    <div class="jit-node"><span>02</span><b>Профиль</b><p>типы и цели вызовов</p></div>
+    <i>→</i>
+    <div class="jit-node"><span>03</span><b>Специализация</b><p>машинный код для горячей трассы</p></div>
+    <i>→</i>
+    <div class="jit-node guard"><span>04</span><b>Guard</b><p>проверяет предположения</p></div>
+    <div class="jit-return"><b>Другой тип</b><span>side exit</span><i>↩</i><p>исполнение продолжается в Zend VM</p></div>
+  </div>
+  <p class="note">// JIT не обязан заранее доказать поведение всей программы</p>
 </section>
 
 <section class="slide" data-label="Структура программы TypePHP"
   data-speaker-notes="Из первых десяти пунктов INCOMPATIBLE_PHP_FEATURES.md для устройства компилятора важны четыре ограничения. Глобальная область становится фазой деклараций: исполняемых операторов в ней нет. Функции и именованные классы нельзя создавать внутри функций и методов, поэтому граф объявлений известен заранее. У собираемого бинарника есть явная глобальная main с одной из двух сигнатур и результатом void. Переменные переменные запрещены, поэтому набор локальных slots тоже статичен. Остальные пункты первой десятки относятся к отдельным возможностям PHP 8.5 и не меняют этот вывод.">
   <div class="top"><span><span class="part">TypePHP</span> INCOMPATIBLE_PHP_FEATURES.md</span><span class="count"></span></div>
-  <h2 class="slide-title">Что не поддерживает TypePHP</h2>
-  <ol class="rows plain compact">
-    <li><span class="n">Global</span><h3>Только объявления</h3><p><b>use</b>, <b>declare</b>, константы, функции и классы — без исполняемых операторов.</p></li>
-    <li><span class="n">Scope</span><h3>Нет вложенных объявлений</h3><p>Функции и именованные классы нельзя создавать внутри функций и методов.</p></li>
-    <li><span class="n">Entry</span><h3>Бинарник начинается с main()</h3><p>Без параметров либо <b>(int $argc, array $argv)</b>; возвращаемый тип — <b>void</b>.</p></li>
-    <li><span class="n">Locals</span><h3>Нет переменных переменных</h3><p><b>$$var</b> не может изменить статически построенный набор local slots.</p></li>
-  </ol>
-  <p class="note">// четыре существенных ограничения из первых десяти пунктов · TypePHP b906bfc · 30 августа</p>
+  <h2 class="slide-title">Структура программы должна быть известна при сборке</h2>
+  <div class="code-compare">
+    <pre class="plate" data-lang="php"><span class="out">// допустимо в PHP</span>
+echo 'boot';
+
+function outer(): void {
+    function inner(): void {}
+}
+
+$name = 'value';
+$$name = 42;</pre>
+    <pre class="plate" data-lang="php"><span class="out">// форма для TypePHP</span>
+function inner(): void {}
+
+function outer(): void {
+    inner();
+}
+
+function main(): void {
+    $value = 42;
+}</pre>
+  </div>
+  <p class="note">// только объявления на верхнем уровне · вложенные функции и $$var запрещены · вход через main()</p>
 </section>
 
 <section class="slide" data-label="Что TypePHP не поддерживает"
   data-speaker-notes="Предыдущий слайд был про статически известную структуру программы. Здесь отдельная цена нативного представления и фиксированной объектной модели. Weak typing конфликтует со стабильным storage, а уже выведенный native-тип нельзя сменить. Fixed-layout объект не хранит полный набор состояний zval: неинициализированное свойство становится нулём, unset не удаляет native-переменную. Closure bind меняет receiver и scope уже во время исполнения, поэтому bind, bindTo и call запрещены. Zend остаётся вокруг расширения и обслуживает поддержанные fallback-пути, но не отменяет эти ограничения внутри скомпилированного модуля.">
   <div class="top"><span><span class="part">TypePHP</span> Несовместимость с PHP</span><span class="count"></span></div>
-  <h2 class="slide-title">Что не поддерживает TypePHP?</h2>
+  <h2 class="slide-title">Нативное представление исключает часть семантики PHP</h2>
   <table class="table">
     <tr><th>Не поддерживается</th><th>Что мешает AOT</th></tr>
     <tr><td>weak typing</td><td>native storage требует стабильного типа</td></tr>
@@ -101,21 +174,33 @@ eval($source);</pre>
   data-speaker-notes="У elephc нет Zend, но это не означает отсутствия рантайма. Обычный поддерживаемый код проходит через собственный EIR и превращается в машинный код. Если строка eval известна при сборке, её тоже разбирают и компилируют заранее. Только динамическая строка подключает статическую библиотеку elephc-magician: собственный интерпретатор EvalIR на Rust. Он не является Zend VM и реализует лишь поддерживаемое подмножество. Получается два контура исполнения и общий мост для значений, областей видимости, функций, классов и исключений.">
   <div class="top"><span><span class="part">elephc</span> eval без Zend</span><span class="count"></span></div>
   <h2 class="slide-title">elephc и динамический PHP</h2>
-  <ol class="rows plain compact">
-    <li><span class="n">PHP</span><h3>Обычный код → EIR → assembly</h3><p>Поддерживаемые конструкции исполняются как машинный код.</p></li>
-    <li><span class="n">eval</span><h3>Известная строка → тот же AOT</h3><p><b>eval('echo 1 + 1;')</b> можно разобрать ещё при сборке.</p></li>
-    <li><span class="n">EvalIR</span><h3>Динамическая строка → Magician</h3><p>Собственный интерпретатор на Rust встраивается в бинарник.</p></li>
-    <li><span class="n">≠ Zend</span><h3>Общий runtime приходится написать самим</h3><p>Scope, значения, COW, функции, классы и исключения пересекают границу.</p></li>
-  </ol>
+  <div class="elephc-dynamic-flow">
+    <div class="elephc-source"><code>PHP + eval($source)</code><span>когда станет известен код?</span></div>
+    <div class="elephc-path aot"><span>BUILD TIME</span><h3>Обычный код или известная строка</h3><code>PHP → EIR → assembly</code><p>Один AOT-путь, машинный код.</p></div>
+    <div class="elephc-path evalir"><span>RUNTIME</span><h3>Строка приходит во время исполнения</h3><code>eval → Magician → EvalIR</code><p>Встроенный интерпретатор на Rust.</p></div>
+    <div class="elephc-runtime"><b>ОБЩИЙ СОБСТВЕННЫЙ RUNTIME</b><p>значения · scope · COW · функции · классы · исключения</p><strong>≠ Zend VM</strong></div>
+  </div>
   <p class="note">// AOT + interpreter fallback · «без Zend VM» не означает «без runtime»</p>
 </section>
 
 <section class="slide divider extensions-divider" data-label="Компиляторы расширяют PHP"
-  data-speaker-notes="До сих пор говорили о цене компиляции — что приходится ограничить. Теперь обратная сторона: закрытый компилятору мир позволяет добавить конструкции, которых обычный Zend не знает, и стереть часть их стоимости при сборке. Три проекта идут в разные стороны. TypePHP добавляет статические типы, контейнеры и compile-time contracts. elephc превращает PHP-синтаксис в системный язык. KPHP добавляет серверные примитивы, связанные с его собственным runtime.">
+  data-speaker-notes="До сих пор говорили о цене компиляции — что приходится ограничить. Снаружи мы видим удава странной формы; рентген показывает целого PHP-слона внутри. Компилятор не просто упаковал прежний язык: вокруг него выросли новая форма языка и новый runtime. Это обратная сторона закрытого мира — можно добавить конструкции, которых обычный Zend не знает, и стереть часть их стоимости при сборке. Три проекта идут в разные стороны. TypePHP добавляет статические типы, контейнеры и compile-time contracts. elephc превращает PHP-синтаксис в системный язык. KPHP добавляет серверные примитивы, связанные с его собственным runtime.">
   <div class="top"><span><span class="part">Расширения</span> Что получаем взамен</span><span class="count"></span></div>
   <div class="ghost">03</div>
   <h2 class="slide-title">TypePHP, elephc и KPHP расширяют язык и runtime</h2>
-  <p class="lede">Типы и контракты. Память и FFI. Coroutines и shared memory.</p>
+  <p class="lede">Не только быстрее PHP: новые данные, системный код и модель backend.</p>
+</section>
+
+<section class="slide" data-label="Три примера расширенного PHP"
+  data-speaker-notes="Перед деталями — три законченных примера, чтобы расширения не оставались перечнем фич. В TypePHP DTO можно объявить immutable и получить сгенерированные getter, with и constructor: часть архитектурного контракта становится compile-time семантикой. В elephc framebuffer для DOOM хранится в buffer, структуры делаются packed, а SDL вызывается через extern: PHP-синтаксис используется как системный язык. В KPHP запрос запускает независимое сетевое чтение через fork, делает другую работу и забирает результат через wait; тяжёлую CPU-задачу можно вынести в job worker с обменом через shared memory. Это три разных направления расширения: модель программы, доступ к машине и модель сервера.">
+  <div class="top"><span><span class="part">Расширения</span> Три законченных сценария</span><span class="count"></span></div>
+  <h2 class="slide-title">Что на этом можно написать?</h2>
+  <div class="extension-examples">
+    <article><span>TypePHP</span><h3>Immutable DTO без boilerplate</h3><p>Контракт неизменяемости проверяется при сборке, методы создаются из свойств.</p><code>#[Immutable] · #[With]</code></article>
+    <article><span>elephc</span><h3>Framebuffer и SDL для DOOM</h3><p>Непрерывная память, packed-структуры и прямой вызов системного C ABI.</p><code>buffer&lt;T&gt; · packed · extern</code></article>
+    <article><span>KPHP</span><h3>Параллельный backend-запрос</h3><p>Сеть ждёт в coroutine, CPU-задача уходит worker-процессу через shared memory.</p><code>fork() · wait() · job worker</code></article>
+  </div>
+  <p class="note">// три диалекта: контракт программы · доступ к машине · серверная модель исполнения</p>
 </section>
 
 <section class="slide" data-label="Расширения TypePHP"
@@ -212,8 +297,8 @@ return tuple($user, $fingerprint);
   <p class="note">// цена whole-program анализа — ограниченное подмножество и переписывание приложения</p>
 </section>
 
-<section class="slide divider" data-label="Память и сборка мусора"
-  data-speaker-notes="Новая глава отделяет языковые расширения от оптимизаторного IR. Компиляция PHP меняет не только инструкции: она должна воспроизвести время жизни значений, copy-on-write и циклы. Именно здесь собственный runtime получает один из самых больших источников выигрыша — и один из самых опасных источников несовместимости.">
+<section class="slide divider gc-divider" data-label="Память и сборка мусора"
+  data-speaker-notes="Новая глава отделяет языковые расширения от оптимизаторного IR. На заставке обычная уборка уже не помогает: машина забита объектами, которые держат друг друга по кругу, поэтому нужна отдельная бригада. Так устроена и память PHP. Reference counting быстро убирает объект, когда счётчик стал нулём; copy-on-write откладывает копирование до записи; но цикл сохраняет ненулевые счётчики и требует отдельного collector. Собственный runtime получает здесь один из самых больших источников выигрыша — и один из самых опасных источников несовместимости.">
   <div class="top"><span><span class="part">Runtime</span> Память и GC</span><span class="count"></span></div>
   <div class="ghost">04</div>
   <h2 class="slide-title">Управление памятью и GC</h2>
@@ -223,24 +308,24 @@ return tuple($user, $fingerprint);
 <section class="slide" data-label="Почему память PHP сложна"
   data-speaker-notes="В PHP освобождение обычно детерминировано счётчиком ссылок: последнее значение исчезло — ресурс можно разрушить сразу. Массивы и строки используют copy-on-write: копия откладывается до записи. Но один refcount не видит цикл A → B → A, поэтому Zend отдельно запускает cycle collector. Компилятор обязан сохранить все три свойства, хотя после анализа часть retain, release и копирований можно доказуемо убрать.">
   <div class="top"><span><span class="part">PHP</span> Три связанных механизма</span><span class="count"></span></div>
-  <h2 class="slide-title">ARC-модель</h2>
-  <ol class="rows plain compact">
-    <li><span class="n">RC</span><h3>Последняя ссылка освобождает сразу</h3><p>Предсказуемое время жизни и своевременный вызов деструктора.</p></li>
-    <li><span class="n">COW</span><h3>Копия массива откладывается до записи</h3><p>Присваивание дёшево, но уникальность приходится проверять.</p></li>
-    <li><span class="n">GC</span><h3>Цикл сохраняет ненулевые счётчики</h3><p>Нужен отдельный поиск недостижимых компонент графа.</p></li>
-  </ol>
+  <h2 class="slide-title">Почему одного refcount недостаточно</h2>
+  <div class="gc-mechanics">
+    <article><span>01 · RC</span><h3>Обычный мусор</h3><div class="gc-mini"><b>root → A</b><i>root ✕</i><strong>RC 0 → free</strong></div><p>Последняя ссылка исчезла — объект освобождается сразу.</p></article>
+    <article><span>02 · COW</span><h3>Отложенная копия</h3><div class="gc-mini"><b>A ─┬→ data</b><i>B ─┘</i><strong>write → clone</strong></div><p>Присваивание дёшево; платить приходится при записи.</p></article>
+    <article class="cycle"><span>03 · GC</span><h3>Следы замкнулись</h3><div class="gc-mini"><b>A → B</b><i>↑   ↓</i><strong>└───┘ · RC 1</strong></div><p>Корней уже нет, но объекты держат друг друга. Нужен collector.</p></article>
+  </div>
   <p class="note">// RC отвечает «сколько ссылок» · GC — «достижимо ли значение от корней»</p>
 </section>
 
 <section class="slide" data-label="Память в компиляторах PHP"
   data-speaker-notes="Проекты платят за совместимость по-разному. TypePHP в режиме расширения может оставить Zend-владение для обычных PHP values, а для native types и std-контейнеров использовать обычное время жизни C++. KPHP знает весь запрос и активно использует request-local allocation, вывод типов и удаление лишних пар incref/decref. elephc несёт собственные значения и runtime: reference counting остаётся быстрым путём, а циклы требуют отдельной обработки. Чем меньше универсальных zval и HashTable, тем меньше метаданных и ветвлений — но тем дальше модель от произвольного PHP.">
   <div class="top"><span><span class="part">AOT</span> Цена собственного runtime</span><span class="count"></span></div>
-  <h2 class="slide-title">Способы решения проблемы</h2>
+  <h2 class="slide-title">Кто убирает память?</h2>
   <table class="table">
-    <tr><th>Проект</th><th>Быстрый путь</th><th>Что остаётся сложным</th></tr>
-    <tr><td>TypePHP ext</td><td>native-типы и RAII C++</td><td>граница с Zend values</td></tr>
-    <tr><td>KPHP</td><td>request arena + меньше RC</td><td>COW, escaping и долгоживущие данные</td></tr>
-    <tr><td>elephc</td><td>собственный layout + RC</td><td>циклы и точная семантика PHP</td></tr>
+    <tr><th>Проект</th><th>Ежедневная уборка</th><th>Что требует специалиста</th></tr>
+    <tr><td>TypePHP ext</td><td>Zend RC или C++ RAII</td><td>граница двух моделей; Zend-циклы</td></tr>
+    <tr><td>KPHP</td><td>request arena + меньше RC</td><td>COW, escaping, долгоживущие графы</td></tr>
+    <tr><td>elephc</td><td>свой heap + RC + reset запроса</td><td>циклы и точная семантика PHP</td></tr>
   </table>
   <p class="note">// анализ времени жизни превращается в меньше alloc, retain, release и копирований</p>
 </section>
@@ -304,56 +389,12 @@ v.push_back(n);
   <p class="note">// rc-cycle — актуальный дизайн · production collection ещё не подключён</p>
 </section>
 
-<section class="slide divider" data-label="Как PHP оптимизирует себя"
-  data-speaker-notes="После управления памятью переходим к оптимизаторному представлению программы. SSA разделяет значения по определениям, а анализ поверх неё выводит типы, диапазоны и цели вызовов. Дальше сравним, где эту форму используют PHP JIT, TypePHP и elephc и какие оптимизации она разрешает каждому из них.">
-  <div class="top"><span><span class="part">Оптимизация</span> SSA и анализ данных</span><span class="count"></span></div>
+<section class="slide divider" data-label="Граница оптимизаций"
+  data-speaker-notes="После управления памятью переходим не к абстрактному списку оптимизаций, а к их границе. Компилятор может убрать работу только там, где доказал поведение программы. На двух примерах видно, что именно приходится доказывать: отсутствие переполнения и конкретный адрес метода. Затем сравним, как JIT, TypePHP, KPHP и elephc используют эти знания — и какую цену совместимости платят.">
+  <div class="top"><span><span class="part">Оптимизация</span> Граница доказательств</span><span class="count"></span></div>
   <div class="ghost">05</div>
-  <h2 class="slide-title">Как PHP оптимизирует себя</h2>
-  <p class="lede">SSA, вывод типов, анализ диапазонов и специализация вызовов.</p>
-</section>
-
-<section class="slide" data-label="Зачем компилятору SSA"
-  data-speaker-notes="Теперь переходим от возможностей языка к механизму оптимизации. В исходном PHP имя x перезаписывается. SSA даёт каждому присваиванию новую версию, а в месте слияния веток вставляет phi: выбрать x1 или x2 в зависимости от пришедшего пути. Теперь у каждого значения ровно одно определение, поэтому к нему можно прикрепить доказанный тип, диапазон и происхождение. Это не оптимизация сама по себе, а форма, в которой становятся простыми propagation, удаление мёртвого кода и распределение регистров.">
-  <div class="top"><span><span class="part">Оптимизация</span> Static Single Assignment</span><span class="count"></span></div>
-  <h2 class="slide-title">SSA разделяет присваивания и соединяет ветки через φ</h2>
-  <div class="code-compare">
-    <pre class="plate" data-lang="php">$x = 1;
-if ($flag) {
-    $x = 2;
-}
-echo $x + 1;</pre>
-    <pre class="plate"><span class="out">x₁</span> = 1
-if flag:
-    <span class="out">x₂</span> = 2
-<span class="hi">x₃ = φ(x₁, x₂)</span>
-echo x₃ + 1</pre>
-  </div>
-  <p class="note">// φ выбирает значение из той ветки, по которой пришло управление</p>
-</section>
-
-<section class="slide" data-label="SSA в трёх компиляторах PHP"
-  data-speaker-notes="Одинаковая идея находится на разных уровнях. OPcache строит SSA-анализ над Zend opcodes; JIT использует выведенные типы и дополняет их наблюдениями трассы и защитными проверками. TypePHP использует SSA и optimizer для вывода нативных типов и анализа ухода ссылок, затем печатает C++ — его уже повторно оптимизирует обычный C++ compiler. elephc явно называет EIR PHP-shaped SSA: там записаны не только значения, но ownership, эффекты и basic blocks; над ним работают CSE, LICM, DCE и linear-scan register allocation.">
-  <div class="top"><span><span class="part">SSA</span> Три места в конвейере</span><span class="count"></span></div>
-  <h2 class="slide-title">Как три PHP-компилятора используют SSA</h2>
-  <table class="table">
-    <tr><th>Проект</th><th>Где SSA</th><th>Что из неё получает</th></tr>
-    <tr><td>PHP JIT</td><td>анализ Zend opcodes</td><td>типы → регистры; guards трассы</td></tr>
-    <tr><td>TypePHP</td><td>SSA / optimizer перед C++</td><td>native-типы; escape ссылок</td></tr>
-    <tr><td>elephc</td><td>собственный EIR</td><td>CSE, LICM, DCE, regalloc</td></tr>
-  </table>
-  <p class="note">// SSA описывает поток значений; совместимость определяет, что разрешено доказать</p>
-</section>
-
-<section class="slide" data-label="Переполнение int"
-  data-speaker-notes="В PHP результат сложения двух int при переполнении становится float. В C++ знаковое переполнение — неопределённое поведение; простая машинная инструкция не является корректной заменой. Даже доказанный входной тип ещё не доказывает тип результата.">
-  <div class="top"><span><span class="part">Арифметика</span> int → float</span><span class="count"></span></div>
-  <h2 class="slide-title">Сумма двух int может стать float</h2>
-  <pre class="plate" data-lang="php"><span class="out">$x = PHP_INT_MAX;</span>
-$x = $x + 1;
-
-<span class="hi">// PHP: float</span>
-<span class="out">// машинный int: другое поведение</span></pre>
-  <p class="note">// знать, что оба операнда int, недостаточно</p>
+  <h2 class="slide-title">Что компилятору разрешено убрать?</h2>
+  <p class="lede">Переполнение, адрес вызова и представление значения.</p>
 </section>
 
 <section class="slide" data-label="Четыре реализации переполнения"
@@ -371,25 +412,17 @@ $x = $x + 1;
 </section>
 
 <section class="slide" data-label="Четыре формы вызова метода"
-  data-speaker-notes="Сначала показываем исходный PHP, а уже на следующем слайде — машинный механизм. Внешне это один оператор стрелки, но компилятору доступны разные сведения: final закрывает наследование, интерфейс требует сопоставления с конкретным классом, а динамическое имя появляется только в рантайме.">
-  <div class="top"><span><span class="part">Методы</span> Исходный код</span><span class="count"></span></div>
-  <h2 class="slide-title">Четыре формы вызова метода</h2>
-  <pre class="plate" data-lang="php">$final->run();        <span class="out">// final class</span>
-$object->run();       <span class="out">// обычный класс</span>
-$service->run();      <span class="out">// переменная типа Interface</span>
-$object->$method();   <span class="hi">// имя известно только в рантайме</span></pre>
-</section>
-
-<section class="slide" data-label="Адрес метода"
-  data-speaker-notes="Для private или метода final-класса адрес известен. Обычный виртуальный метод требует таблицы. Интерфейс добавляет ещё один уровень выбора. При динамическом имени неизвестна даже запись таблицы.">
-  <div class="top"><span><span class="part">Методы</span> Где взять адрес</span><span class="count"></span></div>
-  <h2 class="slide-title">Как определяется адрес метода</h2>
-  <ol class="rows plain compact">
-    <li><span class="n">01</span><h3>private / final</h3><p>Прямой вызов: адрес известен при компиляции.</p></li>
-    <li><span class="n">02</span><h3>Обычный класс</h3><p>Адрес берётся из таблицы виртуальных методов.</p></li>
-    <li><span class="n">03</span><h3>Интерфейс</h3><p>Связать конкретный класс с методом интерфейса.</p></li>
-    <li><span class="n">04</span><h3>$object->$name()</h3><p>Поиск по имени остаётся частью исполнения.</p></li>
-  </ol>
+  data-speaker-notes="Внешне это один оператор стрелки, но стоимость определяется тем, что удалось доказать. Для private или метода final-класса адрес известен и вызов становится прямым. Обычный виртуальный метод требует таблицы. Интерфейс добавляет сопоставление конкретного класса с методом интерфейса. При динамическом имени неизвестна даже запись таблицы — поиск остаётся в runtime.">
+  <div class="top"><span><span class="part">Методы</span> Одни скобки — четыре цены</span><span class="count"></span></div>
+  <h2 class="slide-title">Что компилятор знает о вызове?</h2>
+  <div class="method-costs">
+    <code>$object-&gt;run()</code>
+    <article><span>01</span><h3>private / final</h3><p>Адрес доказан → прямой call</p></article>
+    <article><span>02</span><h3>Обычный класс</h3><p>Цель выбирает vtable</p></article>
+    <article><span>03</span><h3>Interface</h3><p>Класс → слот интерфейса</p></article>
+    <article class="unknown"><span>04</span><h3>$object-&gt;$name()</h3><p>Даже имя известно лишь в runtime</p></article>
+  </div>
+  <p class="note">// один синтаксис · разный объём доказанного знания · разная цена dispatch</p>
 </section>
 
 <section class="slide" data-label="Вызовы методов в четырёх системах"
@@ -420,17 +453,17 @@ $object->$method();   <span class="hi">// имя известно только �
   <p class="note">// быстрее бывает не только код: часто меняются представление значения и контейнер</p>
 </section>
 
-<section class="slide divider" data-label="Результаты измерений"
-  data-speaker-notes="Здесь заканчивается разбор семантики и начинаются три независимых набора чисел. Сначала опубликованный авторами TypePHP замер. Затем наш новый benchmark PHP 8.4, TypePHP и elephc: четыре цикла, сохранённые samples, профиль и машинный код. После него — отдельный исследовательский эксперимент ext/mlir над одной формой foreach. Эти числа нельзя склеивать в одну сравнительную таблицу: разные машины, версии и вопросы.">
+<section class="slide divider benchmark-divider" data-label="Результаты измерений"
+  data-speaker-notes="Здесь заканчивается разбор семантики и начинается проверка цифр. На картинке один секундомер измеряет трёх одинаковых слонов, но один несёт груз, второй получил мотор, а третьему укоротили дорожку. Именно так легко получить эффектный и бессмысленный рейтинг. Сначала разбираем наш benchmark арифметики PHP 8.4, TypePHP и elephc — вместе с профилем и машинным кодом. Затем отдельно разбираем опубликованный авторами TypePHP тест массивов и наш контроль контейнера. После этого benchmark закрывается: SSA и ext/mlir начнут новый раздел и ответят уже на другой вопрос.">
   <div class="top"><span><span class="part">Производительность</span> Результаты</span><span class="count"></span></div>
   <div class="ghost">06</div>
-  <h2 class="slide-title">Простой тест производительности</h2>
-  <p class="lede">Три набора данных: авторы TypePHP; наш benchmark AOT; отдельный эксперимент ext/mlir.</p>
+  <h2 class="slide-title">«Простой» тест производительности</h2>
+  <p class="lede">Сначала вопрос к цифре. Потом — сравнение.</p>
 </section>
 
-<section class="slide" data-label="Как делался замер"
+<section class="slide" data-label="Методика AOT benchmark"
   data-speaker-notes="Методика называется до чисел, иначе числа нечем защищать. Одна машина, i7-11700K, ничего постороннего. PHP 8.4.22 release из пакета. TypePHP 0.6.7 поверх PHP 8.4.22 с Embed SAPI; сгенерированный C++ проходит через g++ 13.3 с -O2. elephc 0.26.5 собран cargo build --release. Эталон на C — тот же gcc -O2. Тело цикла написано один раз и оборачивается под каждый движок; только std::vector использует отдельный исходник. Старт процесса замеряется отдельно пустой программой того же движка и вычитается. PHP-режимы запускаются 31 раз, скомпилированные — 7. Для одномодальной выборки сообщается минимум; если выборка разделяется, сохраняются обе группы и медиана всех прогонов — ни один sample не выбрасывается.">
-  <div class="top"><span><span class="part">Benchmark</span> Методика</span><span class="count"></span></div>
+  <div class="top"><span><span class="part">Наш AOT benchmark</span> Методика</span><span class="count"></span></div>
   <h2 class="slide-title">Один исходник, одна машина, 7–31 прогон</h2>
   <ol class="rows plain compact">
     <li><span class="n">01</span><h3>Одна машина, один исходник</h3><p>i7-11700K. Тело написано один раз и обёрнуто под движок. Кроме колонки <b>std::vector</b>: она переписывает контейнер, потому и отдельная.</p></li>
@@ -457,7 +490,7 @@ for ($i = 0; $i &lt; 100_000_000; $i++) {
 <section class="slide" data-label="Целочисленный цикл"
   data-speaker-notes="Цикл на сто миллионов итераций, тело h = (h * 31 + i) &amp; 0x3fffffff — связь по данным между итерациями, поэтому свернуть цикл в константу не может ни один компилятор. Сразу оговорка про отсчёт: у штатного JIT на этом цикле две группы времён — примерно 480 миллисекунд в девяти прогонах из десяти и 683 в остальных. В таблице стоит медиана всех тридцати одного прогона, 485; про сами группы будет отдельный слайд. Отсюда и вилка в множителях: она не от нашей неуверенности, а от разброса самого JIT. Оба AOT-компилятора, которым скормили обычный PHP, проигрывают ему в шесть-восемь и в восемь-одиннадцать раз — и это верно при любом конце вилки. Компиляция сама по себе здесь не покупает ничего. Покупает директива native_types: 90 миллисекунд против 89 у C, вровень. На следующем слайде — что именно она меняет, и это не то, что кажется.">
   <div class="top"><span><span class="part">Наш замер</span> Целые числа</span><span class="count"></span></div>
-  <h2 class="slide-title">native_types сокращает цикл с 3996 до 90 мс</h2>
+  <h2 class="slide-title">AOT проиграл JIT. native_types догнал C</h2>
   <!-- --w is the time as a share of the longest, 5202 ms: 485/5202, 3996/5202,
        5202/5202, 90/5202. -->
   <div class="bench-hero">
@@ -486,7 +519,7 @@ for ($i = 0; $i &lt; 100_000_000; $i++) {
 </section>
 
 <section class="slide" data-label="Механика целочисленного цикла"
-  data-speaker-notes="Теперь время связываем не с ярлыком JIT или AOT, а с представлением значения. JIT хранит временные zval в слотах трассы и вызывает два специализированных Zend handler. TypePHP без директивы оборачивает zval в php::Variant и вызывает generic Zend API. elephc создаёт Heap Mixed для произведения и результата сложения. TypePHP native_types переводит h в int64_t и получает восемь обычных машинных инструкций, практически как C. Внизу отдельно возвращён прежний замер ext/mlir: это другой целочисленный цикл mix на Windows, поэтому его нельзя добавлять шестой строкой в основную таблицу. Там ext/mlir, PHP JIT и C дают соответственно 86, 105 и 108 миллисекунд — паритет на прямой арифметике.">
+  data-speaker-notes="Теперь время связываем не с ярлыком JIT или AOT, а с представлением значения. JIT хранит временные zval в слотах трассы и вызывает два специализированных Zend handler. TypePHP без директивы оборачивает zval в php::Variant и вызывает generic Zend API. elephc создаёт Heap Mixed для произведения и результата сложения. TypePHP native_types переводит h в int64_t и получает восемь обычных машинных инструкций, практически как C. Это объясняет цифру без смешивания с другим экспериментом: секция SSA и ext/mlir начнётся позже и будет проверять отдельную гипотезу о foreach.">
   <div class="top"><span><span class="part">Benchmark</span> Целые числа</span><span class="count"></span></div>
   <h2 class="slide-title">zval, Variant, Mixed или int64_t в одной итерации</h2>
   <table class="table mechanism-table">
@@ -497,14 +530,14 @@ for ($i = 0; $i &lt; 100_000_000; $i++) {
     <tr class="lead-row"><td>TypePHP native</td><td>int64_t в регистрах</td><td>8 машинных инструкций</td><td class="num">90 мс</td></tr>
     <tr><td>C, gcc -O2</td><td>int64_t в регистрах</td><td>те же 8 инструкций</td><td class="num">89 мс</td></tr>
   </table>
-  <p class="closing"><b>Отдельный цикл mix:</b> ext/mlir 86 мс · PHP JIT 105 мс · C 108 мс.</p>
-  <p class="note">// MLIR-замер на Windows · другой исходный код · 10⁸ итераций · best of 3</p>
+  <p class="closing"><b>Результат объясняет представление значения,</b> а не само слово «AOT».</p>
+  <p class="note">// один исходный цикл · разная цена временного значения внутри итерации</p>
 </section>
 
 <section class="slide" data-label="Одно слово в объявлении"
   data-speaker-notes="Это сгенерированный TypePHP C++ для одного и того же PHP-цикла. Выражение совпадает, обёртка php::toInt над int64_t компилируется в ничто. Отличается представление h: php::Var хранит динамическое значение и вызывает операторы PHPX/Zend; php::Int — typedef zend_long, то есть обычный int64_t. Типовая аннотация исходной функции сама по себе этого не делает: у elephc function work(int $n): int работает с той же скоростью, что и нетипизированная версия. Директива native_types выбирает другое представление и другую семантику переполнения: int64_t заворачивается там, где PHP int становится float.">
   <div class="top"><span><span class="part">Benchmark</span> Сгенерированный C++</span><span class="count"></span></div>
-  <h2 class="slide-title">php::Var заменяется на int64_t</h2>
+  <h2 class="slide-title">Директива меняет представление, не аннотация типа</h2>
   <pre class="plate"><span class="out">// сгенерированный TypePHP C++, один и тот же PHP-цикл</span>
 
 <span class="hi">php::Var h = 1L;</span>             <span class="out">// без директивы — 3996 мс</span>
@@ -614,10 +647,50 @@ for ($i = 1; $i &lt;= 64; $i++) { $h = $h * 2; }
   <p class="note">// 2000 элементов × 20 000 обходов · TypePHP native_types → тот же код со std::vector</p>
 </section>
 
+<section class="slide divider optimizer-divider" data-label="Можно ли ускорить PHP ещё сильнее?"
+  data-speaker-notes="Основной benchmark закончен. Теперь задаём другой вопрос: не кто быстрее вообще, а можно ли ускорить конкретный foreach, не переписывая его на другой контейнер. Детективная иллюстрация здесь означает поиск потерянных фактов. SSA уже знает типы и происхождение значений, но вызов runtime-помощника делает часть этих знаний невидимой для нижележащего оптимизатора. Эксперимент ext/mlir проверяет одну гипотезу: что изменится, если сохранить foreach как целый цикл до LLVM.">
+  <div class="top"><span><span class="part">Эксперимент</span> SSA + MLIR</span><span class="count"></span></div>
+  <div class="ghost">07</div>
+  <h2 class="slide-title">Можно ли ускорить PHP ещё сильнее?</h2>
+  <p class="lede">Не менять исходный foreach — дать компилятору увидеть его целиком.</p>
+</section>
+
+<section class="slide" data-label="Зачем компилятору SSA"
+  data-speaker-notes="SSA — не ещё одна волшебная оптимизация, а способ хранить доказанные факты. Каждое присваивание получает новую версию, а phi соединяет значения из разных веток. Поэтому у значения появляется однозначное происхождение: к нему можно привязать тип, диапазон и место определения. Для нашего foreach важно именно это: JIT уже знает довольно много, но затем часть знания теряется на границе runtime-вызова.">
+  <div class="top"><span><span class="part">SSA + MLIR · 01</span> Форма доказательств</span><span class="count"></span></div>
+  <h2 class="slide-title">SSA превращает значения в проверяемые факты</h2>
+  <div class="code-compare">
+    <pre class="plate" data-lang="php">$x = 1;
+if ($flag) {
+    $x = 2;
+}
+echo $x + 1;</pre>
+    <pre class="plate"><span class="out">x₁</span> = 1
+if flag:
+    <span class="out">x₂</span> = 2
+<span class="hi">x₃ = φ(x₁, x₂)</span>
+echo x₃ + 1</pre>
+  </div>
+  <p class="note">// одно определение → к значению можно привязать тип, диапазон и происхождение</p>
+</section>
+
+<section class="slide" data-label="Что SSA знает о foreach"
+  data-speaker-notes="Перед входом в тело цикла штатный JIT уже доказал три полезных факта: массив packed, сумма имеет тип int и живёт в регистре, тип очередного элемента проверен. Проблема не в полном отсутствии анализа. Проблема в границе видимости: FE_FETCH_R остаётся runtime-вызовом, после которого оптимизатор вынужден заново подтверждать часть состояния. Это и есть гипотеза следующего узкого эксперимента.">
+  <div class="top"><span><span class="part">SSA + MLIR · 02</span> Инвентаризация фактов</span><span class="count"></span></div>
+  <h2 class="slide-title">JIT уже многое знает — но не удерживает это знание</h2>
+  <table class="table">
+    <tr><th>Факт перед итерацией</th><th>Что видно JIT</th><th>Где возникает граница</th></tr>
+    <tr><td>Представление массива</td><td><b>packed array</b></td><td rowspan="3"><b>FE_FETCH_R</b><br />непрозрачный runtime-вызов</td></tr>
+    <tr><td>Накопитель <code>$sum</code></td><td><b>int</b>, уже в регистре</td></tr>
+    <tr><td>Очередной элемент</td><td>тип проверен</td></tr>
+  </table>
+  <p class="closing">Вопрос эксперимента: что будет, если граница IR пройдёт <b>после цикла</b>, а не внутри итерации?</p>
+</section>
+
 <section class="slide" data-label="Цикл, который измеряли"
   data-speaker-notes="Один и тот же минимальный цикл используется для разбора штатного JIT, пилота ext/mlir и варианта на C. Массив содержит 2000 целых, обход без ключа, тело только суммирует элементы. Именно эта узость делает результат объяснимым и одновременно ограничивает вывод.">
-  <div class="top"><span><span class="part">Производительность</span> Исходный код</span><span class="count"></span></div>
-  <h2 class="slide-title">Эксперимент PHP → LLVM (Limelight)</h2>
+  <div class="top"><span><span class="part">SSA + MLIR · 03</span> Проверка гипотезы</span><span class="count"></span></div>
+  <h2 class="slide-title">Один узкий foreach как проверка гипотезы</h2>
   <pre class="plate" data-lang="php">$sum = 0;
 
 foreach ($array as $value) {
@@ -628,8 +701,8 @@ foreach ($array as $value) {
 
 <section class="slide" data-label="JIT видит опкоды, а не foreach"
   data-speaker-notes="Дамп штатного tracing JIT для foreach по packed array. Тип массива известен, накопитель уже в регистре. Но FE_FETCH_R остаётся вызовом помощника движка. В измеренной трассе PHP JIT выполняет 27 машинных инструкций на итерацию, эксперимент ext/mlir — 20: разница семь инструкций. Называть четыре Zend-opcode лишними некорректно — у нативного цикла нет сопоставимого набора opcode. Есть также пять side exit, для каждого надо уметь восстановить состояние VM.">
-  <div class="top"><span><span class="part">PHP JIT</span> Трасса foreach</span><span class="count"></span></div>
-  <h2 class="slide-title">FE_FETCH_R добавляет семь инструкций в итерацию</h2>
+  <div class="top"><span><span class="part">SSA + MLIR · 04</span> Граница runtime</span><span class="count"></span></div>
+  <h2 class="slide-title">Внутри foreach остаётся непрозрачный FE_FETCH_R</h2>
   <pre class="plate">$ php -d opcache.jit_debug=0x144000 loop.php
 <span class="out">op1(packed array)      — тип массива известен</span>
 <span class="out">CV1($s):int(rbx)       — сумма уже в регистре</span>
@@ -640,7 +713,7 @@ foreach ($array as $value) {
 
 <section class="slide statement" data-label="Цена FE_FETCH_R"
   data-speaker-notes="Наблюдаемый результат в текущей реализации, а не универсальный закон о компиляторах. FE_FETCH_R должен учитывать дырки PHP-массива и уходит в помощник движка. В снятой трассе после этого вызова тег типа элемента читается заново — всего три чтения за итерацию.">
-  <div class="top"><span><span class="part">PHP JIT</span> FE_FETCH_R</span><span class="count"></span></div>
+  <div class="top"><span><span class="part">SSA + MLIR · 05</span> Потеря фактов</span><span class="count"></span></div>
   <p class="after">Тип массива известен. Тип элемента уже проверялся.</p>
   <span class="label">Что видно в трассе</span>
   <p class="lead">Тег типа читается<br />трижды за итерацию</p>
@@ -649,7 +722,7 @@ foreach ($array as $value) {
 
 <section class="slide" data-label="Стоимость одного foreach"
   data-speaker-notes="Наш исследовательский эксперимент ext/mlir. Один foreach по packed array без ключа и ветвлений. Двадцать инструкций вместо двадцати семи, вызова FE_FETCH_R нет, по массиву идёт курсор. ext/mlir и C находятся в паритете; разница четыре процента лежит внутри шума. Полную методику ещё нужно записать.">
-  <div class="top"><span><span class="part">ext/mlir · эксперимент</span> Один foreach</span><span class="count"></span></div>
+  <div class="top"><span><span class="part">SSA + MLIR · 06</span> Результат</span><span class="count"></span></div>
   <h2 class="slide-title">foreach: 27 инструкций → 20</h2>
   <table class="table">
     <tr><th>Исполнение</th><th>нс / итерацию</th><th></th></tr>
@@ -658,46 +731,30 @@ foreach ($array as $value) {
     <tr class="lead-row"><td>ext/mlir</td><td class="num">0,73</td><td>20 инструкций</td></tr>
     <tr><td>Тот же цикл на C</td><td class="num">0,76</td><td>паритет</td></tr>
   </table>
+  <p class="closing"><b>Новых optimization passes не понадобилось:</b> LLVM просто увидел цикл целиком.</p>
   <p class="note">// эксперимент: packed foreach без ключа и ветвлений · полная семантика foreach не реализована</p>
 </section>
 
-<section class="slide" data-label="Что перестаёт работать"
-  data-speaker-notes="После измерений перечисляем конкретные границы. JIT остаётся внутри PHP. TypePHP в режиме расширения сохраняет php-fpm и Zend, но компилируемый модуль имеет ограничения. KPHP и elephc не загружают расширения Zend и требуют адаптации приложения под собственный рантайм.">
-  <div class="top"><span><span class="part">Совместимость</span> Граница систем</span><span class="count"></span></div>
-  <h2 class="slide-title">Совместимость JIT, TypePHP, KPHP и elephc</h2>
-  <table class="table">
-    <tr><th></th><th>PHP JIT</th><th>TypePHP ext</th><th>KPHP</th><th>elephc</th></tr>
-    <tr><td>Обычный php-fpm</td><td>да</td><td>да</td><td>нет</td><td>нет</td></tr>
-    <tr><td>Расширения Zend</td><td>да</td><td>да</td><td>нет</td><td>нет</td></tr>
-    <tr><td>$$var</td><td>да</td><td>нет</td><td>нет</td><td>подмножество</td></tr>
-    <tr><td>eval()</td><td>да</td><td>поддержка не заявлена</td><td>нет</td><td>интерпретатор</td></tr>
-    <tr><td>Готовое приложение</td><td>без изменений</td><td>компилируется модуль</td><td>нужна адаптация</td><td>нужна адаптация</td></tr>
-  </table>
-</section>
-
-<section class="slide" data-label="Проекты с владельцем кода"
-  data-speaker-notes="Технические ограничения становятся приемлемыми, когда у компилятора есть владелец целевой кодовой базы: он может менять приложение вместе с runtime, держать репрезентативный набор тестов и осознанно принимать несовместимость. Это точнее, чем постоянный заказчик: важен контроль над кодом, а не коммерческие отношения.">
-  <div class="top"><span><span class="part">Ландшафт</span> Долгоживущие проекты</span><span class="count"></span></div>
-  <h2 class="slide-title">Долгоживущие компиляторы обслуживают контролируемый код</h2>
-  <table class="table">
-    <tr><th>Проект</th><th>Организация</th><th>Кодовая база или рынок</th></tr>
-    <tr><td>KPHP</td><td>VK</td><td>vk.com</td></tr>
-    <tr><td>HHVM</td><td>Facebook</td><td>Facebook, затем Hack</td></tr>
-    <tr><td>PeachPie</td><td>DEVSENSE</td><td>PHP на платформе .NET</td></tr>
-    <tr><td>Zephir</td><td>Phalcon</td><td>расширения фреймворка</td></tr>
-  </table>
-</section>
-
 <section class="slide" data-label="Какой вариант выбирать"
-  data-speaker-notes="Финальный практический слайд сопоставляет исходное ограничение и подход. Если приложение должно остаться обычным PHP, остаются OPcache и JIT. TypePHP имеет смысл для выделенного модуля. KPHP требует контроля всей кодовой базы. Самостоятельный бинарник elephc или Manticore означает принятие подмножества и собственного рантайма.">
-  <div class="top"><span><span class="part">Практика</span> Исходное ограничение</span><span class="count"></span></div>
-  <h2 class="slide-title">Стоит ли?</h2>
+  data-speaker-notes="Финальный практический слайд возвращает разговор от красивых чисел к решению. Сначала профиль: если время уходит в базу или сеть, компилятор не решает проблему. Затем цена изменений. Обычный PHP оставляет нас с OPcache и JIT; выделенный горячий модуль подходит TypePHP; контролируемая кодовая база открывает путь KPHP-подобному AOT; самостоятельный runtime требует принять подмножество. Выбор начинается не с названия компилятора, а с того, какую границу системы мы готовы передвинуть.">
+  <div class="top"><span><span class="part">Вывод</span> Цена ускорения</span><span class="count"></span></div>
+  <h2 class="slide-title">Когда компиляция PHP окупается?</h2>
   <table class="table">
-    <tr><th>Что требуется</th><th>Подход</th></tr>
+    <tr><th>Что показал профиль / проект</th><th>Разумный следующий шаг</th></tr>
+    <tr><td>Время уходит в БД, сеть или I/O</td><td>не менять компилятор</td></tr>
     <tr><td>Оставить приложение обычным PHP</td><td>OPcache и штатный JIT</td></tr>
     <tr><td>Скомпилировать отдельный горячий модуль</td><td>TypePHP в режиме ext</td></tr>
     <tr><td>Контролировать и собирать всю кодовую базу</td><td>KPHP-подобный AOT</td></tr>
     <tr><td>Получить самостоятельный бинарник</td><td>elephc или Manticore, с ограничениями</td></tr>
-    <tr><td>Неизвестно, где тратится время</td><td>сначала профиль нагрузки</td></tr>
   </table>
+  <p class="closing"><b>Сначала профиль.</b> Затем — цена несовместимости и новая граница IR.</p>
+</section>
+
+<section class="slide statement" data-label="Финальный вывод"
+  data-speaker-notes="Финальная формула объединяет обе ветки рассказа. TypePHP, KPHP и elephc дают компилятору больше программы, меняя представление данных, runtime или поддерживаемое подмножество. Эксперимент ext/mlir показывает другой путь: иногда достаточно не прятать уже известный цикл за непрозрачным вызовом. В обоих случаях ускорение появляется не от слова AOT или LLVM, а от объёма программы и фактов, доступных оптимизатору.">
+  <div class="top"><span><span class="part">Вывод</span> Что на самом деле ускоряет</span><span class="count"></span></div>
+  <p class="after">Не AOT. Не LLVM. Не типы сами по себе.</p>
+  <span class="label">Главная мысль</span>
+  <p class="lead">Ускорение приходит,<br />когда компилятор видит<br />больше программы</p>
+  <p class="note">// иногда меняют runtime · иногда — только границу IR</p>
 </section>

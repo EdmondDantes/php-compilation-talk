@@ -354,11 +354,11 @@
   </div>
 </section>
 
-<section class="slide infrastructure-aot" data-label="Инфраструктура сделала AOT практичным"
+<section class="slide infrastructure-aot evolution-slide" data-label="AOT становится привлекательным"
   data-speaker-notes="Это не буквальная смена, после которой shared hosting исчез: все модели существуют одновременно. Но изменилась единица поставки backend. На shared hosting разработчик загружал исходники в чужой PHP и не контролировал версию движка, расширения и процессы — переносимый исходный код был преимуществом, нативный бинарник почти негде было запускать. VPS и аппаратная виртуализация дали root, собственный runtime и долгоживущий daemon. Контейнер добавил воспроизводимый образ: Docker рекомендует компилировать в build stage, а в runtime stage копировать только артефакт. Наконец, orchestration и serverless начали часто создавать новые экземпляры. AWS раскладывает cold start на загрузку пакета, запуск runtime и initialization; его стоимость зависит от размера и объёма стартовой работы. Поэтому startup, RSS и размер образа стали экономическими параметрами. Компилятор теперь продаёт не только скорость цикла, но маленький автономный артефакт, быстрый старт и больше реплик на узле. Для PHP это видно по шкале source плюс php-fpm, затем preload и workers, затем standalone package FrankenPHP и экспериментальные AOT-компиляторы.">
   <div class="top"><span><span class="part">Инфраструктура</span> Единица поставки</span><span class="count"></span></div>
-  <h2 class="slide-title">Инфраструктура сделала AOT практичным</h2>
-  <ol class="rows plain compact">
+  <h2 class="slide-title">AOT становится привлекательным</h2>
+  <ol class="evolution-rail">
     <li><span class="n">Shared</span><h3>Исходники внутри чужого runtime</h3><p>Нет root и контроля ABI: выигрывает переносимость PHP-кода.</p></li>
     <li><span class="n">VPS</span><h3>Приложение получает собственный процесс</h3><p>Можно выбрать runtime, расширения, daemon и модель памяти.</p></li>
     <li><span class="n">Docker</span><h3>Build отделён от runtime</h3><p>Компилятор остаётся в builder; в образ попадает готовый артефакт.</p></li>
@@ -367,11 +367,11 @@
   <p class="note">// source deployment → immutable image · throughput → ещё и startup, memory, density</p>
 </section>
 
-<section class="slide" data-label="Гибкий отказ от VM"
+<section class="slide evolution-slide" data-label="Гибкий отказ от VM"
   data-speaker-notes="Гибкий отказ от VM начался не с сегодняшнего AOT. В реализации Smalltalk-80 Дойча и Шиффмана 1984 года процедура при первом вызове переводилась из v-code в native n-code и результат кэшировался. Self в конце восьмидесятых и девяностых сделал следующий шаг: профилирование, агрессивная специализация под наблюдавшиеся типы и динамическая деоптимизация, когда предположение перестаёт выполняться. Эту линию продолжили HotSpot, CLR и V8. Поэтому современная VM — не синоним постоянной интерпретации: горячий код работает как native, а bytecode и interpreter нужны для быстрого старта, холодных путей и восстановления. GraalVM Native Image и .NET Native AOT сдвигают решение ещё раньше, в build time. PHP-компиляторы повторяют этот последний шаг, пока на гораздо более ранней стадии.">
   <div class="top"><span><span class="part">Тенденция</span> VM остаётся</span><span class="count"></span></div>
   <h2 class="slide-title">Миграция от VM → JIT</h2>
-  <ol class="rows plain compact">
+  <ol class="evolution-rail">
     <li><span class="n">60–70-е</span><h3>Interpreter и переносимый bytecode</h3><p>VM исполняет компактные инструкции одну за другой.</p></li>
     <li><span class="n">1984</span><h3>Smalltalk-80: native по требованию</h3><p>v-code переводится в машинный код при вызове и кэшируется.</p></li>
     <li><span class="n">1990-е</span><h3>Self: adaptive JIT</h3><p>Профиль → специализация → проверка предположений → deoptimization.</p></li>
@@ -380,10 +380,10 @@
   <p class="note">// Deutsch &amp; Schiffman, POPL 1984 · Self → HotSpot · VM стала страховочной сеткой</p>
 </section>
 
-<section class="slide" data-label="Абстракции переносятся в build time"
+<section class="slide" data-label="AOT-компилятор не просто преобразователь кода"
   data-speaker-notes="Вторая причина интереса к компиляции — она может оставить удобную декларативную модель автору, но удалить её механизм из runtime. DI показывает это особенно ясно. Слева разработчик описывает зависимости. На этапе сборки контейнер строит граф, проверяет отсутствующие сервисы и генерирует специализированный PHP-класс. В запросе уже не нужны reflection, сканирование или поиск конструктора: остаются прямые вызовы фабрик и обычный new. Symfony прямо пишет, что у autowiring нет performance penalty благодаря compiled container. Это почти нулевая, но не буквально нулевая цена: создание объектов и вызовы методов остаются.">
   <div class="top"><span><span class="part">Build time</span> Цена абстракции</span><span class="count"></span></div>
-  <h2 class="slide-title">Как AOT-компилятор может улучшить программу?</h2>
+  <h2 class="slide-title">AOT-компилятор не просто преобразователь кода</h2>
   <div class="code-compare">
     <pre class="plate"><span class="out"># описание зависимостей</span>
 Checkout:
@@ -399,4 +399,65 @@ function getCheckout() {
 }</pre>
   </div>
   <p class="note">// runtime: без сканирования и reflection · остаются прямые вызовы и new</p>
+</section>
+
+<section class="slide" data-label="Маршруты собираются заранее"
+  data-speaker-notes="Тот же приём работает с маршрутизацией. Автор оставляет декларативный атрибут рядом с методом. Во время сборки инструменты находят атрибуты, проверяют конфликты и строят matcher. В запросе уже не нужно обходить контроллеры и читать reflection metadata: остаётся разбор пути и прямой вызов найденного обработчика. Это пример build-time compilation метаданных; конкретный AOT-компилятор должен знать соглашения фреймворка или получить уже сгенерированный matcher.">
+  <div class="top"><span><span class="part">Build time</span> Маршрутизация</span><span class="count"></span></div>
+  <h2 class="slide-title">Таблица маршрутов строится до запуска</h2>
+  <div class="code-compare">
+    <pre class="plate" data-lang="php"><span class="out">// декларативное описание</span>
+#[Route('/orders/{id}', methods: ['GET'])]
+function order(int $id): Response {
+    return $this-&gt;show($id);
+}</pre>
+    <pre class="plate" data-lang="php"><span class="out">// сгенерированный matcher</span>
+if ($method === 'GET'
+    &amp;&amp; matchOrderPath($path, $id)) {
+    return $controller-&gt;order($id);
+}</pre>
+  </div>
+  <p class="note">// runtime: разбор пути и прямой вызов · без поиска контроллеров и чтения атрибутов</p>
+</section>
+
+<section class="slide" data-label="Сериализатор генерируется из схемы"
+  data-speaker-notes="Сериализация показывает другую дорогую операцию: универсальный код выясняет свойства и их типы через reflection при каждом холодном старте или кэширует эту структуру отдельно. Если класс известен при сборке, можно проверить схему один раз и выпустить специализированный hydrator. В runtime остаются чтение ключей, преобразование типов и обычные присваивания. Проверки данных не исчезают: исчезает исследование структуры самого класса.">
+  <div class="top"><span><span class="part">Build time</span> Сериализация</span><span class="count"></span></div>
+  <h2 class="slide-title">Сериализатор можно сгенерировать из класса</h2>
+  <div class="code-compare">
+    <pre class="plate" data-lang="php"><span class="out">// схема в объявлении</span>
+final class User {
+    public int $id;
+    public string $name;
+    public ?string $email;
+}</pre>
+    <pre class="plate" data-lang="php"><span class="out">// сгенерированный hydrator</span>
+$user = new User();
+$user-&gt;id = (int) $data['id'];
+$user-&gt;name = (string) $data['name'];
+$user-&gt;email = $data['email'] ?? null;</pre>
+  </div>
+  <p class="note">// runtime: проверки входных данных остаются · reflection структуры класса не нужен</p>
+</section>
+
+<section class="slide" data-label="Конфигурация упрощает программу при сборке"
+  data-speaker-notes="Третий пример требует явного условия: значение должно быть известно именно при сборке. Если вариант поставки фиксирует реализацию платёжного шлюза, компилятор подставляет константу, удаляет недостижимую ветвь и видит точный класс результата. Это позволяет встроить последующие вызовы и удалить код старой реализации из артефакта. Если конфигурация читается из окружения уже при запуске, такого преобразования делать нельзя.">
+  <div class="top"><span><span class="part">Build time</span> Специализация</span><span class="count"></span></div>
+  <h2 class="slide-title">Известная конфигурация удаляет недоступную ветвь</h2>
+  <div class="code-compare">
+    <pre class="plate" data-lang="php"><span class="out">// исходная программа</span>
+if (BUILD_GATEWAY === 'new') {
+    $gateway = new NewGateway();
+} else {
+    $gateway = new LegacyGateway();
+}
+$gateway-&gt;charge($order);</pre>
+    <pre class="plate" data-lang="php"><span class="out">// сборка BUILD_GATEWAY=new</span>
+$gateway = new NewGateway();
+$gateway-&gt;charge($order);
+
+<span class="out">// LegacyGateway недостижим
+// точный класс известен оптимизатору</span></pre>
+  </div>
+  <p class="note">// условие: значение фиксируется при сборке, а не читается в runtime</p>
 </section>

@@ -74,6 +74,10 @@ Goal: the deck exists end to end and runs in a browser.
       add a project-choice diagram, and connect the ratings discussion to
       the empirical adoption evidence. Implemented in
       `player/deck/00-intro.html`.
+- [x] S4.7 Remove the separate Goro and PXP portraits from the active
+      running order. Both remain represented on the interactive compiler
+      inventory slide; `player/deck/03-two-paths.html` stays as parked
+      source material.
 
 ## S7. Our own measurement of TypePHP and elephc [done]
 
