@@ -21,7 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from run import busy_share, measure, split_modes  # noqa: E402
+from run import PHP_REPEATS, busy_share, measure, split_modes  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 
@@ -32,18 +32,25 @@ def main():
     binary = Path(tempfile.mkdtemp(prefix="manticore-loop-")) / "loop"
     subprocess.run([os.environ["MANTICORE_BIN"], "compile", str(source), "-o", str(binary)],
                    check=True, capture_output=True)
+    # PHP 8.5 compiles OPcache in, so unlike run.py's 8.4 columns nothing is loaded.
     opcache = ["-n", "-d", "opcache.enable_cli=1"]
     configs = {
         "manticore": ([str(binary)], 7),
-        "php85 bare (-n)": ([php85, "-n", str(source)], 31),
-        "php85 opcache": ([php85, *opcache, "-d", "opcache.jit=disable", str(source)], 31),
+        "php85 bare (-n)": ([php85, "-n", str(source)], PHP_REPEATS),
+        "php85 opcache": ([php85, *opcache, "-d", "opcache.jit=disable", str(source)], PHP_REPEATS),
         "php85 jit": ([php85, *opcache, "-d", "opcache.jit_buffer_size=64M", "-d", "opcache.jit=tracing",
-                       str(source)], 31),
+                       str(source)], PHP_REPEATS),
     }
     out = {"busy_before": busy_share()}
 
     for name, (argv, repeats) in configs.items():
-        samples, output, _ = measure(argv, repeats)
+        samples, output, code = measure(argv, repeats)
+
+        if code != 0:
+            out[name] = {"status": "failed", "output": output}
+            print(f"{name:18} failed: {output}", flush=True)
+            continue
+
         modes = split_modes(samples)
         out[name] = {
             "min_s": min(samples),

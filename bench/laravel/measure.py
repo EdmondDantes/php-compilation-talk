@@ -37,6 +37,11 @@ PATHS = {"n1e3": "/bench?n=1000", "n1e6": "/bench?n=1000000"}
 
 
 def configurations(app, php, file_cache):
+    """argv prefix per configuration, all on the private PHP 8.4 whose libphp the binary links.
+
+    That build loads OPcache as a zend_extension, as run.py's 8.4 columns do; the file
+    cache stands in for a php-fpm pool whose scripts are already compiled.
+    """
     opcache = ["-n", "-d", "zend_extension=opcache.so", "-d", "opcache.enable_cli=1",
                "-d", f"opcache.file_cache={file_cache}"]
     jit = [*opcache, "-d", "opcache.jit_buffer_size=64M", "-d", "opcache.jit=tracing"]
@@ -102,10 +107,10 @@ def main():
                     continue
 
                 cold, output, code, busy = run_once([*argv, path, "1"], cwd=app)
-                one, _, _, busy_one = run_once([*argv, path, "1"], cwd=app)
+                one, _, code_one, busy_one = run_once([*argv, path, "1"], cwd=app)
                 many, _, code_many, busy_many = run_once([*argv, path, str(WARM_REQUESTS + 1)], cwd=app)
 
-                if code != 0 or code_many != 0:
+                if code != 0 or code_one != 0 or code_many != 0:
                     failed.add(name)
                     outputs[name] = output
                     continue

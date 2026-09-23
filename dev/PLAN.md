@@ -119,13 +119,18 @@ indexed read, indexed write — plus the int-overflow semantics probe.
 Stage closed. What outlives it: `dev/BENCHMARKS.md`, `dev/research/hot-loop-anatomy.md`,
 `bench/`. Open question left behind: the cause of the JIT's two states.
 
-## S8. September refresh of the compilers and our measurements [in progress]
+## S8. September refresh of the compilers and our measurements [done]
 
 Goal: TypePHP, elephc, KPHP and Manticore are described as they stand on
 2026-09-23, every number the deck quotes from S7 is checked against current
 builds, and TypePHP is tried on an application instead of a loop.
 Done when: each S7 claim on the slides is marked holds, changed or
 retracted, and dev/research/refresh-2026-09.md says so with the sources.
+Code Reviewer 2026-09-23: five places where a failure passed silently (an
+  unreadable PHP version renamed the baseline's columns, ignored exit codes in
+  both new scripts, --php-extra appending to the env default, startup built in
+  a case directory) and three copies of the PHP flag sets. The five fixed; the
+  flag sets differ by PHP build and say so in comments.
 
 - [x] S8.1 Record what changed in TypePHP, elephc, KPHP and Manticore since
       2026-08-25: versions, releases, stated performance, compatibility,

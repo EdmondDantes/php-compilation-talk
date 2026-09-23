@@ -450,7 +450,8 @@ def measure_startup(engines, repeats):
         workdir = Path(tempfile.mkdtemp(prefix=f"bench_startup_{engine.name}_"))
 
         try:
-            argv = engine.build(EMPTY_BODY, workdir, CASES / "int_arith")
+            # ROOT holds no decl.php, so the empty program stays empty for every engine.
+            argv = engine.build(EMPTY_BODY, workdir, ROOT)
 
             if argv is None:
                 continue
@@ -469,8 +470,13 @@ def php_column_prefix(binary):
     """`php85` for a PHP 8.5 binary: the columns of a second release carry its version."""
     probe = subprocess.run([binary, "-n", "-r", "echo PHP_MAJOR_VERSION . PHP_MINOR_VERSION;"],
                            capture_output=True, text=True)
+    version = probe.stdout.strip()
 
-    return "php" + probe.stdout.strip()
+    # An empty prefix would name the columns `php-*` and overwrite the baseline's rows.
+    if probe.returncode != 0 or not version.isdigit():
+        sys.exit(f"cannot read the PHP version of {binary}: {probe.stderr.strip() or 'no output'}")
+
+    return "php" + version
 
 
 def collect_engines(args):
@@ -650,8 +656,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--php", default=os.environ.get("BENCH_PHP", "/usr/bin/php8.4"),
                         help="release PHP CLI used as the baseline")
-    parser.add_argument("--php-extra", action="append", default=os.environ.get("BENCH_PHP_EXTRA", "").split(),
-                        help="another PHP release to measure beside the baseline, as its own three columns")
+    parser.add_argument("--php-extra", action="append",
+                        help="another PHP release to measure beside the baseline, as its own three columns; "
+                             "given on the command line, replaces BENCH_PHP_EXTRA instead of adding to it")
     parser.add_argument("--typephp", default=os.environ.get("TYPEPHP_ROOT"),
                         help="path to a TypePHP checkout with vendor/ installed")
     parser.add_argument("--typephp-php-ints", default=os.environ.get("TYPEPHP_PHP_INTS"),
@@ -668,6 +675,9 @@ def main():
     parser.add_argument("--keep", action="store_true", help="keep the per-run scratch directories")
     parser.add_argument("--from-json", help="re-summarize the samples in this file instead of measuring")
     args = parser.parse_args()
+
+    if args.php_extra is None:
+        args.php_extra = os.environ.get("BENCH_PHP_EXTRA", "").split()
 
     if args.from_json:
         return resummarize(Path(args.from_json), Path(args.json or args.from_json))
