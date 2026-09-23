@@ -127,12 +127,17 @@ builds, and TypePHP is tried on an application instead of a loop.
 Done when: each S7 claim on the slides is marked holds, changed or
 retracted, and dev/research/refresh-2026-09.md says so with the sources.
 
-- [ ] S8.1 Record what changed in TypePHP, elephc, KPHP and Manticore since
+- [x] S8.1 Record what changed in TypePHP, elephc, KPHP and Manticore since
       2026-08-25: versions, releases, stated performance, compatibility,
       activity, and whether elephc issue #623 or the overflow sign moved.
       done: a dated update per project in dev/research/php-compilers.md and
       dev/research/typephp-review.md, each claim linked.
       tier: T1 · role: —
+      handoff: updates dated 2026-09-23 under each entry of php-compilers.md
+        and a new first section of typephp-review.md. TypePHP 0.8 made int64
+        the default (`use varint_types` restores PHP ints); elephc PR #817
+        targets our int loop; Manticore publishes a near-identical loop at
+        22.8x. Both local clones are shallow: commit counts come from full clones.
 - [x] S8.2 Build current TypePHP and elephc next to the August builds, not
       over them; one env profile per toolchain generation; run.py stamps
       engine versions and commits into its JSON and writes one file per

@@ -105,6 +105,23 @@ public documentation, announcement or discussion in any language**.
 Anything said about it is read from the source, and that silence is itself
 part of the story.
 
+**Update 2026-09-23.** Thirteen commits on `master` since 2026-08-25,
+the last `82e5369` on 2026-09-16, from four authors; no tags, no
+releases, and the `vkcom/kphp` Docker image unchanged since 2024-12-26.
+The work is k2 in `runtime-light/`: separate memory for coroutines
+(#1675), an rpc client that no longer copies the request buffer
+(#1680), and the largest change, #1683 (2026-09-15), which moves
+`instance_cache` into platform shared memory instead of msgpack over
+RPC to a cache process. Its title says "blazingly fast"; it publishes no
+number. k2 is still undocumented: `docs/` was last touched 2025-10-20 and
+never names it, and the only description is the repository's
+`CLAUDE.md` (2026-02-20) — a re-entrant runtime whose program compiles to
+a shared-library "image" driven by an external platform through
+`runtime-light/k2-platform/k2-header.h`. Language level unchanged
+(≈7.4). No new benchmark claims, and no articles on Habr or Hacker News
+in the range. Packages exist for focal, jammy, buster and bullseye only;
+on Ubuntu 24.04 the route is the 2022 Dockerfile.
+
 **elephc** — <https://github.com/illegalstudio/elephc> · <https://elephc.dev/>
 Vincenzo Petrucci, Guillaume Loulier. Written in Rust; compiles a PHP
 subset **straight to assembly** — no C step, no VM, no runtime
@@ -125,6 +142,27 @@ while preserving overflow-to-float-to-int behavior. This is a useful
 contrast to Manticore's documented wrapping overflow, but remains a
 moving target in an experimental project.
 
+**Update 2026-09-23.** Releases 0.26.6 (2026-09-03) and 0.27.0
+(2026-09-11), nightly tags since, 0.27.1 in preparation; 598 stars.
+1521 commits since 2026-08-25, 1208 of them by Petrucci and 66 by
+"Cursor Agent". (A shallow clone reports ~6900 for the same range; that
+figure is an artifact.) The change that matters for this talk is PR
+#817, merged 2026-08-31 and shipped in 0.26.6: a pass that fuses
+checked `*`, `+` and the int cast into one chain kept in registers until
+the first overflow. Its motivating loop is our `int_arith` body
+verbatim, and the PR states ~5.05 s and 300 million allocations before,
+~0.23 s and none after (project-authored, author's machine). Range
+analysis, `mem2reg` and strength reduction are still unchecked roadmap
+items. Issue #623 was already closed on 2026-08-12, before our August
+run, for a single operation feeding an int sink; the chain case is #817.
+Issue #548 (relational comparison of a float-carrying `Mixed`) closed
+2026-09-21 through tests. No commit targets the overflow sign defect
+filed in dev/BENCHMARKS.md, and on 0.27.0 it still prints
+`-1.844674407371E+19` (our run, 2026-09-23). The compatibility page now
+counts against PHP 8.5.10: functions 883/2169 (41%), classes 142/329,
+constants 1094/3180 — a new baseline and a new method, so not comparable
+with August's 23%. elephc.dev still publishes no performance figure.
+
 **Manticore (ManticorePHP compiler)** — <https://github.com/manticorephp/compiler>
 Taras Chornyi. Self-hosted AOT compiler **written in PHP**: lexer →
 Pratt parser → AST lowering → MIR passes → LLVM IR → static binary
@@ -141,6 +179,21 @@ cold start 2.6 ms against PHP's 62 ms, and 44× on spectralnorm — all
 project-authored.
 Name collision: **Manticore Search** (search engine) and Trail of Bits'
 **Manticore** (symbolic execution) are unrelated.
+
+**Update 2026-09-23.** v0.10.0 (2026-09-19) and v0.11.0 (2026-09-23), 453
+commits since 2026-08-25, all by Chornyi; 48 stars. v0.11.0 is the first
+release with prebuilt binaries (linux-amd64, linux-arm64, macos-arm64)
+and a GHCR image. `json_encode` of objects works since `ab531f7`
+(2026-09-04). Integer overflow still wraps, `extract()` is still
+missing, and the roadmap adds that `['a'] === ['a']` compares pointers.
+The claim "links only libc" is out of date: the README now names PCRE2
+and OpenSSL 3 as dynamic dependencies. The cold-start and 50 KB claims
+are gone from the README; in their place is a 47-row table on an Apple
+M1 Pro against PHP 8.5.10 (project-authored): spectralnorm 77.5×, fib
+109.9×, oop 39.8×, and a `loop` row of 22.8× whose body,
+`$acc = ($acc*3 + ($i&7)) & 0x3FFFFFFF`, is close to our `int_arith`.
+The August 44× on spectralnorm and today's 77.5× were measured on
+different workloads and do not compare.
 
 **TypePHP** (was `swoole/aot-compiler`) — <https://github.com/swoole/typephp>
 Swoole (上海识沃网络科技有限公司), GPL-3.0. PHP → C++17 → native machine
@@ -191,6 +244,32 @@ The README also sells **source protection** — the shipped artifact is a
 binary, not readable PHP. Note where that lands the vendor: Swoole sells
 an encoder called Swoole Compiler and now ships a real compiler whose
 pitch overlaps it.
+
+**Update 2026-09-23.** Version 0.9.2 (`43e85b88`), nine GitHub releases
+since v0.6.5 on 2026-08-26, binaries for Linux, macOS and Windows from
+v0.6.6 on; 1,403 stars against ~95 a month earlier, 17 contributors,
+7,297 Packagist downloads. 256 commits since the August measurement
+(`b906bfc`); the ~1,800 a shallow clone reports is the whole history.
+The change that matters: **0.8.0 made native scalars the default and
+removed `use native_types`** (CHANGELOG, `86c56ad1`, 2026-09-06). An
+inferred `int` is now `int64_t` unless the file says `use varint_types`,
+and `use native_types` is a compile error. Measured on our build: seven
+lines doubling `1` sixty-four times print `0` with no directive and
+`1.844674407371E+19` under `use varint_types`. So the compiler's default
+output no longer agrees with PHP on overflow; only constant overflow is
+rejected at compile time. `declare(strict_types=0)` is rejected and weak
+coercion never happens. New build modes: `--nano`, a VM-free executable
+without `libphp` (no eval, include or anonymous classes), and
+`embedded-files`, which packs Composer `vendor/` as OPcache bytecode
+inside the binary; musl static linking; Android, iOS and an experimental
+freestanding OS target. The documented limits were not relaxed: global
+scope is still declarations only, `Closure::bind` is unsupported, an AOT
+class still cannot extend an autoloaded one. `tests/project/` holds
+Symfony and ThinkPHP pattern reproductions dating from July; Laravel is
+not mentioned anywhere in the repository. The README benchmark numbers
+are unchanged; heise (2026-08-27) quotes "about 135 times faster" on
+Fibonacci from a source we could not reach. Coverage: Laravel News
+(2026-08-26), heise (2026-08-27), two Hacker News posts with no comments.
 
 **ext/mlir** — an MLIR-based JIT extension living inside a php-src tree,
 targeting long-running applications: PHP opcodes → MLIR → LLVM IR →
