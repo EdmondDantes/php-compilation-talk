@@ -224,6 +224,67 @@
   color: #88949c;
 }
 
+/* The closing image returns to the cover's dark field. Keep both answers
+   in the empty left half so the illustration can carry the pause at the end. */
+.closing-slide {
+  background-color: #0d0f12;
+  background-image:
+    linear-gradient(90deg, rgba(13, 15, 18, 0.97) 0%, rgba(13, 15, 18, 0.78) 42%, rgba(13, 15, 18, 0.04) 73%),
+    url('../assets/illustrations/php-compilation-conclusion.png');
+  background-size: cover;
+  background-position: center;
+  color: #e8e6e1;
+}
+
+.closing-slide::before { opacity: 0.18; }
+.closing-slide .top { color: #88949c; }
+.closing-slide .top .part { color: #ffb000; }
+
+.closing-prompt {
+  position: absolute;
+  left: var(--pad);
+  top: 245px;
+  width: 900px;
+  margin: 0;
+  color: #ffb000;
+  font: 600 26px/1.2 var(--font-mono);
+  letter-spacing: 0.05em;
+}
+
+.closing-headline {
+  position: absolute;
+  left: var(--pad);
+  top: 300px;
+  width: 1000px;
+  margin: 0;
+  font: var(--head-weight) 74px/1.08 var(--font-head);
+  letter-spacing: var(--head-ls);
+}
+
+.closing-language {
+  position: absolute;
+  left: var(--pad);
+  top: 490px;
+  width: 1000px;
+  margin: 0;
+  color: #c4c9cc;
+  font: 32px/1.28 var(--font-body);
+}
+
+.closing-prompt-second { top: 625px; }
+
+.closing-answer {
+  position: absolute;
+  left: var(--pad);
+  top: 685px;
+  width: 980px;
+  margin: 0;
+  color: #d0d4d4;
+  font: 42px/1.22 var(--font-body);
+}
+
+.closing-slide .note { color: #88949c; }
+
 .cover .kicker {
   position: absolute;
   left: var(--pad);
