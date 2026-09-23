@@ -158,7 +158,8 @@ Decided: `run.py` runs one sample per engine per round and stores the
 
 Why: other WSL distributions load the same kernel invisibly to `ps`, and a
 burst landing on one engine's back-to-back row read as a property of that
-engine. With turns, the JIT's slow state also stopped appearing (0 of 434).
+engine. With turns, the JIT's slow state also stopped appearing (0 of 434); its
+main cause, file scope, was found the same evening (dev/POSTMORTEM.md).
 
 Rejected: waiting for an idle machine only; it was busy for hours at a time.
 

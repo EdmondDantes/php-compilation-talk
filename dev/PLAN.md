@@ -20,10 +20,11 @@ Review 2026-09-23: code since 08ae6e6 — bench/run.py has four nesting
 
 - The through-line ("compilation buys hardware cost and tail latency,
   not 'speed', and pays in dialect and hiring") now rests on seven loops
-  and one Laravel route (S7, S8; dev/BENCHMARKS.md). elephc 0.27 beating the
-  JIT with PHP's semantics weakens the "compiling alone buys nothing" half.
-- The JIT does almost nothing inside a Laravel request although it is on
-  (dev/research/typephp-laravel.md); a few runs only, cause unknown.
+  and one Laravel route (S7, S8; dev/BENCHMARKS.md, corrected section). With PHP
+  measured inside a function the JIT still beats compiled PHP with PHP semantics
+  (elephc 2.5x, TypePHP 10x), but the gap fell from 34-44x in a month; the Sage
+  review of 2026-09-23 suggests re-anchoring the through-line on runtime
+  representation and the framework boundary rather than on semantics alone.
 - The date of the talk is not recorded anywhere, so the time left for S4
   and S5 cannot be judged.
 - Limelight stays in the talk as a live example, but there is little to

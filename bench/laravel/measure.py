@@ -15,9 +15,10 @@ Two shapes of process are measured, because they answer different questions:
 
 Every configuration uses the private PHP 8.4 that the binary links: hot.so must
 load into the PHP it was built against, and the comparison must not mix builds.
-PHP gets OPcache with a warm file cache, the closest a CLI process comes to a
-php-fpm worker whose scripts are already compiled; the binary carries its opcodes
-embedded, which is the same state.
+For a cold request PHP gets OPcache with a warm file cache, the closest a CLI
+process comes to a php-fpm worker whose scripts are already compiled; the binary
+carries its opcodes embedded, which is the same state. Warm requests run without
+the file cache, because the JIT skips scripts loaded from it (see `configurations`).
 """
 
 import argparse
@@ -36,14 +37,20 @@ WARM_REQUESTS = 200
 PATHS = {"n1e3": "/bench?n=1000", "n1e6": "/bench?n=1000000"}
 
 
-def configurations(app, php, file_cache):
+def configurations(app, php, file_cache=None):
     """argv prefix per configuration, all on the private PHP 8.4 whose libphp the binary links.
 
-    That build loads OPcache as a zend_extension, as run.py's 8.4 columns do; the file
-    cache stands in for a php-fpm pool whose scripts are already compiled.
+    That build loads OPcache as a zend_extension, as run.py's 8.4 columns do. With
+    `file_cache` a fresh process starts from compiled scripts, the way a php-fpm pool
+    does; but the tracing JIT does not compile scripts loaded from the file cache
+    (5.19 against 5.59 ms per warm request with it, 2.58 against 5.18 without), so a
+    process that serves many requests is measured without it.
     """
-    opcache = ["-n", "-d", "zend_extension=opcache.so", "-d", "opcache.enable_cli=1",
-               "-d", f"opcache.file_cache={file_cache}"]
+    opcache = ["-n", "-d", "zend_extension=opcache.so", "-d", "opcache.enable_cli=1"]
+
+    if file_cache is not None:
+        opcache += ["-d", f"opcache.file_cache={file_cache}"]
+
     jit = [*opcache, "-d", "opcache.jit_buffer_size=64M", "-d", "opcache.jit=tracing"]
     hot = ["-d", f"extension={app / 'hot.so'}"]
     driver = str(app / "serve-bench.php")
@@ -87,12 +94,16 @@ def main():
     php = str(Path(os.environ["PHP_HOME"]) / "bin" / "php")
     file_cache = Path(tempfile.mkdtemp(prefix="laravel-opcache-"))
     configs = configurations(app, php, file_cache)
+    warm_configs = configurations(app, php)
     busy_before = busy_share()
     results = {}
 
     for label, path in PATHS.items():
         # One discarded run per configuration fills the file cache and the page cache.
         for argv in configs.values():
+            measure([*argv, path, "1"], 1, cwd=app)
+
+        for argv in warm_configs.values():
             measure([*argv, path, "1"], 1, cwd=app)
 
         # Configurations take turns within each repeat, as in run.py, so a burst of
@@ -107,8 +118,9 @@ def main():
                     continue
 
                 cold, output, code, busy = run_once([*argv, path, "1"], cwd=app)
-                one, _, code_one, busy_one = run_once([*argv, path, "1"], cwd=app)
-                many, _, code_many, busy_many = run_once([*argv, path, str(WARM_REQUESTS + 1)], cwd=app)
+                warm = warm_configs[name]
+                one, _, code_one, busy_one = run_once([*warm, path, "1"], cwd=app)
+                many, _, code_many, busy_many = run_once([*warm, path, str(WARM_REQUESTS + 1)], cwd=app)
 
                 if code != 0 or code_one != 0 or code_many != 0:
                     failed.add(name)
@@ -151,6 +163,7 @@ def main():
         "warm_requests": WARM_REQUESTS,
         "paths": PATHS,
         "configurations": {name: argv for name, argv in configs.items()},
+        "warm_configurations": {name: argv for name, argv in warm_configs.items()},
         "results": results,
     }
     Path(args.json).write_text(json.dumps(payload, indent=2))

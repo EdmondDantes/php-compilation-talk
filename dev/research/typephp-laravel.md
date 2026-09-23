@@ -88,74 +88,60 @@ no dynamic features, which is the precondition the vendor states.
 
 ## Timings
 
-`bench/laravel/measure.py`, private PHP 8.4.22 NTS for every configuration,
-OPcache with a warm file cache for PHP, 15 repeats with the configurations
-taking turns. PHP runs with `-n`; the binary's runtime ini settings were not
-dumped, so they are an uncontrolled difference. *Cold* is one request in a
-fresh process that boots Laravel, minimum of 15. This is also the shape of a
-php-fpm request, since php-fpm keeps OPcache but re-runs `bootstrap/app.php`
-and the providers for every request. *Warm* is one more request in a process
-that has already booted and served one: the median time of 201 requests minus
-the median of 1, divided by 200. Only a persistent worker (Octane, RoadRunner,
-FrankenPHP's worker mode) is in that state; the binary has no php-fpm mode
-at all.
+`bench/laravel/measure.py`, private PHP 8.4.22 NTS for every configuration, 15
+repeats with the configurations taking turns; `results/2026-09-23c-laravel.json`.
+*Cold* is one request in a fresh process that boots Laravel, minimum of 15, with
+OPcache reading a warm file cache — the shape of a request in a pool that starts
+from compiled scripts. *Warm* is one more request in a process that has already
+booted and served one: the median of 201 requests minus the median of 1, divided
+by 200 — the state of a persistent worker (Octane, RoadRunner, FrankenPHP's
+worker mode). Neither Octane nor php-fpm itself was run. Warm requests run
+without the file cache: the tracing JIT does not compile scripts that OPcache
+loaded from it (5.19 against 5.59 ms per warm request with the file cache,
+2.58 against 5.18 without; one run of 7 repeats each), which made the JIT columns
+of the two earlier files (`2026-09-23-laravel.json`, `2026-09-23b-laravel.json`)
+measure OPcache alone.
 
 | configuration | n=1000, cold | n=1000, warm | n=10^6, cold | n=10^6, warm |
 |---|---|---|---|---|
-| PHP + OPcache | 36.7 ms | 0.398 ms | 40.7 ms | 4.861 ms |
-| PHP + JIT | 37.5 ms | 0.408 ms | 40.4 ms | 4.890 ms |
-| PHP + OPcache + hot.so | 37.4 ms | 0.390 ms | 37.3 ms | 1.240 ms |
-| PHP + JIT + hot.so | 37.7 ms | 0.400 ms | 37.8 ms | 1.247 ms |
-| TypePHP binary | 35.4 ms | 0.536 ms | 37.5 ms | 1.399 ms |
+| PHP + OPcache | 36.2 ms | 0.415 ms | 41.2 ms | 5.125 ms |
+| PHP + JIT | 37.3 ms | 0.940 ms | 41.7 ms | 2.061 ms |
+| PHP + OPcache + hot.so | 38.1 ms | 0.431 ms | 38.5 ms | 1.276 ms |
+| PHP + JIT + hot.so | 37.8 ms | 0.913 ms | 42.2 ms | 1.834 ms |
+| TypePHP binary | 36.6 ms | 0.579 ms | 37.6 ms | 1.449 ms |
 
-The n=1000 columns come from the second file, the n=10^6 columns from the
-first: in each run one half coincided with load from other WSL distributions
-(busy up to 0.84 and 0.45 per repeat, recorded in the files), and the table
-takes each half from the run where it was quiet (at most 0.28). The other halves
-agree: warm n=1000 was 0.401, 0.417, 0.395, 0.387 and 0.539 ms in the loaded
-run, and warm n=10^6 was 5.42, 5.54, 1.34, 1.37 and 1.61 ms.
-
-Three results, each within its own run; the first two are for a persistent worker:
+Results, each within this run:
 
 - **A framework request gains nothing from compilation, and the binary loses.**
-  With the hot loop at 1000 iterations the request is Laravel's routing,
-  middleware and response: 0.398 ms on PHP with OPcache, 0.390 with hot.so
-  loaded, 0.536 ms in the binary — 35 % slower. The binary runs the same
-  framework bytecode through its embedded runtime rather than through OPcache's
-  shared memory; why that is slower was not investigated.
-- **Where the request is the hot code, the extension pays.** With 10^6
-  iterations hot.so cuts a warm request from 4.86 to 1.24 ms, 3.9×, without
-  touching Laravel. The binary gets 3.5× on the same request, less than the
-  extension, because it loses on the framework part what it gains on the loop.
-- **Under php-fpm, most of that disappears.** A cold request, which is what
-  php-fpm serves, costs 35–41 ms in every configuration; with 10^6 iterations
-  hot.so takes it from 40.7 to 37.3 ms, 9 %. The 3.9× exists only for a
-  persistent worker.
-
-**The JIT did nothing inside Laravel.** Warm requests ran at OPcache speed with
-the JIT on (0.408 against 0.398 ms, 4.89 against 4.86 ms). It was on:
-`opcache_get_status()` inside the application reports `jit.on`, tracing mode.
-But after 20 requests of 10^6 iterations it had used about 400 KB of its 64 MB
-buffer, and the same `Hot::checksum` called from a plain script runs 4× faster
-under it (11 against 44 ms for 10^7 iterations, one run each). Raising
-`opcache.jit_max_root_traces` and `jit_max_side_traces` to 100,000 changed
-nothing; `opcache.jit=function` made the request five times slower. The cause
-was not established; the observation rests on a few runs and needs its own
-measurement before it reaches a slide.
+  With the loop at 1000 iterations the warm request is Laravel's routing,
+  middleware and response: 0.415 ms under OPcache, 0.431 with hot.so loaded,
+  0.579 ms in the binary — 40 % slower. Why the embedded runtime is slower was
+  not investigated.
+- **Where the request is the hot loop, the extension pays, against the JIT too.**
+  With 10^6 iterations hot.so takes a warm request from 5.125 ms (OPcache) to
+  1.276 ms, 4.0×, and is 1.6× faster than the JIT's 2.061 ms. The binary gets
+  3.5× against OPcache and 1.4× against the JIT.
+- **A fresh process per request hides most of it.** Cold requests cost 36–42 ms
+  in every configuration; with 10^6 iterations hot.so takes one from 41.2 to
+  38.5 ms, 7 %.
+- **The JIT made the framework request slower in this window:** 0.940 against
+  0.415 ms warm at n=1000. 200 requests may not be enough for its traces to pay
+  back their compilation; not investigated further.
 
 ## What this says for the talk
 
 - The vendor's first claim, an existing application shipped as a TypePHP
   binary, holds only in the sense that the binary runs. What runs is Laravel on
   Zend with three compiled files, 176 MB, `$_ENV` warnings in its output, and a
-  framework request 35 % slower than plain PHP in a persistent worker. Everything TypePHP
+  framework request 40 % slower than plain PHP in a persistent worker. Everything TypePHP
   refused — `return` at file scope, top-level calls, vendor traits,
   subclasses of autoloaded classes — is how Laravel is written, not an edge case
   of this application.
 - The second claim, a compiled hot path under an unchanged framework, holds as
-  stated: a 30 KB extension, no change to the application, 3.9× on a request
-  that is the hot loop in a persistent worker, 9 % on the same request under
-  php-fpm, and nothing on a request that is not. This is the same
+  stated: a 30 KB extension, no change to the application, 4.0× against OPcache
+  and 1.6× against the JIT on a request that is the hot loop in a persistent
+  worker, 7 % on the same request in a fresh process, and nothing on a request
+  that is not. This is the same
   result as the talk's loops, now inside a real request: compilation pays for
   typed numeric code and for nothing else.
 - For a working developer the usable form is the extension, and the question it

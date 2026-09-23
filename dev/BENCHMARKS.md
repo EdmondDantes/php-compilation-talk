@@ -8,7 +8,76 @@ Method, cases and how to reproduce: `bench/README.md`. Raw output:
 
 ---
 
+## 2026-09-23 (corrected) — every engine runs the body inside a function
+
+**This section supersedes the PHP columns of both sections below.** Until this
+run `run.py` pasted the case body at file scope for PHP, elephc and Manticore,
+and inside `main()` for TypePHP. At file scope Zend keeps variables in the
+global symbol table, where the tracing JIT cannot hold them in registers: the
+int loop took 431 ms there and 110 ms inside a function (363 against 552 ms
+under OPcache alone). `php_wrapper` now wraps every body in `bench_main()`; the
+compiled engines are unaffected within noise (elephc 246.3 against 245.6 ms,
+C unchanged). Error recorded in dev/POSTMORTEM.md.
+
+Same machine, same builds, engines in turns. Files:
+`results/2026-09-23c-toolchain-2026-09.json` (string_build from
+`2026-09-23c-string_build.json`: the last case of the full run coincided with 77 %
+outside load and split every PHP column), `results/2026-09-23c-toolchain-2026-08.json`.
+
+| case | php-opcache | php-jit | php85-jit | typephp | typephp-native | typephp-std | elephc | manticore | c-gcc-O2 |
+|---|---|---|---|---|---|---|---|---|---|
+| int_arith | 358.1 | **100.2** | 101.8 | 995.6 | 84.7 | — | 246.3 | 21.1 | 82.4 |
+| array_foreach | 130.7 | 32.0 | 33.1 | 253.9 | 222.5 | 13.2 | 650.8 | 12.0 | 7.5 |
+| array_index | 146.4 | 31.3 | 32.5 | 148.2 | 124.3 | 14.5 | 1956.2 | 19.6 | 7.4 |
+| array_write | 238.7 | 42.5 * | 42.0 * | 459.9 | 279.7 | 17.1 | 732.7 | 124.0 | 5.8 |
+| function_call | 249.3 | 68.9 | 66.9 | 341.9 | 17.0 | — | 434.9 | 8.5 | 14.8 |
+| method_call | 476.8 | 231.6 | 234.1 | 1476.2 | 1178.6 | — | 4757.3 | 64.4 | 22.9 |
+| string_build | 170.6 | 120.0 | 117.7 | 559.9 | 305.7 | — | 168.9 | 64.7 | 149.3 |
+
+`*` array_write splits mildly under the JIT: 38–47 ms in 77 % of processes,
+56–65 ms in the rest (PHP 8.5: 87 %). No other JIT row splits.
+
+August builds inside a function, same day: JIT 103.2 ms on int_arith, TypePHP
+0.6.7 with PHP ints 3559.3 (34.5× the JIT), elephc 0.26.5 4579.8 (44.4×),
+TypePHP native 82.5, C 82.3.
+
+**What the corrected numbers say.**
+
+- **Compiling PHP as PHP loses to the JIT, and by less than in August.** The JIT
+  runs the int loop in 100.2 ms, 1.22× gcc's C. TypePHP with PHP ints is 9.9×
+  slower (34.5× in August), elephc 2.5× (44.4× in August). elephc's PR #817 is a
+  real 18× gain, and it is still not enough to reach the JIT.
+- **The price of PHP's int semantics in TypePHP is 11.8×** (995.6 against 84.7),
+  down from 43× in August on the same machine (3559.3 against 82.5).
+- **The JIT is close to typed containers on packed arrays.** It is 2.2–2.5× from
+  `std::vector` and 4–7× faster than TypePHP working on the same PHP array.
+  The container swap still buys 16.9×, 8.6× and 16.4× inside TypePHP, but a
+  PHP developer with the JIT already has most of it.
+- **The JIT's "two states" were mostly a file-scope effect.** Inside a function
+  no JIT row splits except a 1.4× split on array_write; the 3–6× slow state of
+  August and of this morning's runs does not appear. Its cause at file scope is
+  still unknown.
+- **Calls.** Plain calls: TypePHP native 17.0 ms and Manticore 8.5 ms beat the
+  JIT's 68.9; elephc (434.9) loses to it 6.3×. Interface calls on top of that
+  cost 8.1 ns in the JIT, 58 ns in TypePHP, 216 ns in elephc, 2.8 ns in
+  Manticore; TypePHP loses 5.1× to the JIT on method_call, elephc 20.5×.
+- **Strings.** JIT 120 ms, elephc 169 (1.4×), TypePHP 306 native, Manticore 65.
+- **Manticore is faster than the JIT on every case but array_write** (124 against
+  42.5 ms). On int_arith its 21 ms comes from LLVM folding five iterations of a
+  wrapping loop, which clang also does to the C version (23.2 ms).
+- **Manticore's own loop.** Their `loop.php` is top-level code, so their 22.8×
+  was measured against PHP at file scope with OPcache off. Inside a function the
+  JIT takes 67.6 ms against 132.2 ms for their file as written
+  (`results/2026-09-23c-manticore-loop-scope.json`), so Manticore (23.7 ms) is
+  2.9× faster than PHP's JIT on it, not 5.5×.
+- **PHP 8.5** stays within 10 % of 8.4.
+
+---
+
 ## 2026-09-23 — the same loops a month later, new cases, Manticore
+
+**PHP columns in this section were measured at file scope and are superseded by
+the corrected section above.**
 
 **Machine.** The same i7-11700K and WSL2 kernel as on 2026-08-30, now with
 23 GB of RAM instead of 8. The machine was not idle on its own: other WSL
@@ -185,6 +254,9 @@ configuration. Script `bench/manticore-loop/measure.py`, raw samples
 ---
 
 ## 2026-08-30 — PHP 8.4 against TypePHP and elephc, four loops
+
+**PHP columns in this section were measured at file scope, 3.9× slower under
+the JIT than inside a function; see the corrected 2026-09-23 section.**
 
 **Machine.** Intel Core i7-11700K, 16 threads, 8 GB, Linux
 6.6.114.1-microsoft-standard-WSL2. Idle except for the run.

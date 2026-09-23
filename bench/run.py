@@ -61,7 +61,16 @@ def case_declarations(case_dir):
 
 
 def php_wrapper(body, declarations):
-    return "<?php\n" + declarations + "\n" + body + "\n"
+    """The case as a PHP file whose body runs inside a function, as TypePHP's `main()` does.
+
+    At file scope every variable lives in the global symbol table, where Zend's
+    tracing JIT cannot keep it in a register: the int loop ran 3.9x slower there
+    (431 against 110 ms), which made every "x the JIT" ratio before 2026-09-23 wrong.
+    """
+    indented = "\n".join(("    " + line) if line.strip() else "" for line in body.splitlines())
+
+    return ("<?php\n" + declarations + "\nfunction bench_main(): void\n{\n" + indented
+            + "\n}\n\nbench_main();\n")
 
 
 def typephp_wrapper(body, declarations, directives):

@@ -34,24 +34,26 @@ clones.
 
 ## Measurements
 
-On the current builds, same machine, engines in turns:
+Corrected on the evening of 2026-09-23: until then PHP ran every case at file
+scope, where its JIT is 3.9× slower than inside a function, and every ratio
+against the JIT favoured the compilers (dev/POSTMORTEM.md). With every engine
+given the body inside a function (dev/BENCHMARKS.md, corrected section):
 
-- **elephc beats PHP's JIT on `int_arith`**, 245.6 ms against 415.7, and gives
-  PHP's answer when the same statement overflows. The deck's "compiling PHP as
-  PHP loses to the JIT" is false for elephc 0.27.0 on this loop, and true for
-  TypePHP with PHP ints (962.8 ms, 2.3× the JIT).
-- **The price of PHP's integer semantics** in TypePHP fell from 44× to 11.7×.
-- **Replacing the container** still buys the most: 18.0×, 8.8×, 17.0×.
-- **Interface calls are the new weak spot.** TypePHP compiles plain function
-  calls to C speed (14.6 ms) and spends 58 ns on every interface call
-  (1184 ms against the JIT's 276); elephc spends 219 ns (4790 ms).
-- **The JIT's slow state** did not occur once in 434 processes when engines ran
-  in turns, and occurred in 6–26 % of processes when one binary ran back to
-  back. It exists; its frequency depends on how processes are launched. Cause
-  still unknown.
-- **PHP 8.5** is within 10 % of 8.4 on every case.
-- **"Level with C" means gcc.** clang builds the same C loop 3.7× faster by
-  folding five iterations into one; Manticore, being LLVM, gets the same.
+- **The JIT still beats compiled PHP with PHP semantics.** int_arith: JIT 100 ms
+  (1.2× gcc's C), elephc 0.27 246 ms (2.5×), TypePHP with PHP ints 996 ms (9.9×).
+  The gap is shrinking fast — in August it was 44× and 34× — but it is there.
+- **The price of PHP's int semantics** in TypePHP fell from 43× to 11.8×.
+- **On packed arrays the JIT is 2.2–2.5× from `std::vector`** and 4–7× faster
+  than TypePHP on the same PHP array.
+- **Calls:** TypePHP compiles plain calls to C speed (17 ms against the JIT's 69)
+  and loses 5× to the JIT on interface calls (58 ns each); elephc loses 6× on
+  plain calls and 20× on interface calls.
+- **The JIT's "two states" were mostly a file-scope effect.** Inside a function
+  only array_write splits, by 1.4×.
+- **Manticore** is faster than the JIT on every case but array_write.
+- **PHP 8.5** is within 10 % of 8.4.
+- **"Level with C" means gcc;** clang folds the int loop 3.7× further, as
+  Manticore's LLVM does.
 
 ## TypePHP and Laravel
 
@@ -63,15 +65,16 @@ commands, the five errors in the order they stopped the build, and the timings.
   compilation. Each of them stopped the build with a fatal error, not with the
   documented fallback. Three files end up compiled; Laravel runs as embedded
   Zend bytecode in a 176 MB executable, prints four `$_ENV` warnings into its
-  output, and in a persistent worker serves the framework-heavy request 35 %
+  output, and in a persistent worker serves the framework-heavy request 40 %
   slower than PHP with OPcache.
 - **One typed class as an extension** under an unchanged Laravel: builds in
-  2.6 s, loads, and cuts a request whose work is the hot loop from 4.9 ms to
-  1.2 ms in a persistent worker. In a fresh process per request, the shape of a
-  php-fpm request (php-fpm itself was not run), where every request boots
-  Laravel, the same request goes from 40.7 to 37.3 ms, 9 %.
-- **PHP's JIT did nothing inside Laravel** although it was on; the same method
-  runs 4× faster under it from a plain script. A few runs only, cause unknown.
+  2.6 s, loads, and cuts a request whose work is the hot loop from 5.1 ms to
+  1.3 ms in a persistent worker — 4.0× against OPcache and 1.6× against the JIT.
+  In a fresh process per request, the shape of a php-fpm request (php-fpm itself
+  was not run), the same request goes from 41.2 to 38.5 ms, 7 %.
+- **The JIT does not compile scripts loaded from OPcache's file cache**, which
+  silently switched it off in the first Laravel runs; without the file cache it
+  halves the hot-loop request.
 
 ## Manticore since June
 
@@ -105,17 +108,19 @@ the speed is LLVM folding five iterations into one; the folded result equals
 PHP's, since the mask keeps every intermediate below 2^55, so what the fold
 needed was the absence of an overflow check, not a different answer. The other
 rows were not disassembled. It is the fastest of the PHP compilers in the
-table on integers, calls and strings: `int_arith` 22.2 ms (3.7× under gcc's C, by LLVM
-folding the wrapped loop), `function_call` 9.2 ms, `method_call` 50.8 ms
-against the JIT's 276, `string_build` 73.5 ms, half the JIT. It is not fast on
-arrays: `array_write` 124.9 ms, 22× C and near the JIT's 138.
+table on integers, calls and strings, and faster than the JIT everywhere but
+array_write: `int_arith` 21.1 ms (3.9× under gcc's C, by LLVM
+folding the wrapped loop), `function_call` 8.5 ms, `method_call` 64.4 ms
+against the JIT's 232, `string_build` 64.7 ms, half the JIT. It is not fast on
+array writes: 124.0 ms against the JIT's 42.5.
 
 **Its own benchmark claim, checked.** The README's `loop` row says 22.8× over
 PHP 8.5 on an Apple M1 Pro. Its script times whole processes and runs `php` with
-no flags, so OPcache and the JIT are off; the table does not say so. Measured
-here on x86 the same way: Manticore 24 ms; PHP 8.5.10 without OPcache 363 ms,
-15×; with OPcache and the JIT off, as php-fpm runs by default,
-320 ms, 13.5×; with the tracing JIT 130 ms, 5.5×. The README's 22.8× was
+no flags, so OPcache and the JIT are off, and its `loop.php` is top-level code;
+the table says neither. Measured here on x86: Manticore 24 ms; PHP 8.5.10 on
+their file without OPcache 363 ms, 15×; with OPcache and the JIT off, as php-fpm
+runs by default, 320 ms, 13.5×; with the tracing JIT 130 ms, 5.5×; and the same
+loop inside a function under the JIT 68 ms, 2.9×. The README's 22.8× was
 not reproduced — its PHP took 1.37 s, 3.8× our 363 ms, for a reason we cannot
 see from here.
 
@@ -124,7 +129,7 @@ arrays, with one author and three months of public history. What it does not
 keep is documented — wrapping integers, no visibility checks, pointer equality
 for arrays, no runtime autoload — but none of our timed cases exercises those,
 and the one loop examined gains from an omitted overflow check that range
-analysis could have proven dead. Its object calls cost 2.1 ns more than plain
+analysis could have proven dead. Its object calls cost 2.8 ns more than plain
 calls, against TypePHP's 58 ns, which points at its own object model rather
 than at dropped semantics. How much of its lead is the dialect and how much is
 the engineering is not settled by these measurements.
