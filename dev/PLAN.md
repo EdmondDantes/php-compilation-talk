@@ -198,11 +198,18 @@ retracted, and dev/research/refresh-2026-09.md says so with the sources.
         (58 ns per call in TypePHP, 219 ns in elephc), not calls.
       handoff: bench/cases/{method_call,function_call,string_build,
         int_overflow_chain}; decl.php carries declarations outside main().
-- [ ] S8.6 Carry changed numbers onto player/deck/04-next.html and
+- [x] S8.6 Carry changed numbers onto player/deck/04-next.html and
       bench/infographic.html.
       done: both match the new results file; player/tools/sweep-layout.mjs
       reports 0 collisions.
       tier: T1 · role: —
+      handoff: Edmond chose on 2026-09-23 to keep the August slides as history:
+        the August integer slide and both elephc 0.26.5 slides stay, labelled
+        «История»; September slides follow them, plus new slides on interface
+        calls, Laravel and Manticore's 22.8x. The infographic stays an August
+        snapshot with a pointer. Sweep: 67 slides clean in all three themes;
+        the sweep now exits 2 on a page without slides (it had reported a 404
+        page as clean).
 - [x] S8.7 Write dev/research/refresh-2026-09.md: what changed, the Laravel
       outcome, the new numbers, what is still open.
       done: every figure in it traces to a results file or a link.

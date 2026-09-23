@@ -2384,7 +2384,7 @@
 }
 
 .ratio-card .from-to { font-size: 28px; color: var(--ink); }
-.ratio-card p { margin: 18px 0 0; font-size: 22px; line-height: 1.35; color: var(--dim); }
+.ratio-card p { margin: 18px 0 0; font-size: 24px; line-height: 1.35; color: var(--dim); }
 
 .mode-compare {
   position: absolute;

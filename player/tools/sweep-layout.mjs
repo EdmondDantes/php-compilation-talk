@@ -13,7 +13,8 @@
  *     --window-size=1920,1080 --user-data-dir=/tmp/deck-sweep about:blank
  *   node player/tools/sweep-layout.mjs http://localhost:8000/index.html
  *
- * Exit status is 1 when anything is reported, so a build can gate on it.
+ * Exit status is 1 when anything is reported, so a build can gate on it, and 2
+ * when the page holds no slides at all.
  */
 
 const DECK = process.argv[2] || 'http://localhost:8000/index.html';
@@ -235,6 +236,18 @@ await wait(800);
 await session.send('Page.reload', { ignoreCache: true });
 await wait(SETTLE_MS);
 
+/* A page that is not the deck — a wrong port, a 404, parts that failed to load —
+   has no slides, and a sweep over nothing reports clean. Count them first. */
+const { result: counted } = await session.send('Runtime.evaluate',
+  { expression: "document.querySelectorAll('.stage .slide').length", returnByValue: true });
+const slides = counted.value;
+
+if (!slides) {
+  console.log(`no slides found at ${DECK}: nothing was checked`);
+  session.close();
+  process.exit(2);
+}
+
 let broken = 0;
 
 for (const theme of THEMES) {
@@ -266,7 +279,7 @@ for (const theme of THEMES) {
 session.close();
 
 console.log(broken === 0
-  ? `clean in ${THEMES.join(', ')} at ${STATES.join(', ')}: `
+  ? `${slides} slides clean in ${THEMES.join(', ')} at ${STATES.join(', ')}: `
     + 'no collisions, nothing off the field'
   : `${broken} slide(s) with problems`);
 
