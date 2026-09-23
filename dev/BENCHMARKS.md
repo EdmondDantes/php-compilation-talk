@@ -160,8 +160,8 @@ PHP 8.5's 1.37 s, 22.8×, on an Apple M1 Pro. Its `bench/run.sh` times whole
 processes, best of N, and runs `php` with no flags, so OPcache and the JIT are
 off. The same file here, whole process, startup included, their way:
 Manticore 24 ms (min of 7); PHP 8.5.10 without OPcache 363 ms (31 runs);
-with OPcache, the default production setting since the JIT ships disabled,
-320 ms; with the tracing JIT 130 ms. On this machine that is 15×, 13× and 5.4×.
+with OPcache and the JIT off, as php-fpm runs by default,
+320 ms; with the tracing JIT 130 ms. On this machine that is 15.3×, 13.5× and 5.5×, from the unrounded minimums.
 The README's 22.8× comes from an M1 Pro and a PHP that took 1.37 s, 3.8× our
 interpreter's time; it was not reproduced, and the table never names the PHP
 configuration. Script `bench/manticore-loop/measure.py`, raw samples

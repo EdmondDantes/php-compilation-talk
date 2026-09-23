@@ -67,7 +67,8 @@ commands, the five errors in the order they stopped the build, and the timings.
   slower than PHP with OPcache.
 - **One typed class as an extension** under an unchanged Laravel: builds in
   2.6 s, loads, and cuts a request whose work is the hot loop from 4.9 ms to
-  1.2 ms in a persistent worker. Under php-fpm, where every request boots
+  1.2 ms in a persistent worker. In a fresh process per request, the shape of a
+  php-fpm request (php-fpm itself was not run), where every request boots
   Laravel, the same request goes from 40.7 to 37.3 ms, 9 %.
 - **PHP's JIT did nothing inside Laravel** although it was on; the same method
   runs 4× faster under it from a plain script. A few runs only, cause unknown.
@@ -113,8 +114,8 @@ arrays: `array_write` 124.9 ms, 22× C and near the JIT's 138.
 PHP 8.5 on an Apple M1 Pro. Its script times whole processes and runs `php` with
 no flags, so OPcache and the JIT are off; the table does not say so. Measured
 here on x86 the same way: Manticore 24 ms; PHP 8.5.10 without OPcache 363 ms,
-15×; with OPcache, PHP's default production setting since the JIT ships
-disabled, 320 ms, 13×; with the tracing JIT 130 ms, 5.4×. The README's 22.8× was
+15×; with OPcache and the JIT off, as php-fpm runs by default,
+320 ms, 13.5×; with the tracing JIT 130 ms, 5.5×. The README's 22.8× was
 not reproduced — its PHP took 1.37 s, 3.8× our 363 ms, for a reason we cannot
 see from here.
 
