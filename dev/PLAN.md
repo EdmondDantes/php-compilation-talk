@@ -152,12 +152,24 @@ retracted, and dev/research/refresh-2026-09.md says so with the sources.
         mpdecimal sources by that word), hence the ~/.cache/phpx-2026-09 symlink.
         The `timed` flag and MODE_STEP_FACTOR were kept against the review:
         both guard cases the stored samples do not contain.
-- [ ] S8.3 Re-run the suite twice: the August builds on today's machine
+- [x] S8.3 Re-run the suite twice: the August builds on today's machine
       (23 GB instead of 8), then the current builds, plus PHP 8.5.
       done: a dated section in dev/BENCHMARKS.md separates the machine's
       effect from the versions'; each S7 claim on player/deck/04-next.html
       is marked holds, changed or retracted.
       tier: T2 · role: Critic
+      Critic 2026-09-23: every cell matched the JSON; the conclusions did not.
+        "Keeps PHP's arithmetic" was unproven (the masked loop never
+        overflows), load bursts landed on one engine's whole row, "8-13 %"
+        was 6-17 %, method_call had no control, C was no floor for strings,
+        the slide table missed six claims. All accepted: int_overflow_chain
+        and function_call added, run.py made engines take turns and record
+        /proc/stat load per sample, the suite rerun, the section rewritten.
+      handoff: dev/BENCHMARKS.md, section 2026-09-23; tables from
+        results/2026-09-23-toolchain-2026-08.json and
+        2026-09-23b-toolchain-2026-09.json. elephc 0.27.0 beats the JIT on
+        int_arith with PHP's overflow answer; the JIT slow state did not appear
+        with engines in turns (cause still unknown).
 - [ ] S8.4 Try TypePHP on Laravel two ways: the whole application, and ext
       mode with one typed hot class called from a route, timed with and
       without it.
@@ -165,12 +177,17 @@ retracted, and dev/research/refresh-2026-09.md says so with the sources.
       each way, either the timing or the first blocking error verbatim,
       and names which claim of the vendor each way tests.
       tier: T2 · role: Critic
-- [ ] S8.5 Add two cases tied to slide claims: method dispatch and strings.
+- [x] S8.5 Add two cases tied to slide claims: method dispatch and strings.
       done: cases under bench/cases, rows in dev/BENCHMARKS.md; the other
       candidates (recursion, hash arrays, exceptions, startup and memory,
       compile time, KPHP and Manticore as engines) listed with reasons in
       the report.
       tier: T2 · role: Critic
+      Critic 2026-09-23 (same review as S8.3): method_call needs a control.
+        Accepted: function_call added; with it the loss is interface dispatch
+        (58 ns per call in TypePHP, 219 ns in elephc), not calls.
+      handoff: bench/cases/{method_call,function_call,string_build,
+        int_overflow_chain}; decl.php carries declarations outside main().
 - [ ] S8.6 Carry changed numbers onto player/deck/04-next.html and
       bench/infographic.html.
       done: both match the new results file; player/tools/sweep-layout.mjs
@@ -180,6 +197,12 @@ retracted, and dev/research/refresh-2026-09.md says so with the sources.
       outcome, the new numbers, what is still open.
       done: every figure in it traces to a results file or a link.
       tier: T1 · role: —
+- [ ] S8.8 Analyze Manticore's progress since June, requested 2026-09-23:
+      history, what works and how it is shown, and its prebuilt 0.11.0 run
+      as an engine on our cases, set against its own published loop figure.
+      done: a Manticore section in dev/research/refresh-2026-09.md with
+      sources, and a manticore column in a dated results file.
+      tier: T2 · role: Critic
 
 ## S5. Rehearsal
 

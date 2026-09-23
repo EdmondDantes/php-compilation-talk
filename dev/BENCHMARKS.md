@@ -8,6 +8,181 @@ Method, cases and how to reproduce: `bench/README.md`. Raw output:
 
 ---
 
+## 2026-09-23 — the same loops a month later, new cases, Manticore
+
+**Machine.** The same i7-11700K and WSL2 kernel as on 2026-08-30, now with
+23 GB of RAM instead of 8. The machine was not idle on its own: other WSL
+distributions share the kernel and were compiling at up to 90 % of all
+threads for much of the day, invisibly to `ps`. `run.py` now reads
+`/proc/stat` around every sample and stores the busy share with it (`runs`),
+and it runs the engines in turns, one sample each per round, so that a burst of
+outside load lands on several columns at once instead of on one column's whole
+row. Every run filed below started and ended below 10 % busy.
+
+**Builds.** Two toolchain generations side by side (`bench/env-2026-08.sh`,
+`bench/env-2026-09.sh`), each results file naming its commits in `toolchain`:
+
+- August: TypePHP 0.6.7 `b906bfce`, elephc 0.26.5 `20fa89093`, PHP 8.4.22.
+- September: TypePHP 0.9.2 `43e85b88` with PHPX 2.9.1, elephc 0.27.0
+  `8d19942c2`, Manticore 0.11.0 (release tarball, SHA-256 checked, clang 18.1.3),
+  PHP 8.4.22 and PHP 8.5.10 (Ubuntu PPA package, unpacked, OPcache built in).
+  gcc 13.3 `-O2` for C and for TypePHP's C++.
+
+PHPX 2.9.1 has to be configured from a path without the word "bench" in it:
+its CMakeLists drops every mpdecimal source whose path matches `bench`, so a
+build under `~/.cache/php-compilation-talk-bench` links a `libphpx.so` with 36
+undefined `mpd_*` symbols. We built it through a symlink, `~/.cache/phpx-2026-09`.
+
+**TypePHP columns keep their meaning, not their spelling.** 0.8.0 made native
+scalars the default and removed `use native_types`. `typephp` is now compiled
+under `use varint_types` (PHP ints, widening to float) and `typephp-native`
+with no directive. The overflow probe confirms the mapping.
+
+### The machine alone: August builds, today
+
+`results/2026-09-23-toolchain-2026-08.json`, same binaries as 2026-08-30, the
+engines still run one after another (the turn-taking runner came later that day):
+
+| case | php-interp | php-opcache | php-jit | typephp | typephp-native | typephp-std | elephc | c-gcc-O2 |
+|---|---|---|---|---|---|---|---|---|
+| int_arith | 592.4 | 539.5 | 428.7 * | 3537.1 | 80.5 | — | 4512.0 | 81.8 |
+| array_foreach | 215.3 | 214.2 | 73.5 * | 421.8 | 353.0 | 12.5 | 744.3 | 7.5 |
+| array_index | 255.5 | 254.4 | 61.4 * | 939.7 | 179.3 | 17.6 | 1861.8 | 7.4 |
+| array_write | 268.1 | 267.3 | 141.7 * | 1269.0 | 272.1 | 17.3 | 741.3 | 5.5 |
+
+Every cell is faster than on 2026-08-30, by 6 to 17 %: C by 8 % on
+`int_arith` and 6 % on `array_foreach`, TypePHP with PHP ints by 17 % on
+`array_foreach`. On `int_arith` the ratios held — TypePHP 8.3× the JIT's median
+against 8.2×, elephc 10.5× against 10.7× — but the container ratios drifted on
+unchanged binaries: 28.2×, 10.2× and 15.7× against August's 29.6×, 11.2× and
+16.4×. Those same-day numbers, not August's, are the baseline for what the new
+builds changed. The JIT split on all four loops, 77–87 % of processes fast.
+
+### Current builds
+
+`results/2026-09-23b-toolchain-2026-09.json`, milliseconds, engines in turns.
+A first run of the same builds with the engines one after another
+(`2026-09-23-toolchain-2026-09.json`) is kept but not tabled: load bursts during
+it split three rows that have no JIT, and the whole PHP 8.5 block of
+`array_index` ran slow.
+
+| case | php-interp | php-opcache | php-jit | php85-interp | php85-opcache | php85-jit | typephp | typephp-native | typephp-std | elephc | manticore | c-gcc-O2 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| int_arith | 594.6 | 542.5 | 415.7 | 608.7 * | 541.5 | 411.6 | 962.8 | 82.5 | — | **245.6** | 22.2 | 81.9 |
+| array_foreach | 213.7 | 214.8 | 70.1 | 198.0 | 198.5 | 70.3 | 249.0 | 217.5 | 12.1 | 641.4 | 12.6 | 7.4 |
+| array_index | 253.1 | 253.1 | 57.3 | 252.3 | 254.1 | 58.3 | 148.3 | 123.7 | 14.1 | 1933.3 | 25.2 | 7.3 |
+| array_write | 267.3 | 267.2 | 138.0 | 266.9 | 266.8 | 137.5 | 461.4 | 282.5 | 16.6 | 731.9 | 124.9 | 5.7 |
+| function_call | 367.1 | 296.1 | 106.9 | 354.8 | 297.2 | 102.1 | 325.6 | 14.6 | — | 420.0 | 9.2 | 14.2 |
+| method_call | 541.4 | 512.0 | 276.4 | 533.1 | 507.5 | 270.3 | 1465.3 | 1184.2 | — | 4790.4 | 50.8 | 22.7 |
+| string_build | 199.6 | 196.7 | 145.1 | 209.3 | 215.2 | 145.5 | 552.9 | 305.4 | — | 166.4 | 73.5 | 147.4 |
+
+`php85-interp` on `int_arith` split, 3 of 31 runs at 1.04–1.10 s, with no load
+recorded on them; unexplained. Nothing else split — including every JIT row,
+which is the next finding.
+
+**The JIT's slow state did not appear in this run.** 31 processes in each of
+the 14 JIT rows of the seven timed cases, 434 in all, one group each. The state is real and still happens:
+80 fresh processes of `array_foreach` run back to back later the same hour gave
+5 at 0.23–0.26 s, interpreter speed, against 0.08 s for the rest; the machine
+was 0.13–0.15 busy during those five and 0.09 over all. Its frequency is not a
+property of the engine alone: 6–26 % of processes in every run where the same
+binary ran back to back (August, and both earlier runs today), 0 of 434 in the
+turn-taking run, 6 % an hour later. The cause remains unknown. What the deck
+can say is that a PHP process sometimes runs without its trace, not how often.
+
+**elephc now beats the JIT on this loop, with PHP's answer on overflow.**
+`int_arith` went from 4512 ms to 245.6 ms on the same machine, 18×, and is 1.7×
+faster than the JIT (415.7). `elephc --emit-ir` on 0.27.0 shows one
+`ichecked_numeric_chain_to_int v6 v7 v9 [mul,add]` per iteration and no
+allocation, where 0.26.5 boxed the product twice; this is PR #817, written for
+this loop. Because `int_arith` masks `$h` to 30 bits its check never fires, so a
+new probe, `int_overflow_chain`, starts `$h` at 2^62 and runs the same
+statement three times. PHP 8.4 and 8.5, TypePHP under `use varint_types` and
+elephc 0.27.0 all print `0 2 65`; TypePHP native, Manticore and C print
+`1 33 1026`. So the fused path keeps PHP's arithmetic. The older defect is
+separate and still there: `int_overflow`, where an already-float `$h` is
+doubled again, prints `-1.844674407371E+19` on 0.27.0. The speed-up is also
+specific: elephc's array loops did not improve (`array_index` 1861.8 → 1933.3).
+
+**TypePHP with PHP ints narrowed the gap and did not close it.** 3537 → 962.8
+ms, 2.3× the JIT. Its native column is level with gcc's C (82.5 against 81.9),
+so the price of PHP's widening in TypePHP is 11.7×, not the 44× of August.
+
+**Replacing the container still buys more than compiling.** Against the
+natively typed TypePHP program with a PHP array, `std::vector` gives 18.0× on
+`foreach` (217.5 → 12.1), 8.8× on indexed reads, 17.0× on indexed writes. The
+same-day August baseline was 28.2×, 10.2×, 15.7×: `foreach` and reads shrank
+because TypePHP's PHP-array paths got faster (353 → 218, 179 → 124 ms); writes
+did not change.
+
+**Interface dispatch is where TypePHP and elephc lose, and calls are not.**
+`method_call` alternates two `final` implementations of one interface, 2·10^7
+calls; its control, `function_call`, does the same arithmetic through two
+plain functions chosen by the same parity test.
+
+| | function_call | method_call | difference per call |
+|---|---|---|---|
+| PHP 8.4 JIT | 106.9 | 276.4 | 8.5 ns |
+| TypePHP native | 14.6 | 1184.2 | 58 ns |
+| elephc | 420.0 | 4790.4 | 219 ns |
+| Manticore | 9.2 | 50.8 | 2.1 ns |
+| C (gcc) | 14.2 | 22.7 | 0.4 ns |
+
+TypePHP compiles the function version to C speed and then spends 58 ns on
+every interface call — it keeps objects in Zend. elephc pays 21 ns per plain
+call and 219 ns per method. C's `method_call` is a real indirect call through a
+pointer table (`call *%rdx` in the disassembly); the function version is
+inlined. Whether the JIT inlines `apply` was not checked.
+
+**Short strings: the JIT and elephc tie, Manticore is 2× faster.**
+`string_build` computes `"key:" . $i` 5·10^6 times and reads its length and one
+byte: JIT 145 ms, elephc 166, Manticore 73.5, TypePHP 305 native and 553 with
+PHP ints. C's 147 ms is `snprintf`, a general formatter, and is no floor for
+this case.
+
+**Manticore reaches clang, and "level with C" depends on the C compiler.**
+Manticore's 22.2 ms on `int_arith` is 3.7× under gcc's C. Its binary runs five
+iterations per pass: LLVM multiplies by 31^5 (`imul $0x1b4d89f`) and adds a
+precomputed constant, which is valid because its ints wrap and the mask works
+modulo 2^30. The same `main.c` built with `clang -O2` does it too and runs in
+23.2 ms; gcc's build takes 85.8 ms. Every "level with C" in this file means
+gcc -O2. Manticore is the fastest compiled column on most rows but not on
+arrays: `array_write` 124.9 ms, 22× C.
+
+**PHP 8.5 changes nothing measurable here.** Every 8.5 column is within 10 % of
+its 8.4 twin, in both directions, apart from the unexplained interpreter split.
+
+### Manticore's own `loop` benchmark, measured our way
+
+Manticore's README reports its `loop` case (`bench/cases/loop.php`,
+`$acc = ($acc*3 + ($i&7)) & 0x3FFFFFFF`, 5·10^7 iterations) at 0.06 s against
+PHP 8.5's 1.37 s, 22.8×, on an Apple M1 Pro. Its `bench/run.sh` times whole
+processes, best of N, and runs `php` with no flags, so OPcache and the JIT are
+off. The same file here, whole process, startup included, their way:
+Manticore 24 ms (min of 7); PHP 8.5.10 without OPcache 363 ms (31 runs);
+with OPcache 320 ms; with the tracing JIT 130 ms. The project's ratio
+reproduces in kind — 15× here against the interpreter — and shrinks to 5.4×
+against the JIT that a production PHP would run. The table never names that
+configuration. Script `bench/manticore-loop/measure.py`, raw samples
+`results/2026-09-23-manticore-loop.json`.
+
+### What the slides say, checked
+
+| slide in player/deck/04-next.html | claim | status |
+|---|---|---|
+| Как мы замеряли | eight engines, PHP 8.4.22, TypePHP 0.6.7, elephc 0.26.5; "ничего постороннего" | dated; the machine is no longer idle by itself, runs now record load |
+| Четыре реализации переполнения | TypePHP "Zend или явный int64_t"; elephc keeps PHP semantics for +, −, × | TypePHP: int64 by default, PHP ints under `use varint_types`. elephc: holds for the fused chain, fails when a float result is multiplied again |
+| Целочисленный цикл, title and note | "Ускоряет не компиляция"; compiling alone buys nothing | **refuted for elephc 0.27.0**: 245.6 ms against the JIT's 415.7 with PHP's overflow answer |
+| Целочисленный цикл | JIT 485, TypePHP PHP semantics 3996 (6–8×), elephc 5202 (8–11×), native 90, C 89, JIT slow 683, opcache 587 | **changed**: 415.7; 962.8 (2.3×); 245.6 (0.6×); 82.5; 81.9; no slow runs; 542.5 |
+| Одно слово в объявлении | the arithmetic change buys 44× | **changed**: 11.7×, and the native form is now the default |
+| Массивы | container swap 29.6×, 11.2×, 16.4×; 417→14, 209→19, 308→19 ms | **changed**: 18.0×, 8.8×, 17.0×; 217.5→12.1, 123.7→14.1, 282.5→16.6 ms |
+| У JIT два режима | 74–90 % of processes fast; slow runs worse than no JIT on reads and ints | state holds, frequency does not: 0 % to 26 % by run; slow reads now level with opcache |
+| Почему elephc медленнее | two heap boxes per iteration | **0.26.5 only** |
+| Цена реализации elephc | 925 instructions/iteration, 83.5 % servicing the number; TypePHP PHP semantics 491 | **0.26.5 and 0.6.7 only**, not re-profiled |
+| Одна программа — три ответа | TypePHP `native_types` prints 0; elephc −1.84e19 | holds; TypePHP prints 0 with no directive now |
+
+---
+
 ## 2026-08-30 — PHP 8.4 against TypePHP and elephc, four loops
 
 **Machine.** Intel Core i7-11700K, 16 threads, 8 GB, Linux

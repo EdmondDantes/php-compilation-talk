@@ -6,7 +6,7 @@ says how to reproduce them and what the numbers do and do not cover.
 
 ## What is measured
 
-Four timed workloads and one semantics probe, each a handful of lines:
+Seven timed workloads and two semantics probes, each a handful of lines:
 
 | case | what it stresses |
 |---|---|
@@ -14,7 +14,16 @@ Four timed workloads and one semantics probe, each a handful of lines:
 | `array_foreach` | `foreach` over a packed int array of 2000, 20 000 times |
 | `array_index` | the same traffic through `$a[$j]` instead of `foreach` |
 | `array_write` | indexed writes into a preallocated array |
+| `function_call` | two plain functions picked by parity, 2·10^7 calls; the control for `method_call` |
+| `method_call` | the same arithmetic through two `final` classes behind one interface |
+| `string_build` | `"key:" . $i`, then its length and one byte, 5·10^6 times |
 | `int_overflow` | not timed: what each engine answers when an int overflows |
+| `int_overflow_chain` | not timed: the `int_arith` statement made to overflow |
+
+A case may carry `decl.php` with the functions, classes and interfaces it
+needs: TypePHP accepts no class declared inside a function, and its wrapper puts
+the body inside `main()`, so declarations are kept apart and placed at the top
+of every engine's source.
 
 The bodies avoid closed forms on purpose. `int_arith` carries a dependency
 through every iteration (`$h = ($h * 31 + $i) & 0x3fffffff`), so no compiler can
@@ -27,11 +36,13 @@ fold the loop into a constant and report a time that measures nothing.
 | `php-interp` | PHP 8.4.22 NTS, `-n`: no opcache at all |
 | `php-opcache` | the same with opcache, JIT off |
 | `php-jit` | the same with the tracing JIT |
-| `typephp` | TypePHP AOT, PHP semantics kept — no `use native_types` |
-| `typephp-native` | TypePHP with `use native_types`: int becomes `int64_t` |
-| `typephp-std` | `use native_types` **and** `std::vector` instead of a PHP array |
+| `php85-*` | the same three for PHP 8.5, from the September profile |
+| `typephp` | TypePHP AOT, PHP int semantics kept (0.6: no directive; 0.9: `use varint_types`) |
+| `typephp-native` | TypePHP with int as `int64_t` (0.6: `use native_types`; 0.9: the default) |
+| `typephp-std` | native ints **and** `std::vector` instead of a PHP array |
 | `elephc` | elephc, no Zend runtime |
-| `c-gcc-O2` | the same loop written in C, as the floor |
+| `manticore` | Manticore, PHP to LLVM IR, no Zend runtime; ints wrap |
+| `c-gcc-O2` | the same loop written in C, as the floor for gcc; clang reaches lower on `int_arith` |
 
 The three TypePHP columns exist because a single "compiled" number hides which
 of three separate changes bought the time: compiling the code, typing the
@@ -47,6 +58,12 @@ native binary starts in a millisecond and a PHP process does not, and that gap
 says nothing about a loop. Every sample survives into the results file as
 `samples_s`, and the file's `toolchain` block names the machine, the PHP
 binaries, and the version and commit of each compiler it measured.
+
+The engines take turns: each round runs every engine once, so a burst of
+outside load falls on several columns instead of one column's whole row, where
+it would read as a property of that engine. Each sample also stores the busy
+share of the whole machine while it ran, from `/proc/stat`, under `runs`: on
+WSL2 other distributions share the kernel and their load is invisible to `ps`.
 
 What is reported then depends on the shape of the samples, and the runner
 decides, not the reader:
@@ -90,7 +107,7 @@ today's machine:
 | profile | TypePHP | elephc | PHP |
 |---|---|---|---|
 | `env-2026-08.sh` | 0.6.7 | 0.26.5 | 8.4.22 |
-| `env-2026-09.sh` | 0.9.2 | 0.27.0 | 8.4.22, and 8.5.10 as `php85-*` |
+| `env-2026-09.sh` | 0.9.2 | 0.27.0 | 8.4.22, and 8.5.10 as `php85-*`; plus Manticore 0.11.0 |
 
 ```bash
 cd bench

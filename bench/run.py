@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compares one PHP loop across Zend, TypePHP, elephc and C on a single machine.
+"""Compares one PHP loop across Zend, TypePHP, elephc, Manticore and C on a single machine.
 
 Every case is a `body.php` written once and wrapped per engine, so the measured
 source is byte-identical everywhere except for the wrapper a compiler demands.
@@ -49,14 +49,66 @@ class Engine:
         self.body_file = body_file
 
 
-def php_wrapper(body):
-    return "<?php\n" + body + "\n"
+def case_declarations(case_dir):
+    """Classes and interfaces a case needs, from its `decl.php`; empty when it has none.
+
+    They are kept apart from the body because TypePHP accepts no class declared
+    inside a function, and its wrapper puts the body inside `main()`.
+    """
+    decl = case_dir / "decl.php"
+
+    return decl.read_text() if decl.exists() else ""
 
 
-def typephp_wrapper(body, directives):
+def php_wrapper(body, declarations):
+    return "<?php\n" + declarations + "\n" + body + "\n"
+
+
+def typephp_wrapper(body, declarations, directives):
     indented = "\n".join(("    " + line) if line.strip() else "" for line in body.splitlines())
 
-    return "<?php\n" + directives + "\nfunction main(): int\n{\n" + indented + "\n\n    return 0;\n}\n"
+    return ("<?php\n" + directives + "\n" + declarations
+            + "\nfunction main(): int\n{\n" + indented + "\n\n    return 0;\n}\n")
+
+
+def cpu_counters():
+    """(total, idle) jiffies of the whole machine, from the first line of /proc/stat."""
+    fields = [int(v) for v in Path("/proc/stat").read_text().split("\n", 1)[0].split()[1:8]]
+
+    return sum(fields), fields[3] + fields[4]
+
+
+def busy_between(before, after):
+    """Share of all CPU time spent outside idle between two `cpu_counters()` readings.
+
+    It counts load this process cannot see: on WSL2 every distribution and
+    container shares one kernel, so `ps` can show an idle machine while
+    /proc/stat shows it 90 % busy, and a single-threaded loop still slows down.
+    The measured program itself is in the figure: one busy thread of sixteen is
+    0.0625.
+    """
+    total = after[0] - before[0]
+    idle = after[1] - before[1]
+
+    return round(1.0 - idle / max(total, 1), 3)
+
+
+def busy_share(seconds=3.0):
+    """Busy share of the machine over `seconds` of this process sleeping."""
+    before = cpu_counters()
+    time.sleep(seconds)
+
+    return busy_between(before, cpu_counters())
+
+
+def run_once(argv, cwd=None):
+    """Runs argv once: (seconds, stdout, returncode, busy share of the machine meanwhile)."""
+    counters = cpu_counters()
+    started = time.perf_counter()
+    result = subprocess.run(argv, cwd=cwd, capture_output=True, text=True)
+    elapsed = time.perf_counter() - started
+
+    return elapsed, result.stdout.strip(), result.returncode, busy_between(counters, cpu_counters())
 
 
 def measure(argv, repeats, cwd=None):
@@ -71,10 +123,8 @@ def measure(argv, repeats, cwd=None):
     code = 0
 
     for _ in range(repeats):
-        started = time.perf_counter()
-        result = subprocess.run(argv, cwd=cwd, capture_output=True, text=True)
-        samples.append(time.perf_counter() - started)
-        output, code = result.stdout.strip(), result.returncode
+        elapsed, output, code, _ = run_once(argv, cwd)
+        samples.append(elapsed)
 
         if code != 0:
             break
@@ -85,7 +135,7 @@ def measure(argv, repeats, cwd=None):
 def make_php_engine(name, binary, extra_args):
     def build(body, workdir, case_dir):
         source = workdir / "case.php"
-        source.write_text(php_wrapper(body))
+        source.write_text(php_wrapper(body, case_declarations(case_dir)))
 
         return [binary, *extra_args, str(source)]
 
@@ -149,7 +199,7 @@ def make_typephp_engine(name, tpc_php, tpc_root, php_binary, directives, body_fi
 
     def build(body, workdir, case_dir):
         source = workdir / "case.php"
-        source.write_text(typephp_wrapper(body, directives))
+        source.write_text(typephp_wrapper(body, case_declarations(case_dir), directives))
 
         binary = workdir / "case_tp"
 
@@ -170,7 +220,7 @@ def make_typephp_engine(name, tpc_php, tpc_root, php_binary, directives, body_fi
 def make_elephc_engine(name, elephc_bin):
     def build(body, workdir, case_dir):
         source = workdir / "case.php"
-        source.write_text(php_wrapper(body))
+        source.write_text(php_wrapper(body, case_declarations(case_dir)))
 
         # elephc has no output flag: the binary lands beside the source, minus the .php suffix.
         binary = workdir / "case"
@@ -180,6 +230,25 @@ def make_elephc_engine(name, elephc_bin):
 
         if compiled.returncode != 0 or not binary.exists():
             (workdir / "elephc.log").write_text(compiled.stdout + compiled.stderr)
+            return None
+
+        return [str(binary)]
+
+    return Engine(name, build)
+
+
+def make_manticore_engine(name, manticore_bin):
+    def build(body, workdir, case_dir):
+        source = workdir / "case.php"
+        source.write_text(php_wrapper(body, case_declarations(case_dir)))
+
+        binary = workdir / "case_mc"
+
+        compiled = subprocess.run([manticore_bin, "compile", str(source), "-o", str(binary)],
+                                  capture_output=True, text=True)
+
+        if compiled.returncode != 0 or not binary.exists():
+            (workdir / "manticore.log").write_text(compiled.stdout + compiled.stderr)
             return None
 
         return [str(binary)]
@@ -269,39 +338,65 @@ def run_case(case_dir, engines, repeats, startup, keep):
     failed, `failed` when the program ran and exited non-zero, and otherwise the
     summary `summarize` produces. Nothing here decides which figure represents a
     row that split — see `summarize`.
+
+    The engines take turns: round r runs every engine that still owes a sample
+    once, then round r+1 begins. A burst of outside load therefore lands on the
+    samples of several engines at once instead of on one engine's whole row,
+    where it would read as a property of that engine. Each sample keeps the busy
+    share of the machine while it ran, in run order, as `runs`.
     """
     rows = {}
+    built = {}
+    workdirs = []
 
     # A case carrying divergence.md exists to compare answers, not times.
     timed = not (case_dir / DIVERGENCE_MARKER).exists()
 
-    for engine in engines:
-        body_path = case_dir / engine.body_file
+    try:
+        for engine in engines:
+            body_path = case_dir / engine.body_file
 
-        if not body_path.exists():
-            rows[engine.name] = {"status": "unsupported"}
-            continue
+            if not body_path.exists():
+                rows[engine.name] = {"status": "unsupported"}
+                continue
 
-        body = body_path.read_text()
-        workdir = Path(tempfile.mkdtemp(prefix=f"bench_{case_dir.name}_{engine.name}_"))
-
-        try:
-            argv = engine.build(body, workdir, case_dir)
+            workdir = Path(tempfile.mkdtemp(prefix=f"bench_{case_dir.name}_{engine.name}_"))
+            workdirs.append(workdir)
+            argv = engine.build(body_path.read_text(), workdir, case_dir)
 
             if argv is None:
                 rows[engine.name] = {"status": "unsupported"}
                 continue
 
-            samples, output, code = measure(argv, engine.repeats or repeats)
+            built[engine.name] = (argv, engine.repeats or repeats)
 
-            if code != 0:
-                rows[engine.name] = {"status": "failed", "output": output}
+        runs = {name: [] for name in built}
+        outputs = {}
+
+        for round_index in range(max((count for _, count in built.values()), default=0)):
+            for name, (argv, count) in built.items():
+                if round_index >= count or name in rows:
+                    continue
+
+                elapsed, output, code, busy = run_once(argv)
+                outputs[name] = output
+
+                if code != 0:
+                    rows[name] = {"status": "failed", "output": output}
+                    continue
+
+                runs[name].append((elapsed, busy))
+
+        for name in built:
+            if name in rows:
                 continue
 
-            overhead = startup.get(engine.name, 0.0)
-            rows[engine.name] = summarize(samples, overhead, output, timed)
-        finally:
-            if not keep:
+            overhead = startup.get(name, 0.0)
+            rows[name] = summarize([t for t, _ in runs[name]], overhead, outputs[name], timed)
+            rows[name]["runs"] = [[round(max(t - overhead, 0.0), 6), busy] for t, busy in runs[name]]
+    finally:
+        if not keep:
+            for workdir in workdirs:
                 shutil.rmtree(workdir, ignore_errors=True)
 
     return rows
@@ -404,9 +499,17 @@ def collect_engines(args):
     if args.elephc:
         engines.append(make_elephc_engine("elephc", args.elephc))
 
+    if args.manticore:
+        engines.append(make_manticore_engine("manticore", args.manticore))
+
     engines.append(make_c_engine("c-gcc-O2", ["-O2"]))
 
     return engines
+
+
+# Above this share of busy CPU the machine is not the idle one the method assumes;
+# the run still goes ahead, but says so and records it.
+BUSY_WARNING = 0.25
 
 
 def first_line(argv):
@@ -458,6 +561,10 @@ def describe_toolchain(args):
         toolchain["elephc"] = {"version": first_line([args.elephc, "--version"]),
                                "commit": git_commit(Path(args.elephc).resolve().parents[2])}
 
+    if args.manticore:
+        toolchain["manticore"] = {"version": first_line([args.manticore, "version"]),
+                                  "clang": first_line(["clang", "--version"])}
+
     return toolchain
 
 
@@ -501,7 +608,12 @@ def resummarize(source, target):
             if row.get("status") != "ok":
                 continue
 
-            rows[name] = summarize(row["samples_s"], 0.0, row["output"], timed)
+            summary = summarize(row["samples_s"], 0.0, row["output"], timed)
+
+            if "runs" in row:
+                summary["runs"] = row["runs"]
+
+            rows[name] = summary
 
     target.write_text(json.dumps(payload, indent=2))
     print(f"re-summarized {source} -> {target}")
@@ -548,6 +660,8 @@ def main():
                         help="directive line under which this TypePHP compiles int as int64_t")
     parser.add_argument("--elephc", default=os.environ.get("ELEPHC_BIN"),
                         help="path to the elephc binary")
+    parser.add_argument("--manticore", default=os.environ.get("MANTICORE_BIN"),
+                        help="path to the manticore compiler binary")
     parser.add_argument("--case", action="append", help="run only these cases")
     parser.add_argument("--repeats", type=int, default=5, help="timed runs per engine and case")
     parser.add_argument("--json", help="write machine-readable results here; one file per run")
@@ -569,6 +683,11 @@ def main():
 
         names = [n for n in names if n in args.case]
 
+    busy_before = busy_share()
+
+    if busy_before > BUSY_WARNING:
+        print(f"WARNING: the machine is {busy_before * 100:.0f} % busy before the run", flush=True)
+
     print("measuring startup", flush=True)
     startup = measure_startup(engines, args.repeats)
 
@@ -584,9 +703,15 @@ def main():
     print()
     print(format_table(results, engines))
 
+    busy_after = busy_share()
+
+    if busy_after > BUSY_WARNING:
+        print(f"WARNING: the machine is {busy_after * 100:.0f} % busy after the run", flush=True)
+
     if args.json:
         payload = {
             "host": os.uname().nodename,
+            "busy_share": {"before": busy_before, "after": busy_after},
             "toolchain": describe_toolchain(args),
             "startup_s": startup,
             "results": results,

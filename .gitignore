@@ -8,3 +8,4 @@ player/inventory.html
 # OS noise
 Thumbs.db
 .DS_Store
+__pycache__/
