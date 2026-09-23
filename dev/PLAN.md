@@ -24,9 +24,6 @@ Review 2026-09-23: code since 08ae6e6 — bench/run.py has four nesting
   JIT with PHP's semantics weakens the "compiling alone buys nothing" half.
 - The JIT does almost nothing inside a Laravel request although it is on
   (dev/research/typephp-laravel.md); a few runs only, cause unknown.
-- Two slides collide in the sweep in all themes and predate S8: «Языки
-  умерли» (obituary text over the Mojo and Zero labels, possibly intended)
-  and «Память TypePHP» (a highlighted comment over its plate).
 - The date of the talk is not recorded anywhere, so the time left for S4
   and S5 cannot be judged.
 - Limelight stays in the talk as a live example, but there is little to
