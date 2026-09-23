@@ -133,13 +133,20 @@ retracted, and dev/research/refresh-2026-09.md says so with the sources.
       done: a dated update per project in dev/research/php-compilers.md and
       dev/research/typephp-review.md, each claim linked.
       tier: T1 · role: —
-- [ ] S8.2 Build current TypePHP and elephc next to the August builds, not
+- [x] S8.2 Build current TypePHP and elephc next to the August builds, not
       over them; one env profile per toolchain generation; run.py stamps
       engine versions and commits into its JSON and writes one file per
       run; simplify run.py as the 2026-09-23 review found.
       done: both generations run int_overflow; the August results.json is
       frozen under a dated name and re-summarizes unchanged.
       tier: T2 · role: —
+      handoff: bench/env-2026-08.sh and env-2026-09.sh; September builds under
+        ~/.cache/php-compilation-talk-bench/2026-09. int_overflow runs on both;
+        results/2026-08-30.json re-summarizes byte-identical. PHPX 2.9.1 must be
+        configured from a path without "bench" in it (its CMake filters
+        mpdecimal sources by that word), hence the ~/.cache/phpx-2026-09 symlink.
+        The `timed` flag and MODE_STEP_FACTOR were kept against the review:
+        both guard cases the stored samples do not contain.
 - [ ] S8.3 Re-run the suite twice: the August builds on today's machine
       (23 GB instead of 8), then the current builds, plus PHP 8.5.
       done: a dated section in dev/BENCHMARKS.md separates the machine's

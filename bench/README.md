@@ -44,8 +44,9 @@ and carries its own `body-std.php`; the other columns all run the same
 Process startup is measured separately, with an empty program of the same
 engine, and subtracted from every sample before anything else is computed — a
 native binary starts in a millisecond and a PHP process does not, and that gap
-says nothing about a loop. Every sample survives into `results.json` as
-`samples_s`.
+says nothing about a loop. Every sample survives into the results file as
+`samples_s`, and the file's `toolchain` block names the machine, the PHP
+binaries, and the version and commit of each compiler it measured.
 
 What is reported then depends on the shape of the samples, and the runner
 decides, not the reader:
@@ -70,7 +71,7 @@ wrong claim into the deck, and `dev/BENCHMARKS.md` records what that cost. The
 PHP columns therefore run 31 times regardless of `--repeats`; two states cannot
 be told apart from a handful of samples.
 
-`run.py --from-json results.json` re-summarizes stored samples under the current
+`run.py --from-json results/2026-08-30.json` re-summarizes stored samples under the current
 rules without measuring again. That is what keeping them buys: the split test
 here has already been corrected twice, and neither correction cost machine time.
 
@@ -79,20 +80,32 @@ Where engines disagree, the disagreement is the result; see `int_overflow`.
 
 ## Running it
 
-The toolchains are not distribution packages. `env.sh` points at a private PHP
-built with `--enable-embed=shared` (TypePHP needs the Embed SAPI, which the
+The toolchains are not distribution packages. An env profile points at a private
+PHP built with `--enable-embed=shared` (TypePHP needs the Embed SAPI, which the
 Ubuntu packages omit), at a TypePHP checkout with `vendor/` installed and PHPX
-built, and at an elephc binary.
+built, and at an elephc binary. There is one profile per toolchain generation,
+and the builds of each live side by side, so an old result can be rerun on
+today's machine:
+
+| profile | TypePHP | elephc | PHP |
+|---|---|---|---|
+| `env-2026-08.sh` | 0.6.7 | 0.26.5 | 8.4.22 |
+| `env-2026-09.sh` | 0.9.2 | 0.27.0 | 8.4.22, and 8.5.10 as `php85-*` |
 
 ```bash
 cd bench
-. ./env.sh
-python3 run.py --repeats 7 --json results.json   # the PHP columns run 31 times regardless
+. ./env-2026-09.sh
+python3 run.py --repeats 7 --json results/$(date +%F)-$BENCH_PROFILE.json   # the PHP columns run 31 times regardless
 ```
 
-Override `BENCH_SCRATCH`, `TYPEPHP_ROOT`, `ELEPHC_BIN` or `PHP_HOME` before
-sourcing to point at your own builds. Setting up those builds is written down
-in `dev/BENCHMARKS.md` under the run they belong to.
+One run, one file under `results/`; a run never overwrites another. The TypePHP
+columns are defined by what an int is — `typephp` keeps PHP's widening to float,
+`typephp-native` compiles `int64_t` — and the profile names the directive that
+spells each in its release, because 0.9 inverted the default.
+
+Override `BENCH_SCRATCH`, `BENCH_PHP`, `PHP_HOME` or `LOCALDEV` before sourcing
+to point at your own builds. Setting up those builds is written down in
+`dev/BENCHMARKS.md` under the run they belong to.
 
 ## Limits
 

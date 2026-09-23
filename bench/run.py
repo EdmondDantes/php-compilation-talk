@@ -31,14 +31,13 @@ EMPTY_BODY = 'echo "0\\n";'
 class Engine:
     """One way of running a case: how its source is written, built and invoked.
 
-    `name` is the column in the report. `build` receives the case body and a
-    scratch directory and returns the argv to run, or None when the engine
-    cannot express this case — a skip, never a zero.
+    `name` is the column in the report. `build` receives the case body, a
+    scratch directory and the case directory, and returns the argv to run, or
+    None when the engine cannot express this case — a skip, never a zero.
     """
 
-    def __init__(self, name, kind, build, body_file="body.php", repeats=None):
+    def __init__(self, name, build, body_file="body.php", repeats=None):
         self.name = name
-        self.kind = kind
         self.build = build
 
         # None means "take the run's default"; a column known to be bimodal names
@@ -54,18 +53,10 @@ def php_wrapper(body):
     return "<?php\n" + body + "\n"
 
 
-def typephp_wrapper(body, directives=""):
+def typephp_wrapper(body, directives):
     indented = "\n".join(("    " + line) if line.strip() else "" for line in body.splitlines())
 
     return "<?php\n" + directives + "\nfunction main(): int\n{\n" + indented + "\n\n    return 0;\n}\n"
-
-
-def run_once(argv, cwd=None):
-    started = time.perf_counter()
-    result = subprocess.run(argv, cwd=cwd, capture_output=True, text=True)
-    elapsed = time.perf_counter() - started
-
-    return elapsed, result.stdout.strip(), result.returncode
 
 
 def measure(argv, repeats, cwd=None):
@@ -80,8 +71,10 @@ def measure(argv, repeats, cwd=None):
     code = 0
 
     for _ in range(repeats):
-        elapsed, output, code = run_once(argv, cwd)
-        samples.append(elapsed)
+        started = time.perf_counter()
+        result = subprocess.run(argv, cwd=cwd, capture_output=True, text=True)
+        samples.append(time.perf_counter() - started)
+        output, code = result.stdout.strip(), result.returncode
 
         if code != 0:
             break
@@ -90,20 +83,41 @@ def measure(argv, repeats, cwd=None):
 
 
 def make_php_engine(name, binary, extra_args):
-    def build(body, workdir):
+    def build(body, workdir, case_dir):
         source = workdir / "case.php"
         source.write_text(php_wrapper(body))
 
         return [binary, *extra_args, str(source)]
 
-    return Engine(name, "php", build, repeats=PHP_REPEATS)
+    return Engine(name, build, repeats=PHP_REPEATS)
+
+
+def opcache_is_builtin(binary):
+    """PHP 8.5 compiles OPcache in; 8.4 ships it as a zend_extension to load."""
+    probe = subprocess.run([binary, "-n", "-r", 'echo extension_loaded("Zend OPcache") ? 1 : 0;'],
+                           capture_output=True, text=True)
+
+    return probe.stdout.strip() == "1"
+
+
+def make_php_engines(prefix, binary):
+    """The three Zend columns for one PHP binary: no opcache, opcache alone, tracing JIT."""
+    load = [] if opcache_is_builtin(binary) else ["-d", "zend_extension=opcache.so"]
+    opcache = ["-n", *load, "-d", "opcache.enable_cli=1"]
+
+    return [
+        make_php_engine(f"{prefix}-interp", binary, ["-n"]),
+        make_php_engine(f"{prefix}-opcache", binary, [*opcache, "-d", "opcache.jit=disable"]),
+        make_php_engine(f"{prefix}-jit", binary, [
+            *opcache, "-d", "opcache.jit_buffer_size=64M", "-d", "opcache.jit=tracing"]),
+    ]
 
 
 EMPTY_C = '#include <stdio.h>\n\nint main(void)\n{\n    printf("0\\n");\n    return 0;\n}\n'
 
 
 def make_c_engine(name, cflags):
-    def build(body, workdir, case_dir=None):
+    def build(body, workdir, case_dir):
         if body == EMPTY_BODY:
             source = workdir / "empty.c"
             source.write_text(EMPTY_C)
@@ -122,25 +136,25 @@ def make_c_engine(name, cflags):
 
         return [str(binary)]
 
-    return Engine(name, "c", build)
+    return Engine(name, build)
 
 
-def make_typephp_engine(name, tpc_php, tpc_root, php_binary, directives, opt_flags, body_override=None):
-    """`body_override` names an alternative body file, for variants that rewrite the source.
+def make_typephp_engine(name, tpc_php, tpc_root, php_binary, directives, body_file="body.php"):
+    """`body_file` names an alternative body, for variants that rewrite the source.
 
     The std-container variant is such a rewrite: it swaps the PHP array for
     `std::vector`, so it measures a different program and is reported as its own
     column rather than folded into the compiled-PHP number.
     """
 
-    def build(body, workdir):
+    def build(body, workdir, case_dir):
         source = workdir / "case.php"
         source.write_text(typephp_wrapper(body, directives))
 
         binary = workdir / "case_tp"
 
         compiled = subprocess.run(
-            [php_binary, str(tpc_php), str(source), *opt_flags, "-o", str(binary),
+            [php_binary, str(tpc_php), str(source), "-O2", "-o", str(binary),
              "--no-progress", "--no-color", "--build-dir", str(workdir / "build")],
             cwd=str(tpc_root), capture_output=True, text=True)
 
@@ -150,18 +164,18 @@ def make_typephp_engine(name, tpc_php, tpc_root, php_binary, directives, opt_fla
 
         return [str(binary)]
 
-    return Engine(name, "typephp", build, body_override or "body.php")
+    return Engine(name, build, body_file)
 
 
-def make_elephc_engine(name, elephc_bin, opt_flags):
-    def build(body, workdir):
+def make_elephc_engine(name, elephc_bin):
+    def build(body, workdir, case_dir):
         source = workdir / "case.php"
         source.write_text(php_wrapper(body))
 
         # elephc has no output flag: the binary lands beside the source, minus the .php suffix.
         binary = workdir / "case"
 
-        compiled = subprocess.run([elephc_bin, str(source), *opt_flags],
+        compiled = subprocess.run([elephc_bin, str(source), "-q"],
                                   capture_output=True, text=True)
 
         if compiled.returncode != 0 or not binary.exists():
@@ -170,14 +184,7 @@ def make_elephc_engine(name, elephc_bin, opt_flags):
 
         return [str(binary)]
 
-    return Engine(name, "elephc", build)
-
-
-def build_argv(engine, body, workdir, case_dir):
-    if engine.kind == "c":
-        return engine.build(body, workdir, case_dir)
-
-    return engine.build(body, workdir)
+    return Engine(name, build)
 
 
 DIVERGENCE_MARKER = "divergence.md"
@@ -279,7 +286,7 @@ def run_case(case_dir, engines, repeats, startup, keep):
         workdir = Path(tempfile.mkdtemp(prefix=f"bench_{case_dir.name}_{engine.name}_"))
 
         try:
-            argv = build_argv(engine, body, workdir, case_dir)
+            argv = engine.build(body, workdir, case_dir)
 
             if argv is None:
                 rows[engine.name] = {"status": "unsupported"}
@@ -348,7 +355,7 @@ def measure_startup(engines, repeats):
         workdir = Path(tempfile.mkdtemp(prefix=f"bench_startup_{engine.name}_"))
 
         try:
-            argv = build_argv(engine, EMPTY_BODY, workdir, CASES / "int_arith")
+            argv = engine.build(EMPTY_BODY, workdir, CASES / "int_arith")
 
             if argv is None:
                 continue
@@ -363,32 +370,95 @@ def measure_startup(engines, repeats):
     return startup
 
 
-def collect_engines(args):
-    engines = []
-    php = args.php
+def php_column_prefix(binary):
+    """`php85` for a PHP 8.5 binary: the columns of a second release carry its version."""
+    probe = subprocess.run([binary, "-n", "-r", "echo PHP_MAJOR_VERSION . PHP_MINOR_VERSION;"],
+                           capture_output=True, text=True)
 
-    engines.append(make_php_engine("php-interp", php, ["-n"]))
-    engines.append(make_php_engine("php-opcache", php, [
-        "-n", "-d", "zend_extension=opcache.so", "-d", "opcache.enable_cli=1", "-d", "opcache.jit=disable"]))
-    engines.append(make_php_engine("php-jit", php, [
-        "-n", "-d", "zend_extension=opcache.so", "-d", "opcache.enable_cli=1",
-        "-d", "opcache.jit_buffer_size=64M", "-d", "opcache.jit=tracing"]))
+    return "php" + probe.stdout.strip()
+
+
+def collect_engines(args):
+    php = args.php
+    engines = make_php_engines("php", php)
+
+    for binary in args.php_extra or []:
+        engines += make_php_engines(php_column_prefix(binary), binary)
 
     if args.typephp:
+        # The columns are defined by what an int is, not by how a release spells it:
+        # 0.6 kept PHP ints unless told `use native_types`, 0.9 makes native ints the
+        # default and keeps PHP ints under `use varint_types`. The env profile of each
+        # toolchain generation names the spelling.
+        php_ints, native_ints = args.typephp_php_ints, args.typephp_native_ints
+
+        if php_ints is None or native_ints is None:
+            sys.exit("--typephp needs TYPEPHP_PHP_INTS and TYPEPHP_NATIVE_INTS; source an env profile")
+
         tpc_root = Path(args.typephp)
         tpc_php = tpc_root / "bin" / "tpc.php"
-        engines.append(make_typephp_engine("typephp", tpc_php, tpc_root, php, "", ["-O2"]))
-        engines.append(make_typephp_engine("typephp-native", tpc_php, tpc_root, php,
-                                           "use native_types;\n", ["-O2"]))
-        engines.append(make_typephp_engine("typephp-std", tpc_php, tpc_root, php,
-                                           "use native_types;\n", ["-O2"], "body-std.php"))
+        engines.append(make_typephp_engine("typephp", tpc_php, tpc_root, php, php_ints))
+        engines.append(make_typephp_engine("typephp-native", tpc_php, tpc_root, php, native_ints))
+        engines.append(make_typephp_engine("typephp-std", tpc_php, tpc_root, php, native_ints, "body-std.php"))
 
     if args.elephc:
-        engines.append(make_elephc_engine("elephc", args.elephc, ["-q"]))
+        engines.append(make_elephc_engine("elephc", args.elephc))
 
     engines.append(make_c_engine("c-gcc-O2", ["-O2"]))
 
     return engines
+
+
+def first_line(argv):
+    try:
+        result = subprocess.run(argv, capture_output=True, text=True)
+    except OSError:
+        return None
+
+    lines = (result.stdout or result.stderr).strip().splitlines()
+
+    return lines[0] if lines else None
+
+
+def git_commit(directory):
+    return first_line(["git", "-C", str(directory), "rev-parse", "--short", "HEAD"])
+
+
+def describe_toolchain(args):
+    """What was measured, so that a results file names its own builds and machine.
+
+    A file without this cannot be told apart from a run on other versions, and
+    the September rerun exists precisely to separate the machine from the builds.
+    """
+    meminfo = Path("/proc/meminfo").read_text().splitlines()
+    cpu = next((line.split(":", 1)[1].strip() for line in Path("/proc/cpuinfo").read_text().splitlines()
+                if line.startswith("model name")), None)
+    toolchain = {
+        "profile": os.environ.get("BENCH_PROFILE"),
+        "machine": {
+            "cpu": cpu,
+            "threads": os.cpu_count(),
+            "mem_total": meminfo[0].split(":", 1)[1].strip(),
+            "kernel": os.uname().release,
+        },
+        "php": {php: first_line([php, "-n", "-v"]) for php in [args.php, *(args.php_extra or [])]},
+        "gcc": first_line(["gcc", "--version"]),
+    }
+
+    if args.typephp:
+        project = Path(args.typephp) / "project.yml"
+        version = next((line.split(":", 1)[1].strip() for line in project.read_text().splitlines()
+                        if line.startswith("version:")), None)
+        toolchain["typephp"] = {"version": version, "commit": git_commit(args.typephp),
+                                "php_ints": args.typephp_php_ints, "native_ints": args.typephp_native_ints,
+                                "embed": os.environ.get("PHP_HOME")}
+
+    if args.elephc:
+        # target/release/elephc sits three levels below the checkout.
+        toolchain["elephc"] = {"version": first_line([args.elephc, "--version"]),
+                               "commit": git_commit(Path(args.elephc).resolve().parents[2])}
+
+    return toolchain
 
 
 def format_table(results, engines):
@@ -439,17 +509,48 @@ def resummarize(source, target):
     return 0
 
 
+def report_case(name, rows, engines):
+    """Prints one case's rows as they arrive, so a long run can be read while it goes."""
+    print(f"case {name}", flush=True)
+
+    for engine in engines:
+        row = rows.get(engine.name, {"status": "unsupported"})
+
+        if row["status"] != "ok":
+            print(f"  {engine.name:16} {row['status']}", flush=True)
+            continue
+
+        figure = row.get("loop_s", row["median_s"])
+        print(f"  {engine.name:16} {figure * 1000:.1f} ms  out={row['output']}", flush=True)
+
+        if row["bimodal"]:
+            fast, slow = row["fast_group_s"], row["slow_group_s"]
+            print(f"  {'':16} SPLIT {fast[1] * 1000:.0f}–{fast[2] * 1000:.0f} ms in "
+                  f"{row['fast_share'] * 100:.0f}% of {row['n']} runs, "
+                  f"{slow[1] * 1000:.0f}–{slow[2] * 1000:.0f} ms in the rest; "
+                  f"median of all {row['median_s'] * 1000:.1f} ms", flush=True)
+
+    for output, who in check_outputs(CASES / name, rows).items():
+        print(f"  DISAGREEMENT {', '.join(who)} printed {output!r}", flush=True)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--php", default=os.environ.get("BENCH_PHP", "/usr/bin/php8.4"),
                         help="release PHP CLI used as the baseline")
+    parser.add_argument("--php-extra", action="append", default=os.environ.get("BENCH_PHP_EXTRA", "").split(),
+                        help="another PHP release to measure beside the baseline, as its own three columns")
     parser.add_argument("--typephp", default=os.environ.get("TYPEPHP_ROOT"),
                         help="path to a TypePHP checkout with vendor/ installed")
+    parser.add_argument("--typephp-php-ints", default=os.environ.get("TYPEPHP_PHP_INTS"),
+                        help="directive line under which this TypePHP keeps PHP int semantics")
+    parser.add_argument("--typephp-native-ints", default=os.environ.get("TYPEPHP_NATIVE_INTS"),
+                        help="directive line under which this TypePHP compiles int as int64_t")
     parser.add_argument("--elephc", default=os.environ.get("ELEPHC_BIN"),
                         help="path to the elephc binary")
     parser.add_argument("--case", action="append", help="run only these cases")
     parser.add_argument("--repeats", type=int, default=5, help="timed runs per engine and case")
-    parser.add_argument("--json", help="write machine-readable results here")
+    parser.add_argument("--json", help="write machine-readable results here; one file per run")
     parser.add_argument("--keep", action="store_true", help="keep the per-run scratch directories")
     parser.add_argument("--from-json", help="re-summarize the samples in this file instead of measuring")
     args = parser.parse_args()
@@ -477,26 +578,8 @@ def main():
     results = {}
 
     for name in names:
-        print(f"case {name}", flush=True)
         results[name] = run_case(CASES / name, engines, args.repeats, startup, args.keep)
-
-        for engine in engines:
-            row = results[name].get(engine.name, {"status": "unsupported"})
-            figure = row.get("loop_s", row.get("median_s"))
-            detail = f"{figure * 1000:.1f} ms  out={row['output']}" if row["status"] == "ok" else row["status"]
-            print(f"  {engine.name:16} {detail}", flush=True)
-
-            if row.get("bimodal"):
-                fast, slow = row["fast_group_s"], row["slow_group_s"]
-                print(f"  {'':16} SPLIT {fast[1] * 1000:.0f}–{fast[2] * 1000:.0f} ms in "
-                      f"{row['fast_share'] * 100:.0f}% of {row['n']} runs, "
-                      f"{slow[1] * 1000:.0f}–{slow[2] * 1000:.0f} ms in the rest; "
-                      f"median of all {row['median_s'] * 1000:.1f} ms", flush=True)
-
-        disagreement = check_outputs(CASES / name, results[name])
-
-        for output, who in disagreement.items():
-            print(f"  DISAGREEMENT {', '.join(who)} printed {output!r}", flush=True)
+        report_case(name, results[name], engines)
 
     print()
     print(format_table(results, engines))
@@ -504,6 +587,7 @@ def main():
     if args.json:
         payload = {
             "host": os.uname().nodename,
+            "toolchain": describe_toolchain(args),
             "startup_s": startup,
             "results": results,
         }

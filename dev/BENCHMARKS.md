@@ -4,7 +4,7 @@ Our own measurements. Other people's numbers stay in
 `dev/research/php-compilers.md` and are quoted as theirs.
 
 Method, cases and how to reproduce: `bench/README.md`. Raw output:
-`bench/results.json`.
+`bench/results/`, one file per run.
 
 ---
 
@@ -27,7 +27,7 @@ the samples decides what is reported: a minimum where there is one group of
 times, and where there are two, the **median of all runs** — which stands
 whether or not the split is the right description of them. The tracing JIT
 splits on all four loops; its column carries `*` and the two groups are given
-below it. Every sample is kept in `bench/results.json` as `samples_s`. The PHP
+below it. Every sample is kept in `bench/results/2026-08-30.json` as `samples_s`. The PHP
 columns ran 31 times, the compiled ones 7.
 
 | case | php-interp | php-opcache | php-jit | typephp | typephp-native | typephp-std | elephc | c-gcc-O2 |
