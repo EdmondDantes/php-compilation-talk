@@ -47,7 +47,9 @@ given the body inside a function (dev/BENCHMARKS.md, corrected section):
   than TypePHP on the same PHP array.
 - **Calls:** TypePHP compiles plain calls to C speed (17 ms against the JIT's 69)
   and loses 5× to the JIT on interface calls (58 ns each); elephc loses 6× on
-  plain calls and 20× on interface calls.
+  plain calls and 20× on interface calls. The loss is the polymorphic call site:
+  with one class at it TypePHP takes 103 ms against the JIT's 119, because both
+  cache one class and TypePHP's miss is a full Zend call (dev/BENCHMARKS.md).
 - **The JIT's "two states" were mostly a file-scope effect.** Inside a function
   only array_write splits, by 1.4×.
 - **Manticore** is faster than the JIT on every case but array_write.

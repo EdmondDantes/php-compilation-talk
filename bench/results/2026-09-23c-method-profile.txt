@@ -1,0 +1,54 @@
+# perf on method_call (polymorphic), 2026-09-23, linux-tools-6.8.0-134 perf
+
+## tp
+    16.05%  [.] zend_call_function                                                                                                                             -      -
+     8.55%  [.] zend_hash_find                                                                                                                                 -      -
+     7.56%  [.] zend_is_callable_ex                                                                                                                            -      -
+     7.50%  [.] (anonymous namespace)::invokeResolved(php::Variant const&, _zend_object*, _zend_fcall_info_cache*, unsigned int, _zval_struct*, _zend_array*)  -      -
+     6.65%  [.] zend_is_callable_at_frame                                                                                                                      -      -
+     5.48%  [.] zim_Scale_apply(_zend_execute_data*, _zval_struct*)                                                                                            -      -
+     4.90%  [.] zim_Shift_apply(_zend_execute_data*, _zval_struct*)                                                                                            -      -
+     4.71%  [.] zend_string_tolower_ex                                                                                                                         -      -
+     4.51%  [.] php::Variant::copyFrom(_zval_struct const*)                                                                                                    -      -
+     4.06%  [.] php::MethodCallCacheSlot::callImpl(php::Variant const&, php::Variant const&, unsigned int, _zval_struct*, _zend_array*)                        -      -
+     3.86%  [.] php::Object::Object(_zval_struct const*, php::Ctor)                                                                                            -      -
+     2.77%  [.] zval_ptr_dtor                                                                                                                                  -      -
+     2.72%  [.] php_main()                                                                                                                                     -      -
+     2.58%  [.] php::Variant::~Variant()                                                                                                                       -      -
+
+## el
+    17.07%  [k] 0xffffffffb9200080                         -      -
+    13.29%  [.] _fn_bench_u_main                           -      -
+     8.39%  [.] __rt_decref_mixed                          -      -
+     5.69%  [.] __rt_decref_any                            -      -
+     3.96%  [.] __rt_cleanup_invoke                        -      -
+     3.75%  [.] __sigprocmask                              -      -
+     3.39%  [.] __rt_heap_alloc_count                      -      -
+     3.31%  [.] __sigjmp_save                              -      -
+     2.65%  [.] __rt_cleanup_preserve_exception            -      -
+     2.46%  [.] __rt_heap_free_poison_done                 -      -
+     2.44%  [.] __rt_heap_free_debug_checked               -      -
+     2.44%  [.] __rt_cleanup_invoke_return                 -      -
+     2.40%  [.] __rt_incref                                -      -
+     2.09%  [.] __sigsetjmp                                -      -
+
+## jit
+    27.82%  [.] zend_std_get_method     -      -
+    24.38%  [.] zend_hash_find          -      -
+    13.53%  [.] TRACE-1$bench_main$29   -      -
+    11.35%  [.] TRACE-2$bench_main$30   -      -
+     7.25%  [.] 0x00000000000a77a3      -      -
+     2.04%  [.] 0x00000000000a7742      -      -
+     1.93%  [.] 0x00000000000a77a5      -      -
+     1.91%  [.] 0x00000000000a7730      -      -
+     1.83%  [.] 0x00000000000a77ca      -      -
+     1.72%  [.] 0x00000000000a77db      -      -
+     1.32%  [.] 0x00000000000a7759      -      -
+     1.03%  [.] 0x00000000000a7787      -      -
+     0.71%  [.] 0x00000000000a778b      -      -
+     0.61%  [.] 0x00000000000a779e      -      -
+
+## perf stat, per call (2e7 calls, whole process)
+tp  (TypePHP 0.9.2 native): 970.3 instructions, 307.4 cycles
+el  (elephc 0.27.0):        1220.0 instructions, 516.9 cycles (user only; 17 % of samples are in the kernel)
+jit (PHP 8.4.22 tracing):   234.2 instructions, 59.8 cycles

@@ -61,6 +61,22 @@ TypePHP native 82.5, C 82.3.
   JIT's 68.9; elephc (434.9) loses to it 6.3×. Interface calls on top of that
   cost 8.1 ns in the JIT, 58 ns in TypePHP, 216 ns in elephc, 2.8 ns in
   Manticore; TypePHP loses 5.1× to the JIT on method_call, elephc 20.5×.
+- **Why the JIT wins on method_call: the call site is polymorphic.** `$step`
+  alternates between two classes, and both the JIT and TypePHP cache one class
+  per call site. With one class at the site (`2026-09-23c-method-mono-poly.json`)
+  TypePHP takes 102.9 ms against 1247.3, and beats the JIT's 118.9 (259.2
+  polymorphic); elephc halves, 2313 against 4836. The profiles
+  (`2026-09-23c-method-profile.txt`) show what each miss costs. The JIT inlines
+  `apply` into its traces and spends 52 % of samples in `zend_std_get_method` and
+  `zend_hash_find` re-resolving the method: 234 instructions per call. TypePHP
+  falls back to a full Zend call — `zend_call_function`, `zend_is_callable_ex`
+  and `zend_string_tolower_ex` on every call, then the `ZEND_METHOD` wrapper
+  that re-parses the argument: 970 instructions. elephc spends 17 % of samples
+  in the kernel, and its user-side profile names `__sigsetjmp`, `__sigjmp_save`
+  and `__sigprocmask` beside its cleanup-frame helpers: consistent with an
+  exception frame per call that saves the signal mask through a system call
+  (inferred from the symbols, not traced). Refcounting and heap churn come on
+  top: 1220 instructions and 517 user cycles per call.
 - **Strings.** JIT 120 ms, elephc 169 (1.4×), TypePHP 306 native, Manticore 65.
 - **Manticore is faster than the JIT on every case but array_write** (124 against
   42.5 ms). On int_arith its 21 ms comes from LLVM folding five iterations of a
