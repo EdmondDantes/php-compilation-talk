@@ -170,13 +170,23 @@ retracted, and dev/research/refresh-2026-09.md says so with the sources.
         2026-09-23b-toolchain-2026-09.json. elephc 0.27.0 beats the JIT on
         int_arith with PHP's overflow answer; the JIT slow state did not appear
         with engines in turns (cause still unknown).
-- [ ] S8.4 Try TypePHP on Laravel two ways: the whole application, and ext
+- [x] S8.4 Try TypePHP on Laravel two ways: the whole application, and ext
       mode with one typed hot class called from a route, timed with and
       without it.
       done: dev/research/typephp-laravel.md gives the commands and, for
       each way, either the timing or the first blocking error verbatim,
       and names which claim of the vendor each way tests.
       tier: T2 · role: Critic
+      Critic 2026-09-23: "warm" is an Octane worker, not php-fpm; the JIT was
+        called production-default though 8.4 ships it off; TypePHP does have a
+        fallback, just not for file-scope code; "works" was only in-process;
+        the JIT row may not be JIT. All accepted: fpm-shaped figure (9 %) added,
+        fallback described from SourcePipelineTrait, scope of "works" stated;
+        the JIT was on and still compiled almost nothing inside Laravel, kept
+        as an unexplained observation.
+      handoff: dev/research/typephp-laravel.md; bench/laravel/setup.sh rebuilds
+        both builds (verified from scratch); timings in
+        results/2026-09-23-laravel.json and 2026-09-23b-laravel.json.
 - [x] S8.5 Add two cases tied to slide claims: method dispatch and strings.
       done: cases under bench/cases, rows in dev/BENCHMARKS.md; the other
       candidates (recursion, hash arrays, exceptions, startup and memory,
@@ -193,16 +203,25 @@ retracted, and dev/research/refresh-2026-09.md says so with the sources.
       done: both match the new results file; player/tools/sweep-layout.mjs
       reports 0 collisions.
       tier: T1 · role: —
-- [ ] S8.7 Write dev/research/refresh-2026-09.md: what changed, the Laravel
+- [x] S8.7 Write dev/research/refresh-2026-09.md: what changed, the Laravel
       outcome, the new numbers, what is still open.
       done: every figure in it traces to a results file or a link.
       tier: T1 · role: —
-- [ ] S8.8 Analyze Manticore's progress since June, requested 2026-09-23:
+      handoff: dev/research/refresh-2026-09.md; its last section lists the
+        slide decisions that S8.6 waits on.
+- [x] S8.8 Analyze Manticore's progress since June, requested 2026-09-23:
       history, what works and how it is shown, and its prebuilt 0.11.0 run
       as an engine on our cases, set against its own published loop figure.
       done: a Manticore section in dev/research/refresh-2026-09.md with
       sources, and a manticore column in a dated results file.
       tier: T2 · role: Critic
+      Critic 2026-09-23: "a quarter" divided an x86 ratio by an M1 one, and
+        "its speed comes from dropped semantics" was asserted, not measured.
+        Accepted: ratios restated per machine (15x, 13x, 5.4x), the reading
+        limited to the one disassembled loop.
+      handoff: Manticore section of refresh-2026-09.md; manticore column in
+        results/2026-09-23b-toolchain-2026-09.json; its own loop re-timed by
+        bench/manticore-loop/measure.py.
 
 ## S5. Rehearsal
 

@@ -33,6 +33,9 @@ buy, what they cost, and whether to expect one in production.
 - `dev/research/php-governance-and-money.md` — what the language costs to
   develop, how decisions are made, and why generics are missing.
 - `dev/research/typephp-review.md` — a full read of one live compiler.
+- `dev/research/refresh-2026-09.md` — what changed by 2026-09-23 in TypePHP,
+  elephc, KPHP and Manticore, and what it does to the deck's numbers.
+- `dev/research/typephp-laravel.md` — TypePHP tried on a Laravel application.
 - `dev/research/ai-oriented-languages.md` — languages built for models.
 - `dev/OUTLINE.md` — the running order, slide by slide.
 
@@ -53,7 +56,10 @@ buy, what they cost, and whether to expect one in production.
 
 - `dev/PLAN.md` — stages and steps; the task list is rebuilt from it.
 - `dev/BENCHMARKS.md` — our own measurements, with the method and the
-  machine. `bench/` holds the cases and the runner that produced them.
+  machine. `bench/` holds the cases and the runner that produced them, one env
+  profile per toolchain generation, and `bench/results/`, one file per run.
+  `bench/laravel/` rebuilds the Laravel experiment; `bench/manticore-loop/`
+  re-times Manticore's own benchmark.
 - `dev/WORKFLOW.md` — rules specific to this project.
 - `dev/DECISIONS.md` — why the talk and the deck are shaped this way.
 - `dev/POSTMORTEM.md` — mistakes that cost time.

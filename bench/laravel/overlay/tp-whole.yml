@@ -1,0 +1,21 @@
+# Attempt A, strict form: the application's own PHP is compiled, vendor is embedded.
+name: laravel-whole
+mode: bin
+build-dir: build-whole
+optimize: 2
+
+sources:
+  - app.php
+  - app
+  - bootstrap
+  - config
+  - routes
+
+embedded-files:
+  - vendor
+  - bootstrap
+  - config
+  - routes
+  - app
+  - resources
+  - .env

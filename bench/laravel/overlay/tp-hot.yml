@@ -1,0 +1,8 @@
+# Attempt B: only the hot class is compiled, as a PHP extension; Laravel stays on Zend.
+name: hot
+mode: ext
+build-dir: build-hot
+optimize: 2
+
+sources:
+  - app/Support/Hot.php

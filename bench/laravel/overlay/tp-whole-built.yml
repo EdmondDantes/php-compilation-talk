@@ -1,0 +1,11 @@
+# Attempt A as it builds: tp-whole.yml minus every directory TypePHP rejected, in
+# the order it rejected them (see dev/research/typephp-laravel.md). What remains
+# compiled is app.php, app/Http/Controllers/Controller.php and app/Support/Hot.php;
+# everything else runs from the embedded opcodes.
+include: tp-whole.yml
+ignore:
+  - bootstrap
+  - config
+  - routes
+  - app/Models
+  - app/Providers
