@@ -1,18 +1,29 @@
 # PLAN
 
-Updated: 2026-08-31 · Active: S4
+Updated: 2026-09-23 · Active: S8
 
 Destination: a 40–45 minute talk that answers one question — why PHP
 compilers keep getting written, and whether a working developer should
 expect to use one — backed by a verified landscape rather than by
 folklore.
 
+Review 2026-09-23: code since 08ae6e6 — bench/run.py has four nesting
+  sites over three levels, a 78-line `main`, and single-use `build_argv`,
+  `Engine.kind`, `run_once`, `opt_flags` and the `timed` flag; folded into
+  S8.2. The player has a 129-line sweep callback, a 77-line `command`
+  switch and six duplicated fragments; new step S6.6. The split detector's
+  step factor never decided a row on the stored samples; kept as a guard.
+  Plan: Fog item on missing numbers stale since S7, rewritten; S6.5 split;
+  the hostile review's open items attached to S5.2; no talk date recorded.
+
 ## Fog
 
 - The through-line ("compilation buys hardware cost and tail latency,
-  not 'speed', and pays in dialect and hiring") is a claim, not yet a
-  measured argument. The numbers behind it do not exist in this
-  repository.
+  not 'speed', and pays in dialect and hiring") rests on four loops
+  measured in S7. Nothing measured yet touches strings, objects or a
+  request; S8 adds two cases and a Laravel route.
+- The date of the talk is not recorded anywhere, so whether S8 fits
+  before S4 and S5 cannot be judged.
 - Limelight stays in the talk as a live example, but there is little to
   say about it yet; how much room it gets is undecided.
 - Which visual direction the deck takes is open — four are drafted.
@@ -108,12 +119,65 @@ indexed read, indexed write — plus the int-overflow semantics probe.
 Stage closed. What outlives it: `dev/BENCHMARKS.md`, `dev/research/hot-loop-anatomy.md`,
 `bench/`. Open question left behind: the cause of the JIT's two states.
 
+## S8. September refresh of the compilers and our measurements [in progress]
+
+Goal: TypePHP, elephc, KPHP and Manticore are described as they stand on
+2026-09-23, every number the deck quotes from S7 is checked against current
+builds, and TypePHP is tried on an application instead of a loop.
+Done when: each S7 claim on the slides is marked holds, changed or
+retracted, and dev/research/refresh-2026-09.md says so with the sources.
+
+- [ ] S8.1 Record what changed in TypePHP, elephc, KPHP and Manticore since
+      2026-08-25: versions, releases, stated performance, compatibility,
+      activity, and whether elephc issue #623 or the overflow sign moved.
+      done: a dated update per project in dev/research/php-compilers.md and
+      dev/research/typephp-review.md, each claim linked.
+      tier: T1 · role: —
+- [ ] S8.2 Build current TypePHP and elephc next to the August builds, not
+      over them; one env profile per toolchain generation; run.py stamps
+      engine versions and commits into its JSON and writes one file per
+      run; simplify run.py as the 2026-09-23 review found.
+      done: both generations run int_overflow; the August results.json is
+      frozen under a dated name and re-summarizes unchanged.
+      tier: T2 · role: —
+- [ ] S8.3 Re-run the suite twice: the August builds on today's machine
+      (23 GB instead of 8), then the current builds, plus PHP 8.5.
+      done: a dated section in dev/BENCHMARKS.md separates the machine's
+      effect from the versions'; each S7 claim on player/deck/04-next.html
+      is marked holds, changed or retracted.
+      tier: T2 · role: Critic
+- [ ] S8.4 Try TypePHP on Laravel two ways: the whole application, and ext
+      mode with one typed hot class called from a route, timed with and
+      without it.
+      done: dev/research/typephp-laravel.md gives the commands and, for
+      each way, either the timing or the first blocking error verbatim,
+      and names which claim of the vendor each way tests.
+      tier: T2 · role: Critic
+- [ ] S8.5 Add two cases tied to slide claims: method dispatch and strings.
+      done: cases under bench/cases, rows in dev/BENCHMARKS.md; the other
+      candidates (recursion, hash arrays, exceptions, startup and memory,
+      compile time, KPHP and Manticore as engines) listed with reasons in
+      the report.
+      tier: T2 · role: Critic
+- [ ] S8.6 Carry changed numbers onto player/deck/04-next.html and
+      bench/infographic.html.
+      done: both match the new results file; player/tools/sweep-layout.mjs
+      reports 0 collisions.
+      tier: T1 · role: —
+- [ ] S8.7 Write dev/research/refresh-2026-09.md: what changed, the Laravel
+      outcome, the new numbers, what is still open.
+      done: every figure in it traces to a results file or a link.
+      tier: T1 · role: —
+
 ## S5. Rehearsal
 
 Goal: the talk fits the slot and survives questions.
 
 - [ ] S5.1 Time a full run; cut to fit 45 minutes with questions.
 - [ ] S5.2 Collect the likely hostile questions and prepare answers.
+      Includes the open items of the adversarial review in
+      dev/HANDOFF.md: Swoole, RoadRunner and FrankenPHP as the way teams
+      got multiples without compiling, and what a developer does on Monday.
 
 ## S6. Player
 
@@ -135,11 +199,18 @@ enough to present from.
       change and found twelve defects, of which the cascade tie that broke
       `.rows.cards` was confirmed by measurement; ten are fixed, two are
       recorded below.
-- [ ] S6.5 Two findings left from the S6.4 review. The offsets that hold a
-      second body clear of the first are fixed numbers with measured slack:
-      47px between `.figures` and `.stack.after-figures`, whose lines are 35px,
-      so one added line of the figure's caption closes it; 131px between
-      `.names` and `.stack.low`, whose lines are 64px. And the player's own
-      chrome is in physical pixels while the stage scales, so on a 3840x2160
-      screen the prompter's 24px text reads half the size of the 30px slide
-      text beside it.
+- [ ] S6.5 The offsets that hold a second body clear of the first are
+      fixed numbers with measured slack: 47px between `.figures` and
+      `.stack.after-figures`, whose lines are 35px, so one added line of
+      the figure's caption closes it; 131px between `.names` and
+      `.stack.low`, whose lines are 64px.
+- [ ] S6.6 The player's own chrome is in physical pixels while the stage
+      scales, so on a 3840x2160 screen the prompter's 24px text reads half
+      the size of the 30px slide text beside it.
+- [ ] S6.7 Simplify the player code found in the 2026-09-23 review: split
+      the 129-line callback in `player/tools/sweep-layout.mjs` into
+      enter/collect/check/reset, replace the `command` switch in
+      `player/js/player.js` with a key table, and merge the six duplicated
+      fragments (note line, expand-panel close, two-digit counter, `perYear`,
+      `openNote` in build-map.mjs, `clearDetails` in the sweep).
+      done: sweep-layout reports 0 collisions before and after.
