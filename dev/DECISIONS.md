@@ -138,3 +138,36 @@ and hidden the size of the gap the slide is about.
 
 Cost: at a linear scale the fastest bar is a 17px stub. That is the finding,
 but it carries no length a reader can compare — the number beside it does.
+
+## 2026-09-23 — Toolchain generations live side by side
+
+Decided: each benchmark toolchain generation keeps its own builds and env
+profile (`bench/env-2026-08.sh`, `env-2026-09.sh`), every run writes its own
+file under `bench/results/`, and the file records versions, commits and load.
+
+Why: upgrading in place would have made August's numbers unreproducible and
+left the machine's change (8 → 23 GB) indistinguishable from the compilers'.
+
+Cost: two sets of builds on disk, and TypePHP columns defined by semantics
+rather than by directive, since 0.9 inverted `native_types`.
+
+## 2026-09-23 — Engines take turns, and every sample records machine load
+
+Decided: `run.py` runs one sample per engine per round and stores the
+/proc/stat busy share beside each sample.
+
+Why: other WSL distributions load the same kernel invisibly to `ps`, and a
+burst landing on one engine's back-to-back row read as a property of that
+engine. With turns, the JIT's slow state also stopped appearing (0 of 434).
+
+Rejected: waiting for an idle machine only; it was busy for hours at a time.
+
+## 2026-09-23 — August slides stay as history beside September ones
+
+Decided (Edmond): slides whose numbers the September run changed keep their
+August form, labelled «История», and the September result follows them.
+
+Why: the change itself is material for the talk — elephc went from 5202 to
+246 ms on the same loop in a month.
+
+Cost: the benchmark block is longer by eight slides.
