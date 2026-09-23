@@ -1,5 +1,5 @@
-/* Reports every place two pieces of text collide on a slide, or leave the
- * 1920x1080 field.
+/* Reports every place two pieces of text collide on a slide, leave the
+ * 1920x1080 field, or run past the panel, plate or card that holds them.
  *
  * The deck is laid out at fixed pixel offsets, so a change to one offset can
  * push a block onto its neighbour on a slide nobody looked at. Every element
@@ -149,8 +149,45 @@ const SWEEP = `
       }
     }
 
-    if (hits.length || escaped.length) {
-      report.push({ slide: index + 1, label: slide.dataset.label || '', hits, escaped });
+    /* Text that runs past the panel, plate or card it sits in collides with
+       nothing when the neighbour is empty space, so the pair test above misses
+       it; the frame is the nearest ancestor that draws a box or clips. */
+    const framed = (style) => style.overflowX !== 'visible'
+      || style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+      || style.backgroundImage !== 'none'
+      || parseFloat(style.borderRightWidth) > 0;
+    const overruns = [];
+
+    for (const leaf of visible) {
+      let frame = leaf.element.parentElement;
+
+      while (frame && frame !== slide && !framed(getComputedStyle(frame))) {
+        frame = frame.parentElement;
+      }
+
+      if (frame && frame !== slide) {
+        const edge = frame.getBoundingClientRect();
+        /* A frame that scrolls vertically, like the detail panel, holds its tail
+           below the fold by design; sideways nobody scrolls during a talk. */
+        const scrolls = ['auto', 'scroll'].includes(getComputedStyle(frame).overflowY);
+        const below = scrolls ? 0 : leaf.box.bottom - edge.bottom;
+        const past = Math.round(Math.max(leaf.box.right - edge.right, below, edge.left - leaf.box.left));
+
+        if (past > ${TOLERANCE}) {
+          overruns.push({ name: leaf.name, text: leaf.text, past,
+            frame: frame.tagName.toLowerCase() + (frame.className ? '.' + frame.className : '') });
+        }
+      }
+
+      const clipped = leaf.element.scrollWidth - leaf.element.clientWidth;
+
+      if (getComputedStyle(leaf.element).overflowX !== 'visible' && clipped > ${TOLERANCE}) {
+        overruns.push({ name: leaf.name, text: leaf.text, past: clipped, frame: 'its own overflow' });
+      }
+    }
+
+    if (hits.length || escaped.length || overruns.length) {
+      report.push({ slide: index + 1, label: slide.dataset.label || '', hits, escaped, overruns });
     }
 
     /* Put the slide back: the next state starts from a slide at rest. */
@@ -272,6 +309,10 @@ for (const theme of THEMES) {
     for (const escape of slide.escaped) {
       console.log(`  off the field by ${escape.past}px: ${escape.name} "${escape.text}"`);
     }
+
+    for (const overrun of slide.overruns) {
+      console.log(`  past ${overrun.frame} by ${overrun.past}px: ${overrun.name} "${overrun.text}"`);
+    }
   }
   }
 }
@@ -280,7 +321,7 @@ session.close();
 
 console.log(broken === 0
   ? `${slides} slides clean in ${THEMES.join(', ')} at ${STATES.join(', ')}: `
-    + 'no collisions, nothing off the field'
+    + 'no collisions, nothing off the field or past its frame'
   : `${broken} slide(s) with problems`);
 
 process.exit(broken === 0 ? 0 : 1);

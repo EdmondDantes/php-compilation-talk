@@ -276,7 +276,7 @@ function main(): void {
 </section>
 
 <section class="slide divider optimization-divider" data-label="Что компиляторы оптимизируют для PHP"
-  data-speaker-notes="После управления памятью переходим к оптимизациям. На картинке тяжёлая машина из коробок, косвенных связей и проверок проходит через сканер; на выходе остаются компактное представление и прямые пути данных. Это и есть работа оптимизатора: не сделать тот же код волшебно быстрее, а доказать конкретный факт и удалить работу, которая после этого факта больше не нужна. Для PHP особенно важны три доказательства: значение не переполнится, цель вызова известна и динамическому значению больше не нужна универсальная коробка.">
+  data-speaker-notes="После расширений языка переходим к оптимизациям. На картинке тяжёлая машина из коробок, косвенных связей и проверок проходит через сканер; на выходе остаются компактное представление и прямые пути данных. Это и есть работа оптимизатора: не сделать тот же код волшебно быстрее, а доказать конкретный факт и удалить работу, которая после этого факта больше не нужна. Для PHP особенно важны три доказательства: значение не переполнится, цель вызова известна и динамическому значению больше не нужна универсальная коробка.">
   <div class="top"><span><span class="part">Оптимизация</span> Граница доказательств</span><span class="count"></span></div>
   <div class="ghost">05</div>
   <h2 class="slide-title">Что компиляторы оптимизируют для PHP</h2>
@@ -521,7 +521,7 @@ Variant::operator&amp;()
 <section class="slide" data-label="Одна программа — три ответа"
   data-speaker-notes="Последний слайд блока — и он же обратная сторона слайда про 44 раза. Семь строк: единица, шестьдесят четыре удвоения. PHP отвечает 1,8e19, потому что при переполнении int становится float. TypePHP 0.9 отвечает 0 безо всяких директив: с версии 0.8 int64_t стал умолчанием. Это тот самый int64_t, за который получен паритет с C, увиденный со стороны ответа. Manticore тоже отвечает 0 и пишет об этом в документации. Расхождение заявлено самим проектом, дословно: Native std::int overflow and integer division behavior — Intentional Rule — Native numeric types trade PHP compatibility for performance and C++ storage. Цена названа теми, кто её берёт. А elephc отвечает тем же числом с минусом, и это уже дефект: их сайт обещает промоцию в double. Про причину скажу честно, что она выведена, а не снята: их открытый issue 548 описывает для операторов сравнения, что float в коробке Mixed приводится через cvttsd2si и на x86-64 даёт INT64_MIN; арифметика нашего случая сходится с этой историей точно, но IR именно этого кейса мы не смотрели. В elephc 0.27.0 ошибка на месте. Наверх не сообщали.">
   <div class="top"><span><span class="part">Benchmark</span> Переполнение</span><span class="count"></span></div>
-  <h2 class="slide-title">Переполнение: PHP даёт float, TypePHP — 0, elephc — отрицательный float</h2>
+  <h2 class="slide-title">Переполнение: три ответа</h2>
   <pre class="plate" data-lang="php">$h = 1;
 for ($i = 1; $i &lt;= 64; $i++) { $h = $h * 2; }
 
@@ -574,9 +574,9 @@ for ($i = 1; $i &lt;= 64; $i++) { $h = $h * 2; }
 </section>
 
 <section class="slide" data-label="TypePHP и Laravel"
-  data-speaker-notes="Проверили на настоящем фреймворке: свежий Laravel 13 и TypePHP 0.9.2, два способа. Первый — собрать приложение целиком в бинарник. Сборка падала пять раз: return в bootstrap/app.php, return в каждом конфиге, вызовы на верхнем уровне в routes, трейт из vendor в модели, провайдер, унаследованный от класса из vendor. Каждое из этого пришлось исключить, и в итоге скомпилировано три файла, а сам Laravel едет внутри бинарника на 176 мегабайт как байт-код Zend. Обычный запрос в нём на 35 процентов медленнее, чем в PHP с opcache. Второй способ — скомпилировать один горячий типизированный класс в расширение и подложить его под нетронутый Laravel. Это работает без единой правки приложения: запрос, который и есть горячий цикл на миллион итераций, в постоянном процессе вроде Octane ускоряется в 3,9 раза. Но под php-fpm каждый запрос заново поднимает Laravel, и тот же запрос выигрывает 9 процентов. Обычный запрос не выигрывает ничего.">
-  <div class="top"><span><span class="part">Benchmark</span> Laravel 13</span><span class="count"></span></div>
-  <h2 class="slide-title">TypePHP и Laravel</h2>
+  data-speaker-notes="Проверили на настоящем фреймворке: свежий Laravel 13 и TypePHP 0.9.2, два способа. Главное сразу: приложение как есть TypePHP не компилирует. Первый способ — собрать приложение целиком в бинарник. Сборка падала пять раз: return в bootstrap/app.php, return в каждом конфиге, вызовы на верхнем уровне в routes, трейт из vendor в модели, провайдер, унаследованный от класса из vendor. Каждое из этого пришлось исключить, и в итоге скомпилировано три файла, а сам Laravel едет внутри бинарника на 176 мегабайт как байт-код Zend. Обычный запрос в нём на 35 процентов медленнее, чем в PHP с opcache. Второй способ — скомпилировать один горячий типизированный класс в расширение и подложить его под нетронутый Laravel. Это работает без единой правки приложения: запрос, который и есть горячий цикл на миллион итераций, в постоянном процессе вроде Octane ускоряется в 3,9 раза. Но под php-fpm каждый запрос заново поднимает Laravel, и тот же запрос выигрывает 9 процентов. Обычный запрос не выигрывает ничего.">
+  <div class="top"><span><span class="part">Benchmark</span> TypePHP и Laravel 13</span><span class="count"></span></div>
+  <h2 class="slide-title">Laravel как есть не собрать</h2>
   <table class="table">
     <tr><th></th><th>Бинарник целиком</th><th>Расширение</th></tr>
     <tr><td>Скомпилировано</td><td>3 файла, 176 МБ</td><td>1 класс, 30 КБ</td></tr>
@@ -584,13 +584,14 @@ for ($i = 1; $i &lt;= 64; $i++) { $h = $h * 2; }
     <tr><td>Цикл 10⁶, Octane</td><td class="num">3,5×</td><td class="num">3,9×</td></tr>
     <tr><td>Цикл 10⁶, php-fpm</td><td>режима нет</td><td class="num">9 %</td></tr>
   </table>
-  <p class="note">// bootstrap, config, routes, модели и провайдеры TypePHP компилировать отказался</p>
+  <p class="closing">Сборка падает на <b>bootstrap, config, routes, моделях и провайдерах</b> — это и есть Laravel.</p>
+  <p class="note">// скомпилировать удалось три файла, остальное — байт-код Zend внутри бинарника</p>
 </section>
 
 <section class="slide" data-label="Manticore: против чего 22,8×"
   data-speaker-notes="Manticore публикует таблицу, где их тест loop быстрее PHP 8.5 в 22,8 раза. Их скрипт запускает php без флагов, то есть без opcache и без JIT, и таблица этого не говорит. Мы прогнали тот же файл у себя, их же способом. Против голого интерпретатора — 15 раз. Против opcache, а это и есть умолчание продакшена, JIT по умолчанию выключен, — 13. Против tracing JIT — 5,4. Их 22,8 сняты на Apple M1, и их PHP шёл 1,37 секунды против наших 0,36; это расхождение нам объяснить нечем. При этом Manticore действительно быстрый: на наших тестах он быстрее всех компиляторов PHP везде, кроме массивов. Но int у него заворачивается, private не проверяется, а массивы сравниваются по указателю — это записано в их документации.">
   <div class="top"><span><span class="part">Benchmark</span> Manticore 0.11.0</span><span class="count"></span></div>
-  <h2 class="slide-title">22,8× — против чего</h2>
+  <h2 class="slide-title">Manticore: 15× без JIT, 5,4× с JIT</h2>
   <table class="table">
     <tr><th>PHP 8.5.10</th><th>Время</th><th>Manticore быстрее</th></tr>
     <tr><td>без OPcache, как в их README</td><td class="num">363 мс</td><td class="num">15×</td></tr>
@@ -686,98 +687,6 @@ foreach ($array as $value) {
   </table>
   <p class="closing"><b>Новых optimization passes не понадобилось:</b> LLVM просто увидел цикл целиком.</p>
   <p class="note">// эксперимент: packed foreach без ключа и ветвлений · полная семантика foreach не реализована</p>
-</section>
-
-<section class="slide divider gc-divider" data-label="Память и сборка мусора"
-  data-speaker-notes="Последний тематический раздел — управление памятью. На заставке обычная уборка уже не помогает: машина забита объектами, которые держат друг друга по кругу, поэтому нужна отдельная бригада. Так устроена и память PHP. Reference counting быстро убирает объект, когда счётчик стал нулём; copy-on-write откладывает копирование до записи; но цикл сохраняет ненулевые счётчики и требует отдельного collector. Собственный runtime получает здесь один из самых больших источников выигрыша — и один из самых опасных источников несовместимости.">
-  <div class="top"><span><span class="part">Runtime</span> Память и GC</span><span class="count"></span></div>
-  <div class="ghost">08</div>
-  <h2 class="slide-title">Управление памятью и GC</h2>
-  <p class="lede">Освободить быстро. Не освободить рано. Найти циклы.</p>
-</section>
-
-<section class="slide" data-label="Почему память PHP сложна"
-  data-speaker-notes="В PHP освобождение обычно детерминировано счётчиком ссылок: последнее значение исчезло — ресурс можно разрушить сразу. Массивы и строки используют copy-on-write: копия откладывается до записи. Но один refcount не видит цикл A → B → A, поэтому Zend отдельно запускает cycle collector. Компилятор обязан сохранить все три свойства, хотя после анализа часть retain, release и копирований можно доказуемо убрать.">
-  <div class="top"><span><span class="part">PHP</span> Три связанных механизма</span><span class="count"></span></div>
-  <h2 class="slide-title">Почему одного refcount недостаточно</h2>
-  <div class="gc-mechanics">
-    <article><span>01 · RC</span><h3>Обычный мусор</h3><div class="gc-mini"><b>root → A</b><i>root ✕</i><strong>RC 0 → free</strong></div><p>Последняя ссылка исчезла — объект освобождается сразу.</p></article>
-    <article><span>02 · COW</span><h3>Отложенная копия</h3><div class="gc-mini"><b>A ─┬→ data</b><i>B ─┘</i><strong>write → clone</strong></div><p>Присваивание дёшево; платить приходится при записи.</p></article>
-    <article class="cycle"><span>03 · GC</span><h3>Следы замкнулись</h3><div class="gc-mini"><b>A → B</b><i>↑   ↓</i><strong>└───┘ · RC 1</strong></div><p>Корней уже нет, но объекты держат друг друга. Нужен collector.</p></article>
-  </div>
-  <p class="note">// RC отвечает «сколько ссылок» · GC — «достижимо ли значение от корней»</p>
-</section>
-
-<section class="slide" data-label="Память в компиляторах PHP"
-  data-speaker-notes="Проекты платят за совместимость по-разному. TypePHP в режиме расширения может оставить Zend-владение для обычных PHP values, а для native types и std-контейнеров использовать обычное время жизни C++. KPHP знает весь запрос и активно использует request-local allocation, вывод типов и удаление лишних пар incref/decref. elephc несёт собственные значения и runtime: reference counting остаётся быстрым путём, а циклы требуют отдельной обработки. Чем меньше универсальных zval и HashTable, тем меньше метаданных и ветвлений — но тем дальше модель от произвольного PHP.">
-  <div class="top"><span><span class="part">AOT</span> Цена собственного runtime</span><span class="count"></span></div>
-  <h2 class="slide-title">Кто убирает память?</h2>
-  <table class="table">
-    <tr><th>Проект</th><th>Ежедневная уборка</th><th>Что требует специалиста</th></tr>
-    <tr><td>TypePHP ext</td><td>Zend RC или C++ RAII</td><td>граница двух моделей; Zend-циклы</td></tr>
-    <tr><td>KPHP</td><td>request arena + меньше RC</td><td>COW, escaping, долгоживущие графы</td></tr>
-    <tr><td>elephc</td><td>свой heap + RC + reset запроса</td><td>циклы и точная семантика PHP</td></tr>
-  </table>
-  <p class="note">// анализ времени жизни превращается в меньше alloc, retain, release и копирований</p>
-</section>
-
-<section class="slide" data-label="Память TypePHP"
-  data-speaker-notes="У TypePHP нет одного собственного heap для всех значений: режим расширения живёт внутри обычного Zend. Динамический php::Var — RAII-обёртка над zval. Копирование следует правилам Zend и увеличивает refcount refcounted payload; деструктор Variant вызывает zval_ptr_dtor. PHP arrays остаются HashTable с copy-on-write, а циклы среди Zend objects остаются задачей Zend GC. Нативные типы — с версии 0.8 это умолчание — пересекают границу: php::Int и php::Float становятся обычными C++ scalar, которые можно держать в регистре и которым не нужен refcount. std::vector и другие std-контейнеры владеют памятью по RAII C++, но при передаче обратно в PHP их элементы снова должны быть представлены Zend-совместимо.">
-  <div class="top"><span><span class="part">TypePHP</span> Управление памятью</span><span class="count"></span></div>
-  <h2 class="slide-title">Два владельца памяти в одном модуле</h2>
-  <div class="code-compare">
-    <pre class="plate"><span class="out">// PHP-совместимый путь</span>
-php::Var a = value;  <span class="out">// zval</span>
-php::Var b = a;      <span class="hi">// refcount++ для heap payload</span>
-
-~Variant()
-  → <span class="hi">zval_ptr_dtor()</span>
-
-<span class="out">// arrays: Zend HashTable + COW
-// cycles: Zend GC</span></pre>
-    <pre class="plate"><span class="out">// native path</span>
-php::Int n = 42;     <span class="hi">// int64_t</span>
-php::Float x = 1.5;  <span class="hi">// double</span>
-
-std::vector&lt;php::Int&gt; v;
-v.push_back(n);
-
-<span class="out">// scalar: register / stack
-// container: C++ RAII</span></pre>
-  </div>
-  <p class="note">// совместимость сохраняет Zend ownership · нативные типы меняют и layout, и семантику</p>
-</section>
-
-<section class="slide" data-label="Память elephc"
-  data-speaker-notes="elephc, напротив, не использует Zend heap. Его собственный heap по умолчанию занимает 8 мегабайт и сочетает bump allocation, small bins и общий free list. Каждая allocation имеет 16-байтный header: size, refcount и kind. Статически известный int может оставаться I64 и не участвовать в управлении памятью. Значение Mixed — указатель на heap box; присваивание или помещение в контейнер может потребовать retain, окончание владения — type-specific decref и deep free. Массивы и hashes используют copy-on-write. В web-режиме после освобождения request-owned globals и statics весь per-request arena сбрасывается одним изменением bump offset.">
-  <div class="top"><span><span class="part">elephc</span> Управление памятью</span><span class="count"></span></div>
-  <h2 class="slide-title">Scalar в регистре или box в своём heap</h2>
-  <table class="table">
-    <tr><th>Представление</th><th>Где живёт</th><th>Что делает runtime</th></tr>
-    <tr><td>I64 / F64 / Bool</td><td>регистр или stack slot</td><td>нет refcount</td></tr>
-    <tr><td>Heap(Mixed)</td><td>box в compiler-managed heap</td><td>incref / decref / deep free</td></tr>
-    <tr><td>Array / Hash</td><td>тот же heap</td><td>RC + ensure_unique + shallow clone</td></tr>
-    <tr><td>Web request</td><td>per-request arena</td><td>release владельцев → reset bump offset</td></tr>
-  </table>
-  <p class="closing"><b>Header allocation:</b> size:4 · refcount:4 · kind:8 — всего 16 байт.</p>
-  <p class="note">// heap: small bins → free list → bump · default 8 MB · --heap-size задаёт предел</p>
-</section>
-
-<section class="slide" data-label="GC Limelight"
-  data-speaker-notes="Актуальная модель Limelight состоит из трёх путей. Request-local значения размещаются в bump arena и освобождаются при reset. Для heap-значений reference counting сохраняет немедленное освобождение при нулевом счётчике. Ненулевой decrement, прошедший enrolment gate, помещает объект в per-thread queue нового rc-cycle. Старые Bacon–Rajan и rc-walk удалены; rc-cycle — единственный действующий дизайн, но его production entry пока не подключён.">
-  <div class="top"><span><span class="part">Limelight</span> Гибрид</span><span class="count"></span></div>
-  <h2 class="slide-title">Arena + RC; rc-cycle для циклов</h2>
-  <div class="pipeline compact">
-    <div class="node"><b>Arena</b><small>request-local<br>reset блоками</small></div>
-    <div class="arrow">→</div>
-    <div class="node"><b>RC</b><small>refcount = 0<br>освободить сразу</small></div>
-    <div class="arrow">→</div>
-    <div class="node"><b>Enrol</b><small>ненулевой decrement<br>→ очередь кандидатов</small></div>
-    <div class="arrow">→</div>
-    <div class="node hot"><b>rc-cycle</b><small>части реализованы<br>fire ещё возвращает 0</small></div>
-  </div>
-  <p class="closing">Сейчас циклы сохраняются. <b>Production collection ожидает этап S36.7.</b></p>
-  <p class="note">// rc-cycle — актуальный дизайн · production collection ещё не подключён</p>
 </section>
 
 <section class="slide" data-label="Какой вариант выбирать"

@@ -889,13 +889,15 @@
   letter-spacing: var(--display-ls);
 }
 
+/* A row under the two-line title: at 112px the first line runs to about 1580px,
+   so no column to its right is free. */
 .newborn-languages {
   position: absolute;
-  left: 1010px;
+  left: var(--pad);
   right: var(--pad);
-  top: 260px;
+  top: 520px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
 }
 
