@@ -273,3 +273,7 @@ enough to present from.
       a plain JPHP slide, and the PHP elephant without Durov. Retain the practical
       execution-choice slide. Verify 52 slides across four themes and three
       states, and inspect the changed slide screenshots.
+
+- [x] S6.17 Add the hyperrealistic Reaper visiting PHP after other languages
+      on the language-obituary slide. Preserve living windows for earlier
+      languages and readable left-column copy. Verified the Pyhnik deck layout.

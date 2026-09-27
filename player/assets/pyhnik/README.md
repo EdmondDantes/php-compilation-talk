@@ -91,3 +91,6 @@ of actual incidents. Semantic measurements are documented separately.
 
 `php-survival-oscar.png` is the active survival scene, with the Oscar trophy
 added directly to the image. `php-survival-oscar-prompt.md` records the edit.
+
+`languages-reaper.png` illustrates repeated predictions of language death;
+the PHP elephant peers out from its door. Prompt: `languages-reaper-prompt.md`.
