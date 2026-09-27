@@ -30,6 +30,8 @@ buy, what they cost, and whether to expect one in production.
 - `dev/research/php-compilers.md` — the verified inventory of projects
   that compile PHP, with status, target and sourcing. Feeds the
   "Ландшафт" part of the talk.
+- `dev/research/language-rankings-2026-09.md` — September TIOBE refresh,
+  methodology and the effect of AI on ranking data sources.
 - `dev/research/php-governance-and-money.md` — what the language costs to
   develop, how decisions are made, and why generics are missing.
 - `dev/research/typephp-review.md` — a full read of one live compiler.

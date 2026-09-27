@@ -92,6 +92,10 @@ Goal: the deck exists end to end and runs in a browser.
       running order. Both remain represented on the interactive compiler
       inventory slide; `player/deck/03-two-paths.html` stays as parked
       source material.
+- [x] S4.8 Review speaker notes with the speaker (2026-09-27), retain
+      slides explicitly approved unchanged, edit the remaining technical
+      narration, refresh TIOBE, and add the closing ecosystem-migration
+      thesis with a generated illustration matching the existing deck.
 
 ## S7. Our own measurement of TypePHP and elephc [done]
 
