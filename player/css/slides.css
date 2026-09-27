@@ -338,6 +338,27 @@
   text-underline-offset: 6px;
 }
 
+.typephp-architecture { background: #0d0f12; }
+.typephp-architecture::before { display: none; }
+.typephp-architecture .typephp-architecture-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.typephp-architecture .infographic-meta {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  bottom: 18px;
+  display: flex;
+  justify-content: space-between;
+  color: #a9b2b9;
+  font: 24px/1.2 var(--font-mono);
+}
+.infographic-meta a { color: inherit; text-underline-offset: 4px; }
+
 .cover .kicker {
   position: absolute;
   left: var(--pad);

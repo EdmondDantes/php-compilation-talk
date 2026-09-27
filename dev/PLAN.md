@@ -96,6 +96,11 @@ Goal: the deck exists end to end and runs in a browser.
       slides explicitly approved unchanged, edit the remaining technical
       narration, refresh TIOBE, and add the closing ecosystem-migration
       thesis with a generated illustration matching the existing deck.
+- [x] S4.9 Apply the subsequently approved opening reduction (15 to 10
+      slides; preserve five slides in reserve), synchronize the Bun card
+      with its narration, group August measurements before September,
+      and add a generated TypePHP 0.9.3 architecture infographic after
+      the four compilation approaches. No performance measurements rerun.
 
 ## S7. Our own measurement of TypePHP and elephc [done]
 

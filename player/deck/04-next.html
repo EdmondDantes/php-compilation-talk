@@ -32,6 +32,17 @@
   <p class="note">// JIT и TypePHP используют Zend · KPHP и самостоятельный AOT — собственный рантайм</p>
 </section>
 
+<section class="slide typephp-architecture" data-label="Как устроен TypePHP"
+  data-speaker-notes="TypePHP сначала разбирает PHP-код в дерево с помощью nikic/php-parser. Затем собирает объявления проекта, проверяет типы и ограничения языка. При обработке функций используется анализ SSA. Результат переводится в C++17, который собирает обычный нативный компилятор.
+
+Дальше важно различать два варианта. Обычная сборка использует PHPX и Zend: расширение загружается в PHP, а исполняемый файл или библиотека связывается с libphp. Скомпилированные функции уже выполняются как машинный код, но динамические значения и поддержанные вызовы по-прежнему обслуживает рантайм.
+
+Nano на Linux и macOS использует PHP Nano и PHPX без интерпретатора опкодов Zend. Цена этого — более узкое подмножество возможностей: в частности, нет eval и динамической загрузки PHP через include или require. У Windows другой путь сборки с php.dll; его схема не показывает. Проверены исходники версии 0.9.3 от 24 сентября, новые замеры производительности не проводились.">
+  <img class="typephp-architecture-image" src="assets/illustrations/typephp-architecture-0.9.3.png"
+    alt="Как устроен TypePHP 0.9.3: PHP и stub-файлы → nikic/php-parser и AST → анализ символов, типов и проверки → C++17 → GCC или Clang. Обычные ext, bin и lib используют PHPX и Zend. Nano на Linux/macOS использует PHPX и PHP Nano без Zend VM, с ограничениями языка." />
+  <div class="infographic-meta"><a href="https://github.com/swoole/typephp/tree/8b33cad5c4f9cd2be2980425f522496e9ba0bfce" target="_blank" rel="noopener noreferrer">swoole/typephp · 0.9.3 · проверено 27.09.2026</a><span class="count"></span></div>
+</section>
+
 <section class="slide" data-label="Переполнение int"
   data-speaker-notes="Первая проблема видна в четырёх строках. На 64-битной платформе PHP_INT_MAX — последнее значение, которое помещается в int. При прибавлении единицы PHP не переходит к отрицательному числу: результат становится float. Компилятору недостаточно доказать, что оба операнда были целыми; он обязан проверить переполнение и сменить представление результата.">
   <div class="top"><span><span class="part">Механика</span> Арифметика</span><span class="count"></span></div>
@@ -238,7 +249,7 @@ for ($i = 0; $i &lt; 100_000_000; $i++) {
 <section class="slide" data-label="Целочисленный цикл, август"
   data-speaker-notes="Это августовский замер. Здесь есть ошибка методики: цикл PHP находился на верхнем уровне файла. JIT выполнял его за 485 миллисекунд, хотя внутри функции получалось около 103.
 
-Даже с таким преимуществом TypePHP с числами PHP и elephc уступали JIT. Быстрый вариант TypePHP использовал нативное целое с другими правилами переполнения. На следующем слайде — исправленное сравнение.">
+Даже с таким преимуществом TypePHP с числами PHP и elephc уступали JIT. Быстрый вариант TypePHP использовал нативное целое с другими правилами переполнения. Сначала разберём причины этого результата, затем перейдём к исправленному сентябрьскому сравнению.">
   <div class="top"><span><span class="part">История</span> Целые числа, август</span><span class="count"></span></div>
   <h2 class="slide-title">Август: AOT проиграл JIT, native_types догнал C</h2>
   <!-- --w is the time as a share of the longest, 5202 ms: 485/5202, 3996/5202,
@@ -266,6 +277,24 @@ for ($i = 0; $i &lt; 100_000_000; $i++) {
     </div>
   </div>
   <p class="note">// 30.08.2026 · JIT здесь на верхнем уровне файла; в функции — 103 мс</p>
+</section>
+
+<section class="slide" data-label="Механика целочисленного цикла"
+  data-speaker-notes="Эта таблица объясняет августовский замер. TypePHP создавал временные динамические значения и вызывал общие операции Zend. elephc выделял в куче два значения Mixed на итерацию.
+
+В нативном режиме TypePHP работал с целыми в регистрах, почти как C. Это разбор прежних версий; дальше посмотрим, что изменилось в новых.">
+  <div class="top"><span><span class="part">История</span> Целые числа, август</span><span class="count"></span></div>
+  <h2 class="slide-title">zval, Variant, Mixed или int64_t в одной итерации</h2>
+  <table class="table mechanism-table">
+    <tr><th>Движок</th><th>Временное значение</th><th>Работа в цикле</th><th>Время</th></tr>
+    <tr><td>PHP JIT</td><td>zval в слотах трассы</td><td>2 вызова Zend handler</td><td class="num">485 мс</td></tr>
+    <tr><td>TypePHP</td><td>php::Variant → zval</td><td>общие операции Zend + деструкторы</td><td class="num">3996 мс</td></tr>
+    <tr><td>elephc</td><td>Heap(Mixed)</td><td>2 alloc + 2 release</td><td class="num">5202 мс</td></tr>
+    <tr class="lead-row"><td>TypePHP int64_t</td><td>int64_t в регистрах</td><td>8 машинных инструкций</td><td class="num">90 мс</td></tr>
+    <tr><td>C, gcc -O2</td><td>int64_t в регистрах</td><td>те же 8 инструкций</td><td class="num">89 мс</td></tr>
+  </table>
+  <p class="closing"><b>Разницу объясняет представление значения</b> и работа с ним в каждой итерации.</p>
+  <p class="note">// август · время JIT — на верхнем уровне файла, в функции 103 мс</p>
 </section>
 
 <section class="slide" data-label="Целочисленный цикл, сентябрь"
@@ -301,24 +330,6 @@ for ($i = 0; $i &lt; 100_000_000; $i++) {
   <p class="note">// 23.09.2026 · 10⁸ итераций · тело в функции · opcache без JIT — 358 мс · Manticore — 21 мс</p>
 </section>
 
-<section class="slide" data-label="Механика целочисленного цикла"
-  data-speaker-notes="Эта таблица объясняет августовский замер. TypePHP создавал временные динамические значения и вызывал общие операции Zend. elephc выделял в куче два значения Mixed на итерацию.
-
-В нативном режиме TypePHP работал с целыми в регистрах, почти как C. Это разбор прежних версий; дальше посмотрим, что изменилось в новых.">
-  <div class="top"><span><span class="part">История</span> Целые числа, август</span><span class="count"></span></div>
-  <h2 class="slide-title">zval, Variant, Mixed или int64_t в одной итерации</h2>
-  <table class="table mechanism-table">
-    <tr><th>Движок</th><th>Временное значение</th><th>Работа в цикле</th><th>Время</th></tr>
-    <tr><td>PHP JIT</td><td>zval в слотах трассы</td><td>2 вызова Zend handler</td><td class="num">485 мс</td></tr>
-    <tr><td>TypePHP</td><td>php::Variant → zval</td><td>общие операции Zend + деструкторы</td><td class="num">3996 мс</td></tr>
-    <tr><td>elephc</td><td>Heap(Mixed)</td><td>2 alloc + 2 release</td><td class="num">5202 мс</td></tr>
-    <tr class="lead-row"><td>TypePHP int64_t</td><td>int64_t в регистрах</td><td>8 машинных инструкций</td><td class="num">90 мс</td></tr>
-    <tr><td>C, gcc -O2</td><td>int64_t в регистрах</td><td>те же 8 инструкций</td><td class="num">89 мс</td></tr>
-  </table>
-  <p class="closing"><b>Разницу объясняет представление значения</b> и работа с ним в каждой итерации.</p>
-  <p class="note">// август · время JIT — на верхнем уровне файла, в функции 103 мс</p>
-</section>
-
 <section class="slide" data-label="Одно слово в объявлении"
   data-speaker-notes="Здесь показан C++, полученный из одного PHP-цикла. В одном режиме переменная хранится как динамический php::Var, в другом — как машинный php::Int.
 
@@ -337,15 +348,15 @@ h = php::toInt(((((((h) * (31L))) + (i))) &amp; (1073741823L)));</pre>
 </section>
 
 <section class="slide" data-label="elephc 0.27: цепочка без аллокации"
-  data-speaker-notes="В августовской версии elephc выделял два Mixed на каждую итерацию. После PR 817 проверенное умножение, сложение и приведение объединены: обычный путь проходит без этих аллокаций, а проверка переполнения остаётся. На нашей машине время упало с 4,5 секунды до 246 миллисекунд. Для этой цепочки мы проверили случай переполнения отдельно; другой случай на следующем слайде показывает дефект версии 0.27.">
+  data-speaker-notes="В августовской версии elephc выделял два Mixed на каждую итерацию. После PR 817 проверенное умножение, сложение и приведение объединены: обычный путь проходит без этих аллокаций, а проверка переполнения остаётся. При повторном запуске августовской сборки 23 сентября получили 4512 миллисекунд, у новой версии — 246. На диаграмме за 30 августа было 5202 миллисекунды: это другой запуск старой версии. Для этой цепочки мы проверили случай переполнения отдельно; другой случай на следующем слайде показывает дефект версии 0.27.">
   <div class="top"><span><span class="part">Замер</span> elephc 0.27.0</span><span class="count"></span></div>
   <h2 class="slide-title">elephc 0.27: проверка без аллокации</h2>
   <pre class="plate">$ elephc loop.php --emit-ir
 <span class="hi">v12: I64 = ichecked_numeric_chain_to_int v6 v7 v9 [mul,add]</span>
 <span class="out">v13: I64 = ibit_and v12 v11</span>
 <span class="out">store_local v13 slot[0]</span></pre>
-  <p class="closing">4512 → 246 мс; <b>в проверенной цепочке операций</b> результат как у PHP.</p>
-  <p class="note">// PR #817 · проверено пробой, где переполнение случается: 0, 2, 65</p>
+  <p class="closing">4512 → 246 мс; <b>старая и новая сборки, замеры 23 сентября.</b></p>
+  <p class="note">// 5202 мс — запуск 30 августа · 4512 мс — повтор старой сборки 23 сентября · PR #817</p>
 </section>
 
 <section class="slide" data-label="Одна программа — три ответа"

@@ -8,6 +8,12 @@ that the speaker explicitly asked to leave unchanged.
 
 ## Findings, in priority order
 
+Follow-up approved by the speaker: the opening now has ten slides, with five
+preserved in reserve. The Bun card has been synchronized with the approved
+notes. August results and their explanation now precede September results;
+the 5202/4512 ms distinction is explicitly dated. Other proposals below
+remain review observations, not automatically accepted edits.
+
 1. **The opening delays the central question.** The first 15 slides cover
    AI, new languages, rewrites, productivity, rankings and ecosystem value.
    The question about new large PHP projects is raised but not answered.
