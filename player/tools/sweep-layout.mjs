@@ -20,10 +20,10 @@
 const DECK = process.argv[2] || 'http://localhost:8000/index.html';
 const DEVTOOLS = process.argv[3] || 'http://localhost:9222';
 
-/* The three directions set different faces and heading sizes, so a block that
+/* The four directions set different faces and heading sizes, so a block that
    fits in one can overrun its neighbour in another. Named on the command line;
-   all three by default. */
-const THEMES = process.argv[4] ? [process.argv[4]] : ['terminal', 'blueprint', 'php'];
+   all four by default. */
+const THEMES = process.argv[4] ? [process.argv[4]] : ['pyhnik', 'terminal', 'blueprint', 'php'];
 
 /** Smallest intersection, in slide pixels, worth reporting as a collision. */
 const TOLERANCE = 2;

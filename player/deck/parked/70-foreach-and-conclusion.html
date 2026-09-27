@@ -1,0 +1,91 @@
+<!-- Removed from the active deck at the speaker's request, 2026-09-27. -->
+<section class="slide divider optimizer-divider" data-label="Можно ли ускорить исходный foreach?"
+  data-speaker-notes="В предыдущем опыте мы заменили PHP-массив на вектор. Теперь сохраним исходный foreach и разберём работу штатного JIT.
+
+В ext/mlir проверяется узкий случай: плотный массив, обход без ключа и ветвлений. Задача эксперимента — дать оптимизатору увидеть весь цикл, включая переход к следующему элементу.">
+  <div class="top"><span><span class="part">Эксперимент</span> ext/mlir</span><span class="count"></span></div>
+  <div class="ghost">07</div>
+  <h2 class="slide-title">Можно ли ускорить исходный foreach?</h2>
+  <p class="lede">Не менять исходный foreach — дать компилятору увидеть его целиком.</p>
+</section>
+
+<section class="slide" data-label="Цикл, который измеряли"
+  data-speaker-notes="В массиве две тысячи целых чисел. Цикл только суммирует элементы. Эту форму обхода сравниваем в штатном JIT, ext/mlir и C. Простой пример позволяет разобрать причину разницы, но его результат нельзя переносить на произвольный foreach.">
+  <div class="top"><span><span class="part">ext/mlir · 01</span> Проверка гипотезы</span><span class="count"></span></div>
+  <h2 class="slide-title">Один узкий foreach как проверка гипотезы</h2>
+  <pre class="plate" data-lang="php">$sum = 0;
+
+foreach ($array as $value) {
+    $sum += $value;
+}</pre>
+  <p class="note">// packed array · 2000 элементов · без ключа и ветвлений</p>
+</section>
+
+<section class="slide" data-label="Что JIT знает о foreach"
+  data-speaker-notes="JIT уже знает, что массив плотный, а накопитель — целое число в регистре. Он также проверяет тип очередного элемента.
+
+Но переход к следующему элементу проходит через помощник Zend — FE_FETCH_R. Дальше посмотрим, какие операции остаются в машинном коде на этой границе.">
+  <div class="top"><span><span class="part">ext/mlir · 02</span> Известные факты</span><span class="count"></span></div>
+  <h2 class="slide-title">JIT уже многое знает — но не удерживает это знание</h2>
+  <table class="table">
+    <tr><th>Факт перед итерацией</th><th>Что видно JIT</th><th>Где возникает граница</th></tr>
+    <tr><td>Представление массива</td><td><b>packed array</b></td><td rowspan="3"><b>FE_FETCH_R</b><br />непрозрачный вызов рантайма</td></tr>
+    <tr><td>Накопитель <code>$sum</code></td><td><b>int</b>, уже в регистре</td></tr>
+    <tr><td>Очередной элемент</td><td>тип проверен</td></tr>
+  </table>
+  <p class="closing">Вопрос эксперимента: что будет, если граница IR пройдёт <b>после цикла</b>, а не внутри итерации?</p>
+</section>
+
+<section class="slide" data-label="JIT видит опкоды, а не foreach"
+  data-speaker-notes="В дампе JIT видны тип массива и регистр накопителя. Но обход следующего элемента проходит через FE_FETCH_R, вызов помощника Zend. В этой трассе JIT выполняет 27 машинных инструкций на итерацию; ext/mlir — 20. У JIT есть также пять возможных выходов с восстановлением состояния виртуальной машины.">
+  <div class="top"><span><span class="part">ext/mlir · 03</span> Граница рантайма</span><span class="count"></span></div>
+  <h2 class="slide-title">Внутри foreach остаётся непрозрачный FE_FETCH_R</h2>
+  <pre class="plate">$ php -d opcache.jit_debug=0x144000 loop.php
+<span class="out">op1(packed array)      — тип массива известен</span>
+<span class="out">CV1($s):int(rbx)       — сумма уже в регистре</span>
+<span class="hi">FE_FETCH_R             — вызов помощника Zend</span>
+<span class="out">side exit × 5          — восстановление состояния VM</span></pre>
+  <p class="note">// ext/mlir · исследовательский эксперимент · анализ трассы штатного JIT</p>
+</section>
+
+<section class="slide statement" data-label="Цена FE_FETCH_R"
+  data-speaker-notes="FE_FETCH_R учитывает устройство PHP-массива, в том числе пропускает пустые ячейки. В исследованной трассе тег типа элемента читается три раза за итерацию.
+
+Это результат разбора конкретного цикла и версии JIT. Он показывает оставшуюся повторную работу, которую мы пытаемся убрать в эксперименте.">
+  <div class="top"><span><span class="part">ext/mlir · 04</span> Повторная проверка</span><span class="count"></span></div>
+  <p class="after">Тип массива известен. Тип элемента уже проверялся.</p>
+  <span class="label">Что видно в трассе</span>
+  <p class="lead">Тег типа читается<br />трижды за итерацию</p>
+  <p class="note">// вызов нужен, потому что PHP-массив может содержать пустые ячейки</p>
+</section>
+
+<section class="slide" data-label="Стоимость одного foreach"
+  data-speaker-notes="В ext/mlir этот цикл обходится без вызова FE_FETCH_R. На итерацию получилось 20 инструкций вместо 27 у штатного JIT и 0,73 наносекунды вместо 1,72. Результат C — рядом, в пределах шума измерений.
+
+Для этого не потребовалось новых оптимизирующих проходов: LLVM получил представление всего цикла. Но полная семантика foreach в эксперименте пока не реализована, поэтому результат относится только к показанному случаю.">
+  <div class="top"><span><span class="part">ext/mlir · 05</span> Результат</span><span class="count"></span></div>
+  <h2 class="slide-title">foreach: 27 инструкций → 20</h2>
+  <table class="table">
+    <tr><th>Исполнение</th><th>нс / итерацию</th><th></th></tr>
+    <tr><td>Интерпретатор</td><td class="num">10,91</td><td></td></tr>
+    <tr><td>PHP JIT 8.6-dev</td><td class="num">1,72</td><td>27 инструкций</td></tr>
+    <tr class="lead-row"><td>ext/mlir</td><td class="num">0,73</td><td>20 инструкций</td></tr>
+    <tr><td>Тот же цикл на C</td><td class="num">0,76</td><td>паритет</td></tr>
+  </table>
+  <p class="closing"><b>Новых оптимизирующих проходов не понадобилось:</b> LLVM получил цикл целиком.</p>
+  <p class="note">// эксперимент: packed foreach без ключа и ветвлений · полная семантика foreach не реализована</p>
+</section>
+
+
+<section class="slide closing-slide" data-label="Зачем компиляторы PHP — и ждать ли их"
+  data-speaker-notes="Компиляция может ускорить вычислительные участки, но результат зависит от того, какое поведение PHP сохраняется. В наших измерениях нативные числа и типизированные контейнеры дали заметный выигрыш ценой изменения правил и кода.
+
+Для существующего приложения разумно начинать с отдельного модуля и измерять эффект на запросе целиком. Собственный компилятор также позволяет развивать язык: вводить новые типы, ограничения и способы исполнения. Это подводит к последнему выводу.">
+  <div class="top"><span><span class="part">Вывод</span> PHP и компиляция</span><span class="count"></span></div>
+  <p class="closing-prompt">Зачем пишут компиляторы PHP?</p>
+  <h2 class="closing-headline">Чтобы убрать работу<br />из горячего кода.</h2>
+  <p class="closing-language">Компилятор может ускорить развитие PHP<br />или стать основой нового языка.</p>
+  <p class="closing-prompt closing-prompt-second">Ждать ли их в продакшене?</p>
+  <p class="closing-answer">Пробовать на узком участке.<br />Проверять выигрыш и совместимость.</p>
+  <p class="note">// профиль → проверка семантики → замер всего запроса</p>
+</section>

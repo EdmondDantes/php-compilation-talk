@@ -1,0 +1,152 @@
+/* Conference identity: https://pyhnik.phpyh.ru/, captured 2026-09-27.
+   Keep this after slides.css. Illustration backgrounds and their contrast
+   overlays remain authored by each slide. Theme-specific generated variants
+   are selected explicitly below; original assets remain available. */
+@font-face {
+  font-family: 'Bounded';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('../assets/pyhnik/bounded-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+2116;
+}
+@font-face {
+  font-family: 'Bounded';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('../assets/pyhnik/bounded-latin.woff2') format('woff2');
+  unicode-range: U+0020-007E, U+00A0, U+00A7, U+00A9, U+00AB, U+00B7, U+00BB, U+00D7, U+2013-2014, U+2018-2019, U+201C-201D, U+2026, U+20AC, U+20BD, U+2122, U+2191, U+2193, U+2212;
+}
+
+[data-theme='pyhnik'] {
+  --bg: #000a2f;
+  --ink: #ffffff;
+  --dim: #c3c8d5;
+  --faint: #a3a9bd;
+  --accent: #4bfb75;
+  --accent-soft: #a0ffb6;
+  --panel: #0b173b;
+  --panel-gap: #071232;
+  --panel-border: #ffffff24;
+  --rule: #ffffff24;
+  --rule-accent: #4bfb75;
+  --ok: #4bfb75;
+  --warn: #ff9f45;
+  --code-key: #4bfb75;
+  --code-fn: #a0ffb6;
+  --code-lit: #99b5ff;
+  --code-attr: #ff9f45;
+  --font-head: 'JetBrains Mono', ui-monospace, monospace;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --head-weight: 700;
+  --head-ls: -0.03em;
+  --display-ls: -0.035em;
+  --kicker-transform: none;
+  --kicker-ls: 0;
+  --grid: radial-gradient(ellipse at 50% -35%, #4bfb752b, transparent 65%);
+  --gap-size: 2px;
+  --pad: 112px;
+}
+
+/* A quiet version of the site's green glow. Do not replace ::before:
+   illustrated slides use it to keep the text readable over their images. */
+[data-theme='pyhnik'] .slide {
+  background-color: var(--bg);
+}
+[data-theme='pyhnik'] .slide::before { background-size: cover; }
+[data-theme='pyhnik'] .slide-title {
+  font-family: 'Bounded', system-ui, sans-serif;
+  font-size: 64px;
+  letter-spacing: -0.035em;
+  line-height: 1.12;
+}
+[data-theme='pyhnik'] .divider .slide-title { font-size: 80px; }
+[data-theme='pyhnik'] .cover h1 {
+  font-family: 'Bounded', system-ui, sans-serif;
+  font-size: 118px;
+}
+
+[data-theme='pyhnik'] .compilation-cover {
+  background-image:
+    linear-gradient(90deg, #000a2f 0%, #000a2f 10%, rgba(0, 10, 47, .94) 24%, rgba(0, 10, 47, .64) 40%, rgba(0, 10, 47, .22) 57%, transparent 76%),
+    linear-gradient(0deg, #000a2f, transparent 14%, transparent 87%, #000a2f),
+    url('../assets/pyhnik/lighthouse-cover-matrix.png');
+}
+[data-theme='pyhnik'] .compilation-cover::before { opacity: 0; }
+
+.conference-brand { display: none; }
+[data-theme='pyhnik'] .conference-brand {
+  display: block;
+  position: absolute;
+  right: var(--pad);
+  bottom: 26px;
+  width: 240px;
+  height: auto;
+  z-index: 3;
+  pointer-events: none;
+}
+[data-theme='pyhnik'] .cover .conference-brand {
+  top: 42px;
+  bottom: auto;
+  width: 440px;
+}
+/* This slide uses the bottom edge for five illustration captions. */
+[data-theme='pyhnik'] .complexity-contained .conference-brand {
+  bottom: 110px;
+}
+[data-theme='pyhnik'] .compilation-cover .band .k,
+[data-theme='pyhnik'] .cover.compilation-cover .kicker,
+[data-theme='pyhnik'] .closing-slide .top .part,
+[data-theme='pyhnik'] .closing-prompt {
+  color: var(--accent);
+}
+
+/* Dedicated illustration variants; the original themes keep their assets. */
+[data-theme='pyhnik'] .migration-conclusion {
+  background-image: linear-gradient(90deg, rgba(0, 10, 47, .7) 0%, rgba(0, 10, 47, .25) 48%, transparent 68%),
+    url('../assets/pyhnik/php-ecosystem-migration-qr.png');
+}
+[data-theme='pyhnik'] .compatibility-divider {
+  background-image: url('../assets/pyhnik/php-compatibility-shape-sorter.png');
+}
+[data-theme='pyhnik'] .optimization-divider {
+  background-image: url('../assets/pyhnik/php-compiler-optimization-scanner.png');
+}
+[data-theme='pyhnik'] .compile-attempts-divider {
+  background-image: url('../assets/pyhnik/php-compilation-attempts-true-detective.png');
+}
+[data-theme='pyhnik'] .benchmark-divider {
+  background-image: url('../assets/pyhnik/php-performance-test.png');
+}
+[data-theme='pyhnik'] .ai-crossroads {
+  background-image: linear-gradient(90deg, rgba(0, 10, 47, 0.98) 0%, rgba(0, 10, 47, 0.82) 36%, rgba(0, 10, 47, 0.08) 72%),
+    url('../assets/pyhnik/ai-crossroads.png');
+}
+[data-theme='pyhnik'] .rust-teaser {
+  background-image: linear-gradient(90deg, rgba(0, 10, 47, 0.98) 0%, rgba(0, 10, 47, 0.86) 31%, rgba(0, 10, 47, 0.03) 63%),
+    url('../assets/pyhnik/rust-rewrite-noir-labeled.png');
+}
+[data-theme='pyhnik'] .complexity-contained {
+  background-image: linear-gradient(90deg, rgba(0, 10, 47, 0.97) 0%, rgba(0, 10, 47, 0.78) 31%, rgba(0, 10, 47, 0.02) 58%),
+    url('../assets/pyhnik/complexity-chimera.png');
+}
+[data-theme='pyhnik'] .dynamic-compilation-chapter {
+  background-image: url('../assets/pyhnik/dynamic-language-compilation-evolution.png');
+}
+[data-theme='pyhnik'] .infrastructure-value-visual {
+  background-image: url('../assets/pyhnik/language-ecosystem-infrastructure.png');
+}
+[data-theme='pyhnik'] .rankings-elephant {
+  background-image: linear-gradient(90deg, rgba(0, 10, 47, .12), rgba(0, 10, 47, .02)),
+    url('../assets/pyhnik/language-rankings-elephant.png');
+}
+
+[data-theme='pyhnik'] :is(.rust-question strong, .complexity-copy .after,
+  .complexity-contained .top .part, .migration-kicker,
+  .migration-author a) { color: var(--accent); }
+[data-theme='pyhnik'] .closing-slide .top { color: var(--dim); }
+[data-theme='pyhnik'] :is(.top .count, .note) {
+  text-shadow: 0 2px 8px #000a2f, 0 0 16px #000a2f;
+}

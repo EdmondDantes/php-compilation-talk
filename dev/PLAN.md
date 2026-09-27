@@ -199,3 +199,28 @@ enough to present from.
       fragments (note line, expand-panel close, two-digit counter, `perYear`,
       `openNote` in build-map.mjs, `clearDetails` in the sweep).
       done: sweep-layout reports 0 collisions before and after.
+
+- [x] S6.8 Add the default Pyhnik 2026 theme alongside the three existing
+      directions. Use the conference's original SVG logo, locally stored
+      Bounded font, navy ground and green accents. Preserve illustration
+      backgrounds and contrast overlays, and respect a saved theme choice.
+      Verified: 59 slides in four themes at rest/note/expand with no text
+      collisions or overflows; browser checks for fonts, logos, default and
+      persisted selection, unchanged illustration backgrounds. The conference
+      logo clears content; faint decorative divider numerals are background art.
+
+- [x] S6.9 Extend the Pyhnik theme with 12 active navy/green illustrations
+      and restrained Matrix details, preserving the original theme assets.
+      Blend the cover into the navy background, correct its event caption,
+      and increase the Rust question line height from 0.94 to 1.12.
+      Park the six-slide foreach chapter and former penultimate conclusion
+      at the speaker's request. Add a scannable conference QR tail tag to
+      the last slide. Verification: 52 slides x four themes x three states,
+      no text collisions or overflows; QR decoded from the actual final
+      screenshot at 1920/1280/960 widths. Prompts are stored with the assets.
+
+- [x] S6.10 Replace the CSS QR plate with a painted sign on a closer elephant.
+      The final PNG includes the working QR, matched to the enamel and tilt;
+      the frame, rope and shadows remain painted. The speaker authorized the
+      precise raster correction. The HTML/CSS tag is removed. ZXing decoded
+      the actual final slide at 1920/1280/960 widths to the conference URL.

@@ -1206,7 +1206,7 @@
   font-family: var(--font-head);
   font-size: 126px;
   font-weight: var(--head-weight);
-  line-height: 0.94;
+  line-height: 1.12;
   letter-spacing: var(--display-ls);
 }
 

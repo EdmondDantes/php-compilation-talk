@@ -13,10 +13,10 @@
 
   const STAGE_W = 1920;
   const STAGE_H = 1080;
-  const THEMES = ['terminal', 'blueprint', 'php'];
+  const THEMES = ['pyhnik', 'terminal', 'blueprint', 'php'];
 
   /** What each theme is called on the control. */
-  const THEME_NAMES = { terminal: 'Терминал', blueprint: 'Чертёж', php: 'Слон' };
+  const THEME_NAMES = { pyhnik: 'Пыхник’26', terminal: 'Терминал', blueprint: 'Чертёж', php: 'Слон' };
 
   /* Printing forces the paper direction: browsers drop background colours
      by default, and the terminal direction's near-white ink would then
@@ -128,6 +128,15 @@
     start() {
       highlightPhp(this.root);
       this.numberSlides();
+      for (const slide of this.slides) {
+        const brand = document.createElement('img');
+        brand.className = 'conference-brand';
+        brand.src = 'assets/pyhnik/logo-full.svg';
+        brand.alt = 'Пыхник’26';
+        brand.width = 656;
+        brand.height = 148;
+        slide.append(brand);
+      }
       this.applyTheme(this.theme);
       this.fit();
 
