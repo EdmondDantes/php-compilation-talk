@@ -93,7 +93,7 @@ buffer_free($points);</pre>
 <section class="slide overflow-comparison" data-label="Переполнение int"
   data-speaker-notes="Для сравнения берём один и тот же тест из bench/cases/int_overflow: единицу удваиваем 64 раза. PHP переходит во float и получает положительное число. TypePHP 0.9.2 в нативном режиме вернул ноль — это намеренная политика, не обещание полной PHP-совместимости. С use varint_types этот тест совпал с PHP.
 
-elephc обещает переход int во float, но 0.27.0 вернул отрицательное число. Это воспроизведённый 23 сентября дефект повторного умножения уже float-значения. Нельзя переносить его на все операции: отдельная fused checked chain дала корректный ответ. Картинка и реплика — шутка; конкретный результат и режимы показаны слева.">
+elephc обещает переход int во float, но 0.27.0 вернул отрицательное число. Это воспроизведённый 23 сентября дефект повторного умножения уже float-значения. Нельзя переносить его на все операции: отдельная fused checked chain дала корректный ответ. Игра в напёрстки на картинке показывает подмену представления; конкретные результаты и режимы приведены слева.">
   <div class="top"><span><span class="part">Совместимость</span> Обещание и результат</span><span class="count"></span></div>
   <h2 class="slide-title">При переполнении int становится float</h2>
   <pre class="plate overflow-code" data-lang="php">$h = 1;
@@ -106,7 +106,7 @@ echo $h;</pre>
     <article><b>TypePHP 0.9.2 · native</b><code>0</code><span>Другая семантика. <code>use varint_types</code> даёт ответ PHP.</span></article>
     <article class="bug"><b>elephc 0.27.0</b><code>−1.844674407371E+19</code><span>Обещает float, но теряет знак: воспроизведённый баг.</span></article>
   </div>
-  <p class="overflow-joke">«Не виноватая я,<br />он сам переполнил!»</p>
+  <p class="overflow-joke">Кладём int —<br />достаём float.</p>
   <p class="note">// результаты 23.09.2026 · bench/cases/int_overflow · не тест скорости</p>
 </section>
 

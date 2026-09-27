@@ -79,7 +79,7 @@
 .laravel-fit .table .num { white-space: normal; }
 .laravel-fit .closing { top: 826px; bottom: auto; margin: 0; padding-top: 18px; }
 
-[data-theme='pyhnik'] .overflow-comparison { background: linear-gradient(90deg, #000a2f 0%, #000a2fe8 35%, transparent 60%), url('../assets/pyhnik/overflow-diamond-arm-typephp.png') center / cover; }
+[data-theme='pyhnik'] .overflow-comparison { background: linear-gradient(90deg, #000a2f 0%, #000a2fe8 35%, transparent 60%), url('../assets/pyhnik/overflow-shell-game.png') center / cover; }
 [data-theme='pyhnik'] .laravel-fit { background: linear-gradient(90deg, #000a2f 0%, #000a2fdf 35%, transparent 59%), url('../assets/pyhnik/laravel-typephp-crate.png') center / cover; }
 [data-theme='pyhnik'] :is(.overflow-comparison, .laravel-fit)::before { opacity: 0; }
 
@@ -105,7 +105,7 @@
 .jphp-status b { color: var(--accent); font: 700 72px var(--font-head); }
 .jphp-status p { margin: 0; font: 32px/1.4 var(--font-body); }
 [data-theme='pyhnik'] .hiphop-story { background: linear-gradient(90deg, #000a2f 0%, #000a2fe0 28%, transparent 50%), url('../assets/pyhnik/hiphop-dumbledore.png') center / cover; }
-[data-theme='pyhnik'] .kphp-story { background: linear-gradient(90deg, #000a2f 0%, #000a2fdf 28%, transparent 48%), url('../assets/pyhnik/kphp-elephant-protest.png') center / cover; }
+[data-theme='pyhnik'] .kphp-story { background: linear-gradient(90deg, #000a2f 0%, #000a2fdf 28%, transparent 48%), url('../assets/pyhnik/kphp-elephant-dialect.png') center / cover; }
 [data-theme='pyhnik'] .project-story::before { opacity: 0; }
 
 [data-theme='pyhnik'] .language-obituary {

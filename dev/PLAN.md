@@ -277,3 +277,7 @@ enough to present from.
 - [x] S6.17 Add the hyperrealistic Reaper visiting PHP after other languages
       on the language-obituary slide. Preserve living windows for earlier
       languages and readable left-column copy. Verified the Pyhnik deck layout.
+
+- [x] S6.18 Replace the overflow movie parody with the int/float shell game,
+      keeping measured results. Remove the KPHP protest placard and related
+      wall/Telegram references from the active illustration.

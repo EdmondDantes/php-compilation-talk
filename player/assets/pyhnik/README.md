@@ -94,3 +94,8 @@ added directly to the image. `php-survival-oscar-prompt.md` records the edit.
 
 `languages-reaper.png` illustrates repeated predictions of language death;
 the PHP elephant peers out from its door. Prompt: `languages-reaper-prompt.md`.
+
+
+Final visual revisions: `overflow-shell-game.png` now replaces the Diamond
+Arm scene; `kphp-elephant-dialect.png` replaces the protest scene and contains
+neither a person nor a placard. Their matching prompt files record the edits.
