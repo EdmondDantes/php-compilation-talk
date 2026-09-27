@@ -39,6 +39,10 @@ buy, what they cost, and whether to expect one in production.
   compiler diagram, runtime boundaries and image provenance.
 - `dev/research/compiler-canvas-2026-09.md` — TypePHP, elephc and Manticore
   Canvas diagrams, pinned source evidence and reveal behavior.
+- `dev/research/compiler-critic-2026-09.md` — focused source critique and
+  selected historical incidents; distinguishes current code findings from
+  fresh executable reproductions. Manticore property semantics and TypePHP
+  native arithmetic were selected by the speaker for the active deck.
 - `dev/research/refresh-2026-09.md` — what changed by 2026-09-23 in TypePHP,
   elephc, KPHP and Manticore, and what it does to the deck's numbers.
 - `dev/research/typephp-laravel.md` — TypePHP tried on a Laravel application.

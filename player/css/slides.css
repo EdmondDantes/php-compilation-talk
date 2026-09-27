@@ -397,6 +397,36 @@
   text-transform: none;
 }
 
+.semantic-review .review-grid {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 330px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+}
+.review-grid .plate {
+  position: static;
+  margin: 0;
+  padding: 32px;
+  font-size: 30px;
+  line-height: 1.45;
+}
+.review-results { display: grid; gap: 24px; }
+.review-results article {
+  padding: 24px 28px;
+  border: 1px solid var(--rule);
+  background: var(--panel);
+}
+.review-results h3 {
+  margin: 0 0 20px;
+  color: var(--accent);
+  font: 600 30px/1.2 var(--font-body);
+}
+.review-results p { margin: 0; font-size: 28px; line-height: 1.35; }
+.semantic-review .closing { font-size: 32px; }
+
 .cover .kicker {
   position: absolute;
   left: var(--pad);

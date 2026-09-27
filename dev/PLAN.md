@@ -121,6 +121,9 @@ Goal: the deck exists end to end and runs in a browser.
 - [x] S4.13 Put the existing corrected packed-int foreach timings directly
       inside the packed-array cards. Show PHP JIT and TypePHP std::vector
       baselines and state that hash-array foreach was not measured.
+- [x] S4.14 Add the speaker-selected source-review findings: TypePHP native
+      arithmetic/error behavior and Manticore property state/visibility.
+      Distinguish source deductions from fresh executable reproductions.
 
 ## S7. Our own measurement of TypePHP and elephc [done]
 
