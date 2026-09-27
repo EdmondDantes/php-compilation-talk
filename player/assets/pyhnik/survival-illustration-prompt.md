@@ -1,0 +1,8 @@
+# PHP survival
+
+Generated with the built-in imagegen tool, 2026-09-27.
+Asset: `php-survival-revenant.png`.
+
+## Prompt
+
+Use case: stylized-concept. Create a wide 16:9 cinematic editorial illustration for a humorous PHP conference slide asking whether PHP can survive. In a harsh winter forest, Hugh Glass as portrayed by Leonardo DiCaprio in The Revenant: recognizable bearded face, weather-beaten, long disheveled hair, rugged fur and worn frontier coat, exhausted but determined, trudging/running toward an elephant. The large elephant ahead of him is trying to flee toward the right, snow spraying under its feet, looking back nervously at the approaching survivor. Clearly readable chase direction: man behind to the LEFT of elephant, elephant fleeing RIGHT away from him. Mild absurdist cinema parody, no injuries, no blood, no weapons, no bear, no violence. Both characters clearly visible in the RIGHT 55 percent; the elephant is the largest subject, the man recognizable and large enough to read, no tiny distant figures. Compose man's head around 60 percent width and elephant around 80 percent width. LEFT 43 percent is empty quiet midnight navy #000a2f mist fading seamlessly into winter forest, reserved for white slide text and cards. Style matches a sophisticated Matrix-inflected navy/green PHP deck: cinematic painted realism, detailed elephant skin and fur, deep navy shadows, cool blue snow, restrained vivid fresh green #4bfb75 northern light and rim highlights, sparse faint digital-code-like glints far in the forest only, not over characters. Avoid bright white snow on the left. Make the movement and elephant's attempt to escape unmistakable. No text, logos, captions, watermarks. High quality 16:9 raster.

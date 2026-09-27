@@ -13,7 +13,7 @@ Palette from the site's `assets/app.css`: navy `#000a2f`, green `#4bfb75`,
 white `#ffffff`, warm accent `#ff9f45`.
 
 `player/css/pyhnik.css` selects dedicated navy/green Matrix-inspired versions
-for all 12 illustrations in the active deck. Original themes keep their assets.
+for all 13 illustrations in the active deck. Original themes keep their assets.
 The title image fades into the exact theme background at its left/top/bottom edges.
 Bounded is used for titles; body text and code retain the deck's readable fonts.
 
@@ -54,3 +54,13 @@ while preserving the painted frame, rope and shadows.
 
 ZXing decoded the final embedded QR from the actual slide screenshot at
 1920, 1280 and 960 pixels wide, yielding exactly `https://pyhnik.phpyh.ru`.
+
+
+## Cinema metaphors
+
+`language-infrastructure-don.png` illustrates the infrastructure slide:
+an elephant as Don Corleone weighs a light PHP token against a heavier Laravel
+ecosystem. `php-survival-revenant.png` illustrates the renamed PHP survival
+slide, with the Revenant protagonist chasing a fleeing elephant. Both were
+created with built-in imagegen; exact prompts are recorded in
+`don-illustration-prompt.md` and `survival-illustration-prompt.md`.

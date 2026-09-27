@@ -140,13 +140,51 @@
 }
 [data-theme='pyhnik'] .rankings-elephant {
   background-image: linear-gradient(90deg, rgba(0, 10, 47, .12), rgba(0, 10, 47, .02)),
-    url('../assets/pyhnik/language-rankings-elephant.png');
+    url('../assets/pyhnik/php-survival-revenant.png');
 }
 
 [data-theme='pyhnik'] :is(.rust-question strong, .complexity-copy .after,
   .complexity-contained .top .part, .migration-kicker,
   .migration-author a) { color: var(--accent); }
 [data-theme='pyhnik'] .closing-slide .top { color: var(--dim); }
+
+/* The balance pans remain visible to the right of the reading column. */
+[data-theme='pyhnik'] .infrastructure-don {
+  display: block;
+  background-image:
+    linear-gradient(90deg, #000a2f 0%, rgba(0, 10, 47, .7) 24%, transparent 46%),
+    url('../assets/pyhnik/language-infrastructure-don.png');
+  background-size: cover;
+  background-position: center;
+}
+[data-theme='pyhnik'] .infrastructure-don::before { opacity: 0; }
+[data-theme='pyhnik'] .infrastructure-don .lead {
+  position: absolute;
+  left: var(--pad);
+  top: 230px;
+  width: 740px;
+  font-size: 54px;
+  line-height: 1.2;
+}
+[data-theme='pyhnik'] .infrastructure-don > .stack {
+  position: absolute;
+  left: var(--pad);
+  right: auto;
+  top: 450px;
+  width: 640px;
+  gap: 30px;
+  font: 400 30px/1.4 var(--font-body);
+  letter-spacing: 0;
+}
 [data-theme='pyhnik'] :is(.top .count, .note) {
   text-shadow: 0 2px 8px #000a2f, 0 0 16px #000a2f;
+}
+
+[data-theme='pyhnik'] .rankings-elephant .slide-title {
+  max-width: 880px;
+  font-size: 58px;
+}
+[data-theme='pyhnik'] .rankings-elephant .ranking-measures { width: 640px; }
+[data-theme='pyhnik'] .rankings-elephant::before {
+  background: linear-gradient(90deg, #000a2f 0%, rgba(0, 10, 47, .9) 30%, rgba(0, 10, 47, .15) 47%, transparent 58%);
 }

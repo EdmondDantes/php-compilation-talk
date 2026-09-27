@@ -224,3 +224,9 @@ enough to present from.
       the frame, rope and shadows remain painted. The speaker authorized the
       precise raster correction. The HTML/CSS tag is removed. ZXing decoded
       the actual final slide at 1920/1280/960 widths to the conference URL.
+
+- [x] S6.11 Illustrate the language/infrastructure slide with Don Corleone's
+      elephant weighing PHP against a heavier Laravel ecosystem. Rename the
+      rankings slide to the PHP survival question and add the Revenant chase
+      illustration. Keep text clear of both scenes; resize the survival title
+      in other themes too. Verified 52 slides in all four themes and three states.
