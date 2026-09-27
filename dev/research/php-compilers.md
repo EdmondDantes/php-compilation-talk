@@ -123,6 +123,9 @@ in the range. Packages exist for focal, jammy, buster and bullseye only;
 on Ubuntu 24.04 the route is the 2022 Dockerfile.
 
 **elephc** — <https://github.com/illegalstudio/elephc> · <https://elephc.dev/>
+Current-source architecture and data layouts (27 September):
+[Canvas evidence](compiler-canvas-2026-09.md#elephc). The historical inventory
+below predates the optional Magician eval bridge.
 Vincenzo Petrucci, Guillaume Loulier. Written in Rust; compiles a PHP
 subset **straight to assembly** — no C step, no VM, no runtime
 dependency. macOS ARM64, Linux ARM64/x86_64. MIT.
@@ -164,6 +167,9 @@ constants 1094/3180 — a new baseline and a new method, so not comparable
 with August's 23%. elephc.dev still publishes no performance figure.
 
 **Manticore (ManticorePHP compiler)** — <https://github.com/manticorephp/compiler>
+Current-source architecture, MIR memory passes and native dependencies:
+[27 September review](compiler-canvas-2026-09.md#manticore). The historical
+description below is not the current dependency inventory.
 Taras Chornyi. Self-hosted AOT compiler **written in PHP**: lexer →
 Pratt parser → AST lowering → MIR passes → LLVM IR → static binary
 linking only libc. MIT.
@@ -196,6 +202,8 @@ The August 44× on spectralnorm and today's 77.5× were measured on
 different workloads and do not compare.
 
 **TypePHP** (was `swoole/aot-compiler`) — <https://github.com/swoole/typephp>
+Current architecture and PHP-AST SSA boundary:
+[0.9.3 source review](typephp-architecture-2026-09.md).
 Swoole (上海识沃网络科技有限公司), GPL-3.0. PHP → C++17 → native machine
 code. Active preview: created 2026-05-11, ~1.5k commits, commits as
 recent as 2026-08-25, ~95 stars. No tagged releases; `project.yml` says

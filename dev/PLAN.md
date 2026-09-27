@@ -101,6 +101,14 @@ Goal: the deck exists end to end and runs in a browser.
       with its narration, group August measurements before September,
       and add a generated TypePHP 0.9.3 architecture infographic after
       the four compilation approaches. No performance measurements rerun.
+- [x] S4.10 Replace the TypePHP raster diagram with theme-aware Canvas,
+      make the PHP-AST SSA boundary explicit, add source-checked elephc
+      and Manticore diagrams, and reveal stages with space/back navigation.
+      Redraw canvases for overview, presenter, theme changes and printing.
+      Add the requested zval/object/array representation comparison after
+      Manticore, then replace the table with three logical memory diagrams
+      titled "Как реализуются абстракции", as requested. Keep the table in
+      reserve; the three consecutive slides advance normally with space.
 
 ## S7. Our own measurement of TypePHP and elephc [done]
 

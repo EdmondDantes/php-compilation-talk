@@ -37,6 +37,8 @@ buy, what they cost, and whether to expect one in production.
 - `dev/research/typephp-review.md` — a full read of one live compiler.
 - `dev/research/typephp-architecture-2026-09.md` — source-checked 0.9.3
   compiler diagram, runtime boundaries and image provenance.
+- `dev/research/compiler-canvas-2026-09.md` — TypePHP, elephc and Manticore
+  Canvas diagrams, pinned source evidence and reveal behavior.
 - `dev/research/refresh-2026-09.md` — what changed by 2026-09-23 in TypePHP,
   elephc, KPHP and Manticore, and what it does to the deck's numbers.
 - `dev/research/typephp-laravel.md` — TypePHP tried on a Laravel application.

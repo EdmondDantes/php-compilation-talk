@@ -32,15 +32,91 @@
   <p class="note">// JIT и TypePHP используют Zend · KPHP и самостоятельный AOT — собственный рантайм</p>
 </section>
 
-<section class="slide typephp-architecture" data-label="Как устроен TypePHP"
+<section class="slide compiler-architecture" data-label="Как устроен TypePHP" data-diagram-step="0"
   data-speaker-notes="TypePHP сначала разбирает PHP-код в дерево с помощью nikic/php-parser. Затем собирает объявления проекта, проверяет типы и ограничения языка. При обработке функций используется анализ SSA. Результат переводится в C++17, который собирает обычный нативный компилятор.
 
 Дальше важно различать два варианта. Обычная сборка использует PHPX и Zend: расширение загружается в PHP, а исполняемый файл или библиотека связывается с libphp. Скомпилированные функции уже выполняются как машинный код, но динамические значения и поддержанные вызовы по-прежнему обслуживает рантайм.
 
 Nano на Linux и macOS использует PHP Nano и PHPX без интерпретатора опкодов Zend. Цена этого — более узкое подмножество возможностей: в частности, нет eval и динамической загрузки PHP через include или require. У Windows другой путь сборки с php.dll; его схема не показывает. Проверены исходники версии 0.9.3 от 24 сентября, новые замеры производительности не проводились.">
-  <img class="typephp-architecture-image" src="assets/illustrations/typephp-architecture-0.9.3.png"
-    alt="Как устроен TypePHP 0.9.3: PHP и stub-файлы → nikic/php-parser и AST → анализ символов, типов и проверки → C++17 → GCC или Clang. Обычные ext, bin и lib используют PHPX и Zend. Nano на Linux/macOS использует PHPX и PHP Nano без Zend VM, с ограничениями языка." />
-  <div class="infographic-meta"><a href="https://github.com/swoole/typephp/tree/8b33cad5c4f9cd2be2980425f522496e9ba0bfce" target="_blank" rel="noopener noreferrer">swoole/typephp · 0.9.3 · проверено 27.09.2026</a><span class="count"></span></div>
+  <div class="top"><span><span class="part">TypePHP 0.9.3</span> Устройство компилятора</span><span class="count"></span></div>
+  <h2 class="slide-title">Как устроен TypePHP</h2>
+  <canvas class="compiler-canvas" data-compiler-diagram="typephp" role="img"
+    aria-label="PHP и stub-файлы → nikic/php-parser и AST → анализ символов, типов и SSA → C++17 → GCC или Clang. Обычные ext, bin и lib используют PHPX и Zend. Nano на Linux/macOS использует PHPX и PHP Nano без Zend VM; eval, include и require запрещены.">
+    PHP → AST → анализ → C++17 → нативная сборка. Обычные режимы используют PHPX и Zend; Nano — PHPX и PHP Nano.
+  </canvas>
+  <div class="infographic-meta"><span data-diagram-hint aria-live="polite">Пробел — следующий этап</span></div>
+</section>
+
+<section class="slide compiler-architecture" data-label="Как устроен elephc" data-diagram-step="0"
+  data-speaker-notes="У elephc собственный путь компиляции. Лексер и парсер строят AST, затем компилятор разрешает имена, проверяет типы и переводит программу в EIR. После оптимизации IR его собственный backend выпускает ассемблер для выбранной архитектуры. Ассемблер и линкер собирают исполняемый файл вместе со службами рантайма.
+
+Здесь нет промежуточного C++ и нет LLVM. Строки, массивы и управление памятью обслуживает собственный рантайм, а не Zend.
+
+Интересное исключение — экспериментальный eval. Подходящие строковые литералы компилируются заранее. Когда нужен динамический разбор или поведение, не поддержанное AOT-путём, в бинарник включается интерпретатор Magician. Он обслуживает эти фрагменты, а основной код остаётся нативным. Схема проверена по текущим исходникам; результаты замеров ниже относятся к указанным на них версиям.">
+  <div class="top"><span><span class="part">elephc</span> Собственный backend</span><span class="count"></span></div>
+  <h2 class="slide-title">Как устроен elephc</h2>
+  <canvas class="compiler-canvas" data-compiler-diagram="elephc" role="img"
+    aria-label="PHP → собственный парсер и AST → типы и EIR → собственный backend и ассемблер ARM64 или x86-64 → линковка программы с runtime elephc. Динамический eval при необходимости использует встроенный Magician. Без Zend и LLVM.">
+    PHP → AST → EIR → ассемблер → бинарник с собственным runtime. Magician обслуживает динамические фрагменты eval.
+  </canvas>
+  <div class="infographic-meta"><span data-diagram-hint aria-live="polite">Пробел — следующий этап</span></div>
+</section>
+
+<section class="slide compiler-architecture" data-label="Как устроен Manticore" data-diagram-step="0"
+  data-speaker-notes="Manticore написан на PHP, но использует собственные лексер и парсер. AST переводится в типизированное промежуточное представление MIR. После анализа и преобразований компилятор выдаёт LLVM IR. Clang делает из него объектные файлы, а cc связывает готовую программу.
+
+Главное отличие на этой схеме — управление памятью. Ещё в MIR анализируются эффекты и выход выделенных объектов за границы области. Компилятор выбирает способ размещения данных и вставляет операции удержания, освобождения и копирования при записи. LLVM получает уже эту программу.
+
+В готовом приложении нет Zend. У него собственные службы исполнения и зависимости от системных библиотек, в том числе libc, PCRE2 и OpenSSL. Отсутствие PHP-интерпретатора не означает отсутствие рантайма или внешних библиотек. Это разбор текущих исходников, а не новый замер скорости.">
+  <div class="top"><span><span class="part">Manticore</span> MIR и LLVM</span><span class="count"></span></div>
+  <h2 class="slide-title">Как устроен Manticore</h2>
+  <canvas class="compiler-canvas" data-compiler-diagram="manticore" role="img"
+    aria-label="PHP → собственный lexer и parser → типизированный MIR → LLVM IR → clang и cc → нативный бинарник без Zend. В MIR анализируются эффекты и escape, выбираются arena или heap и вставляются retain, release и copy-on-write. Программа использует свои службы и системные библиотеки.">
+    PHP → AST → MIR → LLVM IR → clang и cc. Операции управления памятью вставляются до LLVM.
+  </canvas>
+  <div class="infographic-meta"><span data-diagram-hint aria-live="polite">Пробел — следующий этап</span></div>
+</section>
+
+<section class="slide compiler-architecture memory-architecture" data-label="Как реализуются абстракции: динамическое значение"
+  data-speaker-notes="Начнём с универсального значения. В обычном режиме TypePHP класс php::Var содержит настоящий zval. Целые числа, float и bool помещаются в него непосредственно, а строки, массивы и объекты представлены ссылками на соответствующие данные Zend.
+
+У elephc переменная Mixed хранит адрес собственной ячейки в куче. В ней находятся тег и данные либо ссылка на них. Manticore использует собственную тегированную cell. В обоих случаях это другая модель хранения, не совместимая с ABI zval.
+
+Речь здесь именно о динамических значениях: известные скаляры могут храниться нативно, без такой универсальной упаковки.">
+  <div class="top"><span><span class="part">Абстракции · 1/3</span> Динамическое значение</span><span class="count"></span></div>
+  <h2 class="slide-title">Как реализуются абстракции</h2>
+  <canvas class="compiler-canvas" data-compiler-diagram="memory-value" role="img" aria-label="Начнём с универсального значения. В обычном режиме TypePHP класс php::Var содержит настоящий zval. Целые числа, float и bool помещаются в него непосредственно, а строки, массивы и объекты представлены ссылками на соответствующие данные Zend.  У elephc переменная Mixed хранит адрес собственной ячейки в куче. В ней находятся тег и данные либо ссылка на них. Manticore использует собственную тегированную cell. В обоих случаях это другая модель хранения, не совместимая с ABI zval.  Речь здесь именно о динамических значениях: известные скаляры могут храниться нативно, без такой универсальной упаковки.">
+    Динамическое значение: сравнение логического устройства памяти TypePHP с Zend, elephc и Manticore.
+  </canvas>
+  <p class="note">// логическая схема · обычные представления данных · TypePHP с Zend</p>
+</section>
+
+<section class="slide compiler-architecture memory-architecture" data-label="Как реализуются абстракции: объект"
+  data-speaker-notes="В обычной сборке TypePHP объект доступен через php::Object и zval, содержащий указатель на zend_object. Скомпилированные методы выполняются нативно, но объект обслуживают Zend и PHPX.
+
+У elephc объект имеет собственный идентификатор класса и слоты свойств; счётчик ссылок находится в заголовке аллокации. У Manticore объект содержит указатель на дескриптор класса, счётчик ссылок и поля. Дескриптор хранит метаданные, нужные для работы с классом.
+
+Схема показывает обычные объекты. Специальные native-классы TypePHP, packed-классы elephc и Struct в Manticore могут иметь другое устройство.">
+  <div class="top"><span><span class="part">Абстракции · 2/3</span> Объект</span><span class="count"></span></div>
+  <h2 class="slide-title">Как реализуются абстракции</h2>
+  <canvas class="compiler-canvas" data-compiler-diagram="memory-object" role="img" aria-label="В обычной сборке TypePHP объект доступен через php::Object и zval, содержащий указатель на zend_object. Скомпилированные методы выполняются нативно, но объект обслуживают Zend и PHPX.  У elephc объект имеет собственный идентификатор класса и слоты свойств; счётчик ссылок находится в заголовке аллокации. У Manticore объект содержит указатель на дескриптор класса, счётчик ссылок и поля. Дескриптор хранит метаданные, нужные для работы с классом.  Схема показывает обычные объекты. Специальные native-классы TypePHP, packed-классы elephc и Struct в Manticore могут иметь другое устройство.">
+    Объект: сравнение логического устройства памяти TypePHP с Zend, elephc и Manticore.
+  </canvas>
+  <p class="note">// логическая схема · обычные представления данных · TypePHP с Zend</p>
+</section>
+
+<section class="slide compiler-architecture memory-architecture" data-label="Как реализуются абстракции: массив"
+  data-speaker-notes="В TypePHP обычный php::Array использует массив Zend. Его HashTable имеет плотный и хешированный режимы: в одном хранятся последовательные zval, в другом — записи с ключом и значением.
+
+elephc использует собственные структуры для индексированных и ассоциативных массивов. Их заголовки и способы доступа различаются. В текущем Manticore PHP-массив представлен единым PhpArray, который переключается между PACKED и HASHED.
+
+Это объясняет, почему одинаковая запись доступа к массиву ещё не означает одинаковую работу процессора. Отдельные std-контейнеры TypePHP в этом сравнении не показаны.">
+  <div class="top"><span><span class="part">Абстракции · 3/3</span> Массив</span><span class="count"></span></div>
+  <h2 class="slide-title">Как реализуются абстракции</h2>
+  <canvas class="compiler-canvas" data-compiler-diagram="memory-array" role="img" aria-label="В TypePHP обычный php::Array использует массив Zend. Его HashTable имеет плотный и хешированный режимы: в одном хранятся последовательные zval, в другом — записи с ключом и значением.  elephc использует собственные структуры для индексированных и ассоциативных массивов. Их заголовки и способы доступа различаются. В текущем Manticore PHP-массив представлен единым PhpArray, который переключается между PACKED и HASHED.  Это объясняет, почему одинаковая запись доступа к массиву ещё не означает одинаковую работу процессора. Отдельные std-контейнеры TypePHP в этом сравнении не показаны.">
+    Массив: сравнение логического устройства памяти TypePHP с Zend, elephc и Manticore.
+  </canvas>
+  <p class="note">// логическая схема · обычные представления данных · TypePHP с Zend</p>
 </section>
 
 <section class="slide" data-label="Переполнение int"
@@ -92,7 +168,7 @@ foreach ($items as $key =&gt; &amp;$value) {
 </section>
 
 <section class="slide" data-label="Что происходит с динамическим кодом"
-  data-speaker-notes="Здесь видно четыре разных решения одной задачи. JIT уже находится внутри Zend. TypePHP запрещает переменные переменные и оставляет поддерживаемые динамические вызовы движку. KPHP исключает eval, динамические имена и рефлексию из подмножества. elephc может встроить собственный интерпретатор EvalIR специально для eval; обычный код остаётся AOT.">
+  data-speaker-notes="Здесь видно четыре разных решения одной задачи. JIT уже находится внутри Zend. TypePHP запрещает переменные переменные и оставляет поддерживаемые динамические вызовы движку. KPHP исключает eval, динамические имена и рефлексию из подмножества. В текущих исходниках elephc подходящие литералы eval компилируются заранее, а динамические фрагменты при необходимости обслуживает встроенный Magician. Обычный код остаётся AOT.">
   <div class="top"><span><span class="part">Динамика</span> Решения проектов</span><span class="count"></span></div>
   <h2 class="slide-title">Что происходит с динамическим кодом</h2>
   <div class="dynamic-routes">
@@ -100,7 +176,7 @@ foreach ($items as $key =&gt; &amp;$value) {
     <div class="dynamic-route"><b>PHP JIT</b><strong>Оставить Zend</strong><p>При выходе из трассы исполнение продолжает VM.</p></div>
     <div class="dynamic-route"><b>TypePHP</b><strong>Ограничить модуль</strong><p>$$var запрещена; поддержанные вызовы возвращаются в Zend.</p></div>
     <div class="dynamic-route"><b>KPHP</b><strong>Сузить язык</strong><p>eval, динамические имена и рефлексия исключены.</p></div>
-    <div class="dynamic-route"><b>elephc</b><strong>Встроить интерпретатор</strong><p>Динамический eval исполняет собственный EvalIR.</p></div>
+    <div class="dynamic-route"><b>elephc</b><strong>Встроить интерпретатор</strong><p>Для динамических фрагментов eval — Magician; подходящие литералы — AOT.</p></div>
   </div>
   <p class="note">// одна конструкция — четыре границы между компилятором и рантаймом</p>
 </section>

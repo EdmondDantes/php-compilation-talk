@@ -155,6 +155,7 @@
       addEventListener('beforeunload', () => this.tellPeer({ type: 'bye' }));
       addEventListener('beforeprint', () => {
         document.documentElement.dataset.theme = PRINT_THEME;
+        document.querySelectorAll('.compiler-architecture').forEach(slide => CompilerDiagrams.draw(slide));
       });
       addEventListener('afterprint', () => {
         document.documentElement.dataset.theme = this.theme;
@@ -231,6 +232,11 @@
      */
     go(i, echo = true) {
       this.index = this.clamp(i);
+      const current = this.slides[this.index];
+      if (current.hasAttribute('data-diagram-step')) {
+        current.dataset.diagramStep = '0';
+        CompilerDiagrams.draw(current);
+      }
 
       for (const slide of this.slides) {
         slide.toggleAttribute('data-current', Number(slide.dataset.index) === this.index);
@@ -273,7 +279,28 @@
 
     /** @param {number} step slides to move by, negative to go back */
     advance(step) {
+      const slide = this.slides[this.index];
+      if (slide.hasAttribute('data-diagram-step')) {
+        const current = Number(slide.dataset.diagramStep);
+        const next = current + Math.sign(step);
+        if (next >= 0 && next <= CompilerDiagrams.lastStep) {
+          this.startClock();
+          this.setDiagramStep(next);
+          return;
+        }
+      }
       this.navigate(this.index + step);
+    }
+
+    /** Keeps the canvas reveal in sync with the presenter window. */
+    setDiagramStep(step, echo = true) {
+      const slide = this.slides[this.index];
+      if (!slide.hasAttribute('data-diagram-step') || !Number.isInteger(step)
+          || step < 0 || step > CompilerDiagrams.lastStep) return;
+      slide.dataset.diagramStep = String(step);
+      CompilerDiagrams.draw(slide, true);
+      if (this.isPresenter) this.paintPresenter();
+      if (echo) this.tellPeer({ type: 'diagram-step', index: this.index, step });
     }
 
     /**
@@ -304,6 +331,7 @@
     applyTheme(name) {
       this.theme = name;
       document.documentElement.dataset.theme = name;
+      document.querySelectorAll('.compiler-architecture').forEach(slide => CompilerDiagrams.draw(slide));
       write(STORE_THEME, name);
 
       if (this.themeName) {
@@ -361,7 +389,7 @@
 
         const shot = document.createElement('div');
         shot.className = 'shot';
-        shot.appendChild(this.cloneSlide(slide));
+        shot.appendChild(this.cloneSlide(slide, true));
 
         const caption = document.createElement('figcaption');
         caption.innerHTML = `<b>${String(i + 1).padStart(2, '0')}</b><span></span>`;
@@ -450,16 +478,17 @@
     /**
      * Copies a slide for display outside the stage.
      *
-     * Clones are inert: the deck has no per-slide scripts, so a copy is
-     * indistinguishable from the original once it is scaled.
+     * Canvas pixels are not copied by cloneNode; redraw diagrams explicitly.
      *
      * @param {Element} slide
      * @returns {Element}
      */
-    cloneSlide(slide) {
+    cloneSlide(slide, complete = false) {
       const copy = slide.cloneNode(true);
       copy.removeAttribute('data-current');
       copy.removeAttribute('data-index');
+      if (complete) copy.dataset.diagramComplete = 'yes';
+      CompilerDiagrams.draw(copy);
       return copy;
     }
 
@@ -483,7 +512,7 @@
       const next = this.slides[this.index + 1] || null;
 
       this.ui.now.replaceChildren(this.cloneSlide(current));
-      this.ui.next.replaceChildren(next ? this.cloneSlide(next) : document.createElement('div'));
+      this.ui.next.replaceChildren(next ? this.cloneSlide(next, true) : document.createElement('div'));
       this.ui.notes.textContent = current.dataset.speakerNotes || '';
       this.ui.position.textContent = `${String(this.index + 1).padStart(2, '0')} / `
         + String(this.slides.length).padStart(2, '0');
@@ -560,6 +589,8 @@
         this.tellPeer({ type: 'theme', theme: this.theme });
         this.tellPeer({ type: 'timer', startedAt: this.startedAt });
         this.tellPeer({ type: 'goto', index: this.index });
+        const step = this.slides[this.index].dataset.diagramStep;
+        if (step !== undefined) this.tellPeer({ type: 'diagram-step', index: this.index, step: Number(step) });
         return;
       }
 
@@ -573,6 +604,12 @@
 
       if (message.type === 'theme') {
         this.applyTheme(message.theme);
+        return;
+      }
+
+      if (message.type === 'diagram-step' && message.index === this.index) {
+        this.startClock();
+        this.setDiagramStep(message.step, false);
         return;
       }
 
@@ -615,6 +652,11 @@
       }
 
       const key = event.key;
+      if (event.repeat && this.slides[this.index].hasAttribute('data-diagram-step')
+          && [' ', 'ArrowRight', 'ArrowDown', 'PageDown', 'ArrowLeft', 'ArrowUp', 'PageUp'].includes(key)) {
+        event.preventDefault();
+        return;
+      }
 
       if (key >= '0' && key <= '9') {
         this.typeDigit(key);

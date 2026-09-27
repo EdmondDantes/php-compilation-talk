@@ -1,0 +1,22 @@
+<!-- Replaced by three memory schematics at the speaker's request. -->
+<section class="slide value-representations" data-label="Как представлены значения PHP"
+  data-speaker-notes="Теперь сравним, что скрывается под привычными значениями PHP. TypePHP в обычном режиме использует PHPX: php::Var — это обёртка над zval, php::Object работает с zend_object, а php::Array — с массивом Zend. При этом известные скаляры могут храниться нативно, а std-контейнеры идут отдельным путём. Nano в эту колонку не включён.
+
+У elephc динамическое значение Mixed — собственная ячейка в куче, на которую указывает переменная. Объект содержит идентификатор класса и слоты свойств. Для индексированных и ассоциативных массивов используются собственные структуры.
+
+У Manticore динамическое значение представлено тегированной cell. Обычный объект содержит дескриптор класса, счётчик ссылок и поля. PHP-массив использует единый PhpArray с плотным и хешированным режимами. Конкретно типизированные значения могут обходиться без универсальной упаковки.
+
+Это разные способы реализовать похожие операции языка. У elephc и Manticore нет совместимости с внутренним представлением zval: поведение PHP они воспроизводят собственными структурами и рантаймом.">
+  <div class="top"><span><span class="part">Представление данных</span> Три компилятора</span><span class="count"></span></div>
+  <h2 class="slide-title">Что находится под значениями PHP</h2>
+  <table class="table representation-table">
+    <thead><tr><th scope="col">PHP</th><th scope="col">TypePHP<span>обычный режим с Zend</span></th><th scope="col">elephc<span>собственный runtime</span></th><th scope="col">Manticore<span>собственный runtime</span></th></tr></thead>
+    <tbody>
+      <tr><th scope="row">zval / mixed</th><td><b>php::Var → zval</b><span>Обёртка PHPX над значением Zend</span></td><td><b>Mixed → ячейка в куче</b><span>Собственные тег и данные</span></td><td><b>cell → тегированное значение</b><span>Собственное представление</span></td></tr>
+      <tr><th scope="row">object</th><td><b>php::Object → zend_object</b><span>Объектная модель Zend / PHPX</span></td><td><b>class_id + свойства</b><span>Слоты полей по смещениям</span></td><td><b>Дескриптор + RC + поля</b><span>Метаданные класса и счётчик ссылок</span></td></tr>
+      <tr><th scope="row">array</th><td><b>php::Array → HashTable</b><span>Массив Zend, copy-on-write</span></td><td><b>Indexed array / hash table</b><span>Собственные структуры массивов</span></td><td><b>Единый PhpArray</b><span>Режимы PACKED / HASHED</span></td></tr>
+    </tbody>
+  </table>
+  <p class="closing">Поведение PHP и внутреннее представление данных — разные уровни.</p>
+  <p class="note">// известные скаляры могут храниться нативно · Nano, std-контейнеры и специальные классы — за рамками таблицы</p>
+</section>

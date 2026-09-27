@@ -338,26 +338,47 @@
   text-underline-offset: 6px;
 }
 
-.typephp-architecture { background: #0d0f12; }
-.typephp-architecture::before { display: none; }
-.typephp-architecture .typephp-architecture-image {
+.compiler-architecture .compiler-canvas {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  left: var(--pad);
+  top: 270px;
+  width: calc(100% - 2 * var(--pad));
+  height: auto;
+  aspect-ratio: 1680 / 680;
 }
-.typephp-architecture .infographic-meta {
+.compiler-architecture .infographic-meta {
   position: absolute;
   left: var(--pad);
   right: var(--pad);
-  bottom: 18px;
+  bottom: 44px;
   display: flex;
   justify-content: space-between;
-  color: #a9b2b9;
+  color: var(--dim);
   font: 24px/1.2 var(--font-mono);
 }
-.infographic-meta a { color: inherit; text-underline-offset: 4px; }
+.value-representations .representation-table {
+  top: 290px;
+  transform: none;
+  table-layout: fixed;
+  font-size: 27px;
+}
+.representation-table th:first-child { width: 210px; }
+.representation-table th,
+.representation-table td { padding: 22px 18px; }
+.representation-table tbody th {
+  color: var(--accent);
+  font: 26px/1.3 var(--font-mono);
+  text-align: left;
+}
+.representation-table span {
+  display: block;
+  margin-top: 14px;
+  color: var(--dim);
+  font: 25px/1.3 var(--font-body);
+  text-transform: none;
+  letter-spacing: normal;
+}
+.representation-table b { font-size: 27px; font-weight: 600; }
 
 .cover .kicker {
   position: absolute;

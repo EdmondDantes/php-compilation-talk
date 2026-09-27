@@ -39,12 +39,26 @@ The release notes include fixes for dynamic arithmetic result types and
 unary-plus conversion. Existing performance slides remain dated 0.9.2
 measurements; this source review does not update those results.
 
-## Image provenance
+## Canvas implementation
+
+The active slide now uses `player/js/compiler-diagrams.js`, not the raster
+asset. It explicitly labels the analysis as SSA over PHP AST, before C++
+generation. `src/Analysis/SsaBuilder.php:197` accepts the function's
+`PhpParser\\Node[]` statements; `src/Translator.php:6773` constructs it.
+This is PHP compiler code analyzing PHP nodes, not analysis of C++ syntax.
+
+The space key reveals six further stages after the input. Back navigation
+reverses the steps. Overview and print show the complete diagram; the
+presenter follows the current step. Source links are recorded here rather
+than displayed on the slide, at the speaker's request.
+
+## Superseded image provenance
 
 Asset: `player/assets/illustrations/typephp-architecture-0.9.3.png`.
 Generated with the built-in image generation tool, without Superdesign.
-The diagram labels are raster content; the slide retains an HTML alt text,
-speaker explanation and clickable pinned source link.
+This first image was replaced by Canvas at the speaker's request. The asset
+and its prompt remain as historical design material and are no longer used
+by the active slide.
 
 ### Exact generation prompt
 
