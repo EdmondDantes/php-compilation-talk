@@ -252,3 +252,8 @@ enough to present from.
       after the renamed "What is under the hood?" divider. Source evidence:
       dev/research/hosting-buildtime-compatibility-2026-09.md. Verified all
       54 slides in four themes and three states; no collisions or overflows.
+
+- [x] S6.15 Fold the fixed-build-configuration example into a fourth card
+      on "What can compilation give us?" and park its standalone slide.
+      Keep the requirement that configuration is known at build time.
+      Verified 53 slides across all themes and states without overlaps.

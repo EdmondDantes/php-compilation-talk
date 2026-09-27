@@ -326,6 +326,8 @@ Jac стремится сократить связующий код между �
 
 Первый пример — контейнер зависимостей Symfony: описание сервисов проверяется и превращается в код их создания. Второй — маршруты: из описаний заранее строится скомпилированный сопоставитель URL, но сам URL по-прежнему нужно сопоставить при запросе. Третий — Twig: шаблон разбирается и компилируется в PHP; данные подставляются при рендеринге.
 
+Четвёртый пример — специализация по конфигурации. Если BUILD_GATEWAY зафиксирован при сборке, компилятор может оставить NewGateway и удалить недостижимую ветвь с LegacyGateway. Если значение читается только при запуске, такое преобразование недопустимо.
+
 Эти примеры не являются обещанием ускорения любого кода и не требуют нативного AOT. Они показывают общий принцип: всё известное заранее можно подготовить один раз, а динамические данные оставить времени исполнения.">
   <div class="top"><span><span class="part">Компиляция</span> Меньше работы при запросе</span><span class="count"></span></div>
   <h2 class="slide-title">Что может дать компиляция?</h2>
@@ -333,28 +335,7 @@ Jac стремится сократить связующий код между �
     <article><span class="benefit-number">01 / СЕРВИСЫ</span><h3>Контейнер<br />зависимостей</h3><p class="benefit-input">Описания сервисов<br />и связи между ними</p><span class="benefit-arrow">↓</span><div class="benefit-output"><span>Готовый результат</span><code>new Checkout(<br />  $payment, $logger<br />)</code></div><p class="benefit-payoff">Без повторного разбора конфигурации.</p></article>
     <article><span class="benefit-number">02 / МАРШРУТЫ</span><h3>Сопоставление<br />URL</h3><p class="benefit-input">Пути, параметры<br />и обработчики</p><span class="benefit-arrow">↓</span><div class="benefit-output"><span>Готовый результат</span><code>/orders/{id}<br />→ matcher<br />→ OrderController</code></div><p class="benefit-payoff">Готовый сопоставитель вместо разбора описаний.</p></article>
     <article><span class="benefit-number">03 / ШАБЛОНЫ</span><h3>Рендеринг<br />страниц</h3><p class="benefit-input">Twig-шаблон<br />с выражениями и блоками</p><span class="benefit-arrow">↓</span><div class="benefit-output"><span>Готовый результат</span><code>{{ user.name }}<br />→ PHP-код<br />→ HTML с данными</code></div><p class="benefit-payoff">Без повторного разбора текста шаблона.</p></article>
+    <article><span class="benefit-number">04 / УСЛОВИЯ</span><h3>Известная<br />конфигурация</h3><p class="benefit-input">Выбор реализации<br />зафиксирован при сборке</p><span class="benefit-arrow">↓</span><div class="benefit-output"><span>Готовый результат</span><code>BUILD_GATEWAY=new<br />→ NewGateway<br />→ без ветки else</code></div><p class="benefit-payoff">Недостижимая ветвь удалена; точный класс известен.</p></article>
   </div>
-  <p class="note">// Symfony DI · Routing · Twig · результат — PHP-код, не обязательно машинный</p>
-</section>
-
-<section class="slide" data-label="Конфигурация упрощает программу при сборке"
-  data-speaker-notes="Если вариант платёжного шлюза известен при сборке, компилятор может подставить его и удалить недостижимую ветвь. Тогда становится известен точный класс объекта и проще оптимизировать следующий вызов. Если вариант читается из окружения только при запуске, такое преобразование недопустимо. Это граница между уже известной конфигурацией и настоящей динамикой.">
-  <div class="top"><span><span class="part">Build time</span> Специализация</span><span class="count"></span></div>
-  <h2 class="slide-title">Известная конфигурация удаляет недоступную ветвь</h2>
-  <div class="code-compare">
-    <pre class="plate" data-lang="php"><span class="out">// исходная программа</span>
-if (BUILD_GATEWAY === 'new') {
-    $gateway = new NewGateway();
-} else {
-    $gateway = new LegacyGateway();
-}
-$gateway-&gt;charge($order);</pre>
-    <pre class="plate" data-lang="php"><span class="out">// сборка BUILD_GATEWAY=new</span>
-$gateway = new NewGateway();
-$gateway-&gt;charge($order);
-
-<span class="out">// LegacyGateway недостижим
-// точный класс известен оптимизатору</span></pre>
-  </div>
-  <p class="note">// условие: значение фиксируется при сборке, а не читается в runtime</p>
+  <p class="note">// известно при сборке → подготовлено заранее · динамика остаётся до исполнения</p>
 </section>

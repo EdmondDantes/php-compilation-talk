@@ -1,0 +1,22 @@
+<!-- Consolidated into the compilation-benefits card, 2026-09-27. -->
+<section class="slide" data-label="Конфигурация упрощает программу при сборке"
+  data-speaker-notes="Если вариант платёжного шлюза известен при сборке, компилятор может подставить его и удалить недостижимую ветвь. Тогда становится известен точный класс объекта и проще оптимизировать следующий вызов. Если вариант читается из окружения только при запуске, такое преобразование недопустимо. Это граница между уже известной конфигурацией и настоящей динамикой.">
+  <div class="top"><span><span class="part">Build time</span> Специализация</span><span class="count"></span></div>
+  <h2 class="slide-title">Известная конфигурация удаляет недоступную ветвь</h2>
+  <div class="code-compare">
+    <pre class="plate" data-lang="php"><span class="out">// исходная программа</span>
+if (BUILD_GATEWAY === 'new') {
+    $gateway = new NewGateway();
+} else {
+    $gateway = new LegacyGateway();
+}
+$gateway-&gt;charge($order);</pre>
+    <pre class="plate" data-lang="php"><span class="out">// сборка BUILD_GATEWAY=new</span>
+$gateway = new NewGateway();
+$gateway-&gt;charge($order);
+
+<span class="out">// LegacyGateway недостижим
+// точный класс известен оптимизатору</span></pre>
+  </div>
+  <p class="note">// условие: значение фиксируется при сборке, а не читается в runtime</p>
+</section>
