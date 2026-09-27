@@ -237,3 +237,7 @@ enough to present from.
       the redundant infrastructure-value slide. Verified 51 slides across
       all four themes and rest/note/expand states, with no text collisions
       or overflows.
+
+- [x] S6.13 Add the speaker's language-efficiency thesis below the four
+      ranking cards on the PHP survival slide. Verified 51 slides in four
+      themes and three states with no collisions or overflows.
