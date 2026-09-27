@@ -1328,6 +1328,13 @@
   color: #a9b2b9;
 }
 
+.complexity-copy .abstraction-time {
+  margin: 36px 0 0;
+  font-size: 32px;
+  line-height: 1.35;
+  color: #e8e6e1;
+}
+
 .guardrail-labels {
   position: absolute;
   left: 70px;

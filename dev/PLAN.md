@@ -230,3 +230,10 @@ enough to present from.
       rankings slide to the PHP survival question and add the Revenant chase
       illustration. Keep text clear of both scenes; resize the survival title
       in other themes too. Verified 52 slides in all four themes and three states.
+
+- [x] S6.12 Reorder the opening argument: complexity, evidence about libraries
+      and existing code, then the Don elephant infrastructure metaphor.
+      Add the qualified claim that higher abstractions may save time. Park
+      the redundant infrastructure-value slide. Verified 51 slides across
+      all four themes and rest/note/expand states, with no text collisions
+      or overflows.
