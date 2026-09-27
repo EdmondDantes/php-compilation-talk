@@ -95,3 +95,9 @@ Printing renders every stage and restores the current step afterward.
 
 `player/js/memory-diagrams.js` draws the three memory schematics through
 the same theme, high-resolution canvas and clone-redraw path.
+
+The array slide displays the corrected 2026-09-23 `array_foreach` timings
+inside the packed-storage cards: TypePHP native 222.5 ms, elephc 650.8 ms,
+Manticore 12.0 ms; the footer gives PHP JIT 32.0 ms and TypePHP std::vector
+13.2 ms. These are historical packed-int measurements from
+`dev/BENCHMARKS.md`, not hash-map or current-source performance results.

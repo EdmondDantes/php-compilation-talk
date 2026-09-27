@@ -118,6 +118,9 @@ Goal: the deck exists end to end and runs in a browser.
       field density separately from the existing interface-call benchmark,
       review hash lookup/storage algorithms, and add a reproducible memory
       model comparison. These are structural byte counts, not RSS results.
+- [x] S4.13 Put the existing corrected packed-int foreach timings directly
+      inside the packed-array cards. Show PHP JIT and TypePHP std::vector
+      baselines and state that hash-array foreach was not measured.
 
 ## S7. Our own measurement of TypePHP and elephc [done]
 

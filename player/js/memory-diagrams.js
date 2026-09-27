@@ -41,19 +41,19 @@
       takeaway: 'PHP JIT: 231,6 мс. В тесте классы без полей: это скорость вызовов, а не проверка плотности.'
     },
     array: {
-      title: '03 / МАССИВ · ЗАГОЛОВОК И СЛОТЫ · 64 БИТА',
+      title: '03 / МАССИВ · 64 БИТА · FOREACH НА INT',
       columns: [
         { first: ['php::Array → HashTable', ['обёртка · 16 Б', 'header · 56 Б']], link: 'два режима одного контейнера',
           second: ['Плотный режим', ['zval · 16 Б', 'zval · 16 Б'], '16 Б / слот'],
-          third: ['Хеш-режим', ['Bucket · 32 Б', '+ хеш-индекс'], '32 Б / запись'] },
+          third: ['Хеш-режим', ['Bucket · 32 Б', '+ хеш-индекс'], '32 Б / запись'], metric: 'foreach: 222,5 мс · native int' },
         { first: ['Array / AssocArray', ['Array · 24 Б', 'Hash · 64 Б']], link: 'заголовки без аллокатора',
           second: ['Индексированный', ['8 Б: int и ссылки', '16 Б: строки'], '8 / 16 Б'],
-          third: ['Хеш-таблица', ['entry · 64 Б', 'включая prev/next'], '64 Б / слот'] },
+          third: ['Хеш-таблица', ['entry · 64 Б', 'включая prev/next'], '64 Б / слот'], metric: 'foreach: 650,8 мс' },
         { first: ['PhpArray', ['header · 56 Б', 'RC-префикс · 8 Б']], link: 'два режима одного контейнера',
           second: ['Плотный режим', ['v₀ · 8 Б', 'v₁ · 8 Б'], '8 Б / слот'],
-          third: ['Хеш-режим', ['entry · 24 Б', '+ хеш-индекс'], '24 Б / запись'] }
+          third: ['Хеш-режим', ['entry · 24 Б', '+ хеш-индекс'], '24 Б / запись'], metric: 'foreach: 12,0 мс' }
       ],
-      takeaway: 'Размер записи ещё не даёт полный расход: нужны запас ёмкости, индекс и данные ключей.'
+      takeaway: 'PHP JIT: 32 мс · TypePHP + std::vector: 13,2 мс · foreach хеш-массивов не измеряли.'
     }
   };
 
@@ -63,7 +63,9 @@
     const color = name => style.getPropertyValue(`--${name}`).trim();
     const body = style.getPropertyValue('--font-body').trim();
     const mono = style.getPropertyValue('--font-mono').trim();
-    const layout = layouts[canvas.dataset.compilerDiagram.slice(7)];
+    const kind = canvas.dataset.compilerDiagram.slice(7);
+    const layout = layouts[kind];
+    const isArray = kind === 'array';
     ctx.setTransform(2, 0, 0, 2, 0, 0);
     ctx.clearRect(0, 0, 1680, 680);
 
@@ -83,27 +85,30 @@
       ctx.lineTo(x + width, y);
       ctx.stroke();
     }
-    function box(x, y, [title, cells, bytes]) {
+    function box(x, y, [title, cells, bytes], options = {}) {
+      const height = options.height || BOX_HEIGHT;
+      const compact = options.compact || false;
       ctx.fillStyle = color('panel');
       ctx.strokeStyle = color('rule');
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.roundRect(x + .5, y + .5, COLUMN - 1, BOX_HEIGHT - 1, 8);
+      ctx.roundRect(x + .5, y + .5, COLUMN - 1, height - 1, 8);
       ctx.fill();
       ctx.stroke();
-      text(title, x + PAD, y + 18, 25, 'accent', 500, mono);
-      if (bytes) text(bytes, x + COLUMN - PAD, y + 18, 24, 'ink', 600, body, 'right');
-      rule(x + PAD, y + 55, COLUMN - 2 * PAD);
+      text(title, x + PAD, y + (compact ? 14 : 18), 25, 'accent', 500, mono);
+      if (bytes) text(bytes, x + COLUMN - PAD, y + (compact ? 14 : 18), 24, 'ink', 600, body, 'right');
+      rule(x + PAD, y + (compact ? 46 : 55), COLUMN - 2 * PAD);
       const width = (COLUMN - 2 * PAD) / cells.length;
       cells.forEach((cell, i) => {
         if (i) {
           ctx.beginPath();
-          ctx.moveTo(x + PAD + i * width, y + 66);
-          ctx.lineTo(x + PAD + i * width, y + BOX_HEIGHT - 14);
+          ctx.moveTo(x + PAD + i * width, y + (compact ? 56 : 66));
+          ctx.lineTo(x + PAD + i * width, y + (compact ? 89 : height - 14));
           ctx.stroke();
         }
-        text(cell, x + PAD + (i + .5) * width, y + 76, 25, 'ink', 400, body, 'center');
+        text(cell, x + PAD + (i + .5) * width, y + (compact ? 62 : 76), 25, 'ink', 400, body, 'center');
       });
+      if (options.metric) text(options.metric, x + PAD, y + 104, 24, 'accent', 600);
     }
     text(layout.title, 0, 0, 26, 'accent', 600, mono);
     layout.columns.forEach((column, i) => {
@@ -111,21 +116,21 @@
       const center = x + COLUMN / 2;
       text(['TypePHP · Zend', 'elephc', 'Manticore'][i], x + PAD, 72, 34, 'ink', 600);
       rule(x, 122, COLUMN);
-      box(x, FIRST_ROW, column.first);
-      text(column.link, center, 284, 24, 'dim', 400, body, 'center');
+      box(x, FIRST_ROW, column.first, isArray ? { height: 100, compact: true } : {});
+      text(column.link, center, isArray ? 268 : 284, 24, 'dim', 400, body, 'center');
       ctx.strokeStyle = color('accent');
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(center, 319);
-      ctx.lineTo(center, 342);
-      ctx.lineTo(center - 5, 334);
-      ctx.moveTo(center, 342);
-      ctx.lineTo(center + 5, 334);
+      ctx.moveTo(center, isArray ? 306 : 319);
+      ctx.lineTo(center, isArray ? 332 : 342);
+      ctx.lineTo(center - 5, isArray ? 324 : 334);
+      ctx.moveTo(center, isArray ? 332 : 342);
+      ctx.lineTo(center + 5, isArray ? 324 : 334);
       ctx.stroke();
-      box(x, SECOND_ROW, column.second);
-      if (column.third) box(x, THIRD_ROW, column.third);
+      box(x, isArray ? 348 : SECOND_ROW, column.second, isArray ? { height: 140, compact: true, metric: column.metric } : {});
+      if (column.third) box(x, isArray ? 512 : THIRD_ROW, column.third, isArray ? { height: 100, compact: true } : {});
       column.notes?.forEach((line, row) => text(line, x + PAD, 506 + row * 40, 24, 'dim'));
-      if (column.metric) text(column.metric, x + PAD, 588, 25, 'accent', 500);
+      if (column.metric && !isArray) text(column.metric, x + PAD, 588, 25, 'accent', 500);
     });
     text(layout.takeaway, 0, 638, 27);
     canvas.dataset.renderedStep = '0';
