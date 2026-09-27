@@ -257,3 +257,19 @@ enough to present from.
       on "What can compilation give us?" and park its standalone slide.
       Keep the requirement that configuration is known at build time.
       Verified 53 slides across all themes and states without overlaps.
+
+- [x] S6.16 Split the ecosystem evidence into a detailed adoption-study slide
+      and a Deno dinosaur comic with factual chronology and fictional dialogue.
+      Add concrete per-compiler restrictions and consolidate the separate
+      dynamic-code, TypePHP structure/native-restrictions and Manticore property
+      slides. Park the redundant representation slide. Verify the foreach
+      mutation and native-division examples on TypePHP 0.9.2: foreach agrees,
+      division returns 3 instead of PHP's 3.5. Preserve probes in bench/semantic-probes.
+      Rewrite overflow as a measured comparison plus the Diamond Arm parody;
+      refine the actress with a face reference and Chinese-inspired TypePHP
+      costume. Add PHP source to the interface-call benchmark. Repair the
+      Laravel layout; the final image retains only the crate and machine.
+      Add HipHop, JPHP and KPHP stories after the timeline: Dumbledore,
+      a plain JPHP slide, and the PHP elephant without Durov. Retain the practical
+      execution-choice slide. Verify 52 slides across four themes and three
+      states, and inspect the changed slide screenshots.

@@ -1,0 +1,114 @@
+<!-- Concrete restrictions consolidated; foreach probe agrees with PHP. 2026-09-27. -->
+<section class="slide" data-label="Изменение массива в foreach"
+  data-speaker-notes="Ещё одна особенность PHP — массив во время обхода не обязан оставаться прежним. В этом примере удаляется ещё не посещённая ячейка, элементы доступны по ссылке, а в конце добавляется новая ячейка. Компилятор не может механически заменить такой foreach простым циклом по непрерывному буферу: он должен сохранить порядок обхода, пропуски, ссылки и правила изменения массива.">
+  <div class="top"><span><span class="part">Механика</span> PHP-массив</span><span class="count"></span></div>
+  <h2 class="slide-title">Массив может измениться во время foreach</h2>
+  <div class="problem-example">
+    <pre class="plate" data-lang="php">$items = [10, 20, 30];
+
+foreach ($items as $key =&gt; &amp;$value) {
+    if ($key === 0) unset($items[1]);
+    if ($key === 2) $items[] = 40;
+}</pre>
+    <div class="obligation"><span>Компилятор обязан</span><p>сохранить порядок обхода, пустые ячейки, ссылки и изменение контейнера.</p></div>
+  </div>
+  <p class="note">// foreach над PHP-массивом шире обычного цикла по непрерывному массиву</p>
+</section>
+
+<section class="slide" data-label="Что происходит с динамическим кодом"
+  data-speaker-notes="Здесь видно четыре разных решения одной задачи. JIT уже находится внутри Zend. TypePHP запрещает переменные переменные и оставляет поддерживаемые динамические вызовы движку. KPHP исключает eval, динамические имена и рефлексию из подмножества. В текущих исходниках elephc подходящие литералы eval компилируются заранее, а динамические фрагменты при необходимости обслуживает встроенный Magician. Обычный код остаётся AOT.">
+  <div class="top"><span><span class="part">Динамика</span> Решения проектов</span><span class="count"></span></div>
+  <h2 class="slide-title">Что происходит с динамическим кодом</h2>
+  <div class="dynamic-routes">
+    <div class="dynamic-source"><code>$$var · $function() · new $class · eval($source)</code><span>известно только при исполнении</span></div>
+    <div class="dynamic-route"><b>PHP JIT</b><strong>Оставить Zend</strong><p>При выходе из трассы исполнение продолжает VM.</p></div>
+    <div class="dynamic-route"><b>TypePHP</b><strong>Ограничить модуль</strong><p>$$var запрещена; поддержанные вызовы возвращаются в Zend.</p></div>
+    <div class="dynamic-route"><b>KPHP</b><strong>Сузить язык</strong><p>eval, динамические имена и рефлексия исключены.</p></div>
+    <div class="dynamic-route"><b>elephc</b><strong>Встроить интерпретатор</strong><p>Для динамических фрагментов eval — Magician; подходящие литералы — AOT.</p></div>
+  </div>
+  <p class="note">// одна конструкция — четыре границы между компилятором и рантаймом</p>
+</section>
+
+<section class="slide" data-label="Структура программы TypePHP"
+  data-speaker-notes="В TypePHP исполняемые операторы нельзя оставлять на верхнем уровне: входом в программу служит main(). Именованную функцию нельзя объявить внутри другой функции, а переменные переменные запрещены. Так компилятор заранее узнаёт набор объявлений и локальных переменных. Слева — допустимый PHP, справа — форма, которую принимает TypePHP.">
+  <div class="top"><span><span class="part">TypePHP</span> INCOMPATIBLE_PHP_FEATURES.md</span><span class="count"></span></div>
+  <h2 class="slide-title">Структура программы должна быть известна при сборке</h2>
+  <div class="code-compare">
+    <pre class="plate" data-lang="php"><span class="out">// допустимо в PHP</span>
+echo 'boot';
+
+function outer(): void {
+    function inner(): void {}
+}
+
+$name = 'value';
+$$name = 42;</pre>
+    <pre class="plate" data-lang="php"><span class="out">// форма для TypePHP</span>
+function inner(): void {}
+
+function outer(): void {
+    inner();
+}
+
+function main(): void {
+    $value = 42;
+}</pre>
+  </div>
+  <p class="note">// только объявления на верхнем уровне · вложенные функции и $$var запрещены · вход через main()</p>
+</section>
+
+<section class="slide" data-label="Что TypePHP не поддерживает"
+  data-speaker-notes="TypePHP фиксирует машинное представление значений при сборке. Поэтому часть привычных состояний PHP недоступна: тип выведенной нативной переменной нельзя сменить, а нативное свойство нельзя вернуть в состояние unset. Привязка замыкания к другому объекту или области видимости тоже запрещена. Обычный Zend остаётся вокруг расширения, но внутри собранного модуля этих возможностей нет.">
+  <div class="top"><span><span class="part">TypePHP</span> Несовместимость с PHP</span><span class="count"></span></div>
+  <h2 class="slide-title">Нативное представление исключает часть семантики PHP</h2>
+  <table class="table">
+    <tr><th>Не поддерживается</th><th>Что мешает AOT</th></tr>
+    <tr><td>нестрогая типизация</td><td>машинное представление требует стабильного типа</td></tr>
+    <tr><td>смена выведенного типа</td><td>машинное представление уже зафиксировано</td></tr>
+    <tr><td>полный <b>unset</b> / uninitialized</td><td>фиксированная раскладка не хранит все состояния zval</td></tr>
+    <tr><td><b>Closure::bind*</b></td><td>объект и область видимости меняются при исполнении</td></tr>
+  </table>
+  <p class="note">// факт ограничений: INCOMPATIBLE_PHP_FEATURES.md · причины следуют из архитектуры</p>
+</section>
+
+<section class="slide semantic-review" data-label="Manticore: состояние и доступ к полям"
+  data-speaker-notes="В Manticore компактность обычного объекта пока нужно рассматривать вместе с неполной поддержкой поведения PHP. Первый случай — типизированное поле без значения. PHP отличает его от поля, которому присвоили ноль, и при чтении выбрасывает Error. В изученном коде Manticore обычный int-слот обнуляется, а отдельное состояние неинициализированного свойства не сохраняется.
+
+Второй случай — доступ к объявленному private-полю известного класса. В PHP обращение снаружи запрещено. Изученный путь Manticore вычисляет смещение и читает слот без проверки видимости свойства. В коде сериализатора прямо отмечено, что свободная функция может читать private-поле. Это не утверждение, что у проекта отсутствуют все проверки доступа: динамические методы уже имеют отдельную проверку видимости.
+
+Два обращения справа рассматриваются независимо: ошибка первого в обычном PHP не должна скрывать второй пример. Это ревью исходников 69310ff, новые исполняемые примеры не запускались. Также отсюда не следует, что полная поддержка PHP обязательно требует шестнадцать байт на каждое поле: состояние и доступ можно реализовать другими способами. Но нынешние размеры нельзя считать сравнением полностью одинаковой семантики.">
+  <div class="top"><span><span class="part">Manticore</span> Ревью исходников</span><span class="count"></span></div>
+  <h2 class="slide-title">Manticore: семантика свойств</h2>
+  <div class="review-grid">
+    <pre class="plate" data-lang="php">class Account
+{
+    public int $balance;
+    private int $limit = 100;
+}
+
+$a = new Account();</pre>
+    <div class="review-results">
+      <article><h3><code>$a-&gt;balance</code></h3><p>PHP: <b>Error</b> — поле не задано.<br />В коде Manticore: int-слот обнуляется.</p></article>
+      <article><h3><code>$a-&gt;limit</code></h3><p>PHP: <b>Error</b> — поле закрыто.<br />В коде Manticore: чтение без проверки видимости.</p></article>
+    </div>
+  </div>
+  <p class="closing">Сравнивая размер объекта, нужно сравнивать и сохранённые правила PHP.</p>
+  <p class="note">// исходники 69310ff · обращения независимы · примеры не запускались</p>
+</section>
+
+<section class="slide" data-label="Одно слово в объявлении"
+  data-speaker-notes="Здесь показан C++, полученный из одного PHP-цикла. В одном режиме переменная хранится как динамический php::Var, в другом — как машинный php::Int.
+
+Выбор представления меняет стоимость операций. Но вместе с ним меняется и поведение при переполнении. Обычная аннотация int в PHP сама по себе не означает переход к нативному целому.">
+  <div class="top"><span><span class="part">Замер</span> Сгенерированный C++</span><span class="count"></span></div>
+  <h2 class="slide-title">Тип в исходнике тот же; директива меняет представление</h2>
+  <pre class="plate"><span class="out">// сгенерированный TypePHP C++, один и тот же PHP-цикл</span>
+
+<span class="hi">php::Var h = 1L;</span>             <span class="out">// use varint_types — 996 мс</span>
+h = ((((((h) * (31L))) + (i))) &amp; (1073741823L));
+
+<span class="hi">php::Int h = php::toInt(1L);</span> <span class="out">// по умолчанию     —  85 мс</span>
+h = php::toInt(((((((h) * (31L))) + (i))) &amp; (1073741823L)));</pre>
+  <p class="closing"><b>php::Int = zend_long.</b> Вместе с представлением меняется поведение при переполнении.</p>
+  <p class="note">// TypePHP 0.9.2 · php::Int — это typedef zend_long · в августе было 3996 и 90 мс</p>
+</section>

@@ -27,6 +27,24 @@
   <p class="note">// обзор документации и ревью · не сертификат совместимости · TypePHP Nano — отдельный режим</p>
 </section>
 
+
+<section class="slide concrete-compatibility" data-label="Что именно несовместимо с PHP"
+  data-speaker-notes="Здесь перечислены конкретные ограничения, а не только архитектурные подходы. TypePHP 0.9.3 запрещает переменные переменные, Closure::bind, исполняемые операторы на верхнем уровне и вложенные именованные объявления. В бинарном режиме требуется main(), поддерживается только strict_types=1. Нативные значения также ограничивают смену типа и unset. При этом не вся динамика запрещена: поддержанные динамические вызовы могут обращаться к Zend.
+
+KPHP исключает произвольные eval, рефлексию, переменные переменные и динамические объявления. У elephc 0.27.0 документация прямо отвергает goto и ссылочные элементы литерала массива, например [&$x]; __unset также не поддержан. eval нельзя помечать как отсутствующий целиком: есть AOT для подходящих литералов и необязательный интерпретатор для динамики.
+
+У Manticore 0.11 нет extract. По ревью 69310ff, чтение обычного незаданного int-поля возвращает нулевой слот вместо состояния uninitialized, а исследованный прямой путь чтения private-поля не проверяет видимость. Эти два пункта — вывод по исходникам, не новый запуск. Совместимость каждого проекта надо оценивать для конкретной версии и конструкции.">
+  <div class="top"><span><span class="part">Совместимость</span> Конкретные ограничения</span><span class="count"></span></div>
+  <h2 class="slide-title">Что именно несовместимо с PHP?</h2>
+  <table class="concrete-limits"><thead><tr><th>Компилятор</th><th>Не поддерживается / запрещено</th><th>Где поведение отличается</th></tr></thead><tbody>
+    <tr><th>TypePHP<span>0.9.3 · документация</span></th><td><code>$$var</code>, <code>Closure::bind*</code>, вложенные объявления.<br />На верхнем уровне — только объявления; вход через <code>main()</code>.</td><td>Только <code>strict_types=1</code>.<br />Нативные типы: другая арифметика, ограничения смены типа и <code>unset</code>.</td></tr>
+    <tr><th>KPHP<span>Документация</span></th><td><code>eval</code>, рефлексия, <code>$$var</code>, динамическое объявление функций и классов.</td><td>Нужно статически анализируемое подмножество программы.</td></tr>
+    <tr><th>elephc<span>0.27.0 · документация</span></th><td><code>goto</code>, <code>__unset()</code>, ссылки в литерале массива: <code>[&amp;$x]</code>.</td><td><code>eval</code> — отдельный гибридный путь.<br />Переход <code>int → float</code> заявлен, но в нашем тесте есть баг.</td></tr>
+    <tr><th>Manticore<span>0.11 / ревью 69310ff</span></th><td><code>extract()</code>.<br />Zend-расширения нельзя подключить как есть.</td><td>По ревью: незаданное int-поле → <code>0</code> вместо Error; прямое чтение <code>private</code> без ожидаемого запрета.</td></tr>
+  </tbody></table>
+  <p class="note">// версии и источники зафиксированы · отсутствие поддержки и отличие поведения — разные вещи</p>
+</section>
+
 <section class="slide language-extension-example" data-label="TypePHP расширяет PHP"
   data-speaker-notes="TypePHP не только компилирует привычный синтаксис: он предлагает дополнительные типы и контейнеры. Здесь показан сокращённый фрагмент с std::vector(Type::Int), который уже используется в наших тестах массивов. Это плотный типизированный контейнер C++, а не обычный PHP array.
 
@@ -72,146 +90,54 @@ buffer_free($points);</pre>
 
 
 
-<section class="slide" data-label="Переполнение int"
-  data-speaker-notes="Первая проблема видна в четырёх строках. На 64-битной платформе PHP_INT_MAX — последнее значение, которое помещается в int. При прибавлении единицы PHP не переходит к отрицательному числу: результат становится float. Компилятору недостаточно доказать, что оба операнда были целыми; он обязан проверить переполнение и сменить представление результата.">
-  <div class="top"><span><span class="part">Механика</span> Арифметика</span><span class="count"></span></div>
-  <h2 class="slide-title">При переполнении int становится float</h2>
-  <div class="problem-example">
-    <pre class="plate" data-lang="php">$a = PHP_INT_MAX;
-$b = $a + 1;
+<section class="slide overflow-comparison" data-label="Переполнение int"
+  data-speaker-notes="Для сравнения берём один и тот же тест из bench/cases/int_overflow: единицу удваиваем 64 раза. PHP переходит во float и получает положительное число. TypePHP 0.9.2 в нативном режиме вернул ноль — это намеренная политика, не обещание полной PHP-совместимости. С use varint_types этот тест совпал с PHP.
 
-var_dump($b);
-// float(9.2233720368548E+18)</pre>
-    <div class="obligation"><span>Компилятор обязан</span><p>обнаружить границу <b>int</b>, создать значение другого типа и сохранить правила PHP.</p></div>
+elephc обещает переход int во float, но 0.27.0 вернул отрицательное число. Это воспроизведённый 23 сентября дефект повторного умножения уже float-значения. Нельзя переносить его на все операции: отдельная fused checked chain дала корректный ответ. Картинка и реплика — шутка; конкретный результат и режимы показаны слева.">
+  <div class="top"><span><span class="part">Совместимость</span> Обещание и результат</span><span class="count"></span></div>
+  <h2 class="slide-title">При переполнении int становится float</h2>
+  <pre class="plate overflow-code" data-lang="php">$h = 1;
+for ($i = 1; $i &lt;= 64; $i++) {
+    $h = $h * 2;
+}
+echo $h;</pre>
+  <div class="overflow-results">
+    <article><b>PHP 8.4 / 8.5</b><code>1.844674407371E+19</code><span>Положительный float — ожидаемый результат.</span></article>
+    <article><b>TypePHP 0.9.2 · native</b><code>0</code><span>Другая семантика. <code>use varint_types</code> даёт ответ PHP.</span></article>
+    <article class="bug"><b>elephc 0.27.0</b><code>−1.844674407371E+19</code><span>Обещает float, но теряет знак: воспроизведённый баг.</span></article>
   </div>
-  <p class="note">// тип результата определяется не только типами операндов, но и их значениями</p>
+  <p class="overflow-joke">«Не виноватая я,<br />он сам переполнил!»</p>
+  <p class="note">// результаты 23.09.2026 · bench/cases/int_overflow · не тест скорости</p>
 </section>
 
 
 
-<section class="slide semantic-review" data-label="TypePHP: граница нативной арифметики"
-  data-speaker-notes="В TypePHP нужно различать совместимость синтаксиса и правила арифметики. В стандартном native-режиме целые операнды могут превратиться в обычные целые C++. Само объявление возвращаемого float не превращает предшествующее целочисленное деление в дробное.
+<section class="slide division-comparison" data-label="TypePHP: 7 делить на 2"
+  data-speaker-notes="На установленном TypePHP 0.9.2 заново проверили функцию divide с аргументами, прочитанными из окружения при запуске, чтобы исключить свёртку констант. PHP 8.4 вывел 3.5, TypePHP native — 3. Деление двух машинных целых происходит раньше приведения результата к возвращаемому float. Дробная часть уже потеряна.
 
-Поэтому в показанной функции для аргументов семь и два PHP вычисляет 3,5, а нативная операция C++ сначала получает три. При делителе ноль PHP гарантирует DivisionByZeroError. У сырого целочисленного деления C++ на ноль неопределённое поведение, и рассчитывать на то же PHP-исключение нельзя.
-
-Это вывод по коду TypePHP 0.9.3, не результат нового запуска примера. Статически известный нулевой делитель компилятор отвергает; здесь речь об аргументе, неизвестном при сборке. use varint_types направляет обычную арифметику в PHP-совместимый путь через Variant; явно нативные операции остаются отдельным случаем. Native-политика документирована как намеренное правило языка, но её нужно учитывать при переносе приложения.">
-  <div class="top"><span><span class="part">TypePHP 0.9.3</span> Ревью исходников</span><span class="count"></span></div>
-  <h2 class="slide-title">TypePHP: цена нативной арифметики</h2>
-  <div class="review-grid">
-    <pre class="plate" data-lang="php">function divide(int $a, int $b): float
-{
+Это конкретное несовпадение на установленной версии 0.9.2, а не новый замер производительности. Предыдущий слайд опирался на чтение исходников 0.9.3; теперь рядом показан воспроизводимый запуск. Для сохранения дроби важен тип операндов до деления, а не только тип возвращаемого значения.">
+  <div class="top"><span><span class="part">TypePHP 0.9.2</span> Проверенный пример</span><span class="count"></span></div>
+  <h2 class="slide-title">7 / 2: где потерялась дробная часть?</h2>
+  <pre class="plate division-code" data-lang="php">function divide(int $a, int $b): float {
     return $a / $b;
 }
-
-<span class="out">// $a и $b приходят при исполнении
-// native int → целые C++</span></pre>
-    <div class="review-results">
-      <article><h3>Аргументы 7 и 2</h3><p>PHP: <b>3,5</b><br />C++ int / int: <b>3</b>, затем приведение к float.</p></article>
-      <article><h3>Делитель равен нулю</h3><p>PHP: <b>DivisionByZeroError</b><br />Нативный C++: неопределённое поведение.</p></article>
-    </div>
-  </div>
-  <p class="closing"><code>use varint_types</code> выбирает PHP-совместимую арифметику.</p>
-  <p class="note">// исходники 0.9.3 · примеры не запускались · делитель неизвестен при сборке</p>
-</section>
-
-<section class="slide" data-label="Изменение массива в foreach"
-  data-speaker-notes="Ещё одна особенность PHP — массив во время обхода не обязан оставаться прежним. В этом примере удаляется ещё не посещённая ячейка, элементы доступны по ссылке, а в конце добавляется новая ячейка. Компилятор не может механически заменить такой foreach простым циклом по непрерывному буферу: он должен сохранить порядок обхода, пропуски, ссылки и правила изменения массива.">
-  <div class="top"><span><span class="part">Механика</span> PHP-массив</span><span class="count"></span></div>
-  <h2 class="slide-title">Массив может измениться во время foreach</h2>
-  <div class="problem-example">
-    <pre class="plate" data-lang="php">$items = [10, 20, 30];
-
-foreach ($items as $key =&gt; &amp;$value) {
-    if ($key === 0) unset($items[1]);
-    if ($key === 2) $items[] = 40;
-}</pre>
-    <div class="obligation"><span>Компилятор обязан</span><p>сохранить порядок обхода, пустые ячейки, ссылки и изменение контейнера.</p></div>
-  </div>
-  <p class="note">// foreach над PHP-массивом шире обычного цикла по непрерывному массиву</p>
-</section>
-
-<section class="slide" data-label="Что происходит с динамическим кодом"
-  data-speaker-notes="Здесь видно четыре разных решения одной задачи. JIT уже находится внутри Zend. TypePHP запрещает переменные переменные и оставляет поддерживаемые динамические вызовы движку. KPHP исключает eval, динамические имена и рефлексию из подмножества. В текущих исходниках elephc подходящие литералы eval компилируются заранее, а динамические фрагменты при необходимости обслуживает встроенный Magician. Обычный код остаётся AOT.">
-  <div class="top"><span><span class="part">Динамика</span> Решения проектов</span><span class="count"></span></div>
-  <h2 class="slide-title">Что происходит с динамическим кодом</h2>
-  <div class="dynamic-routes">
-    <div class="dynamic-source"><code>$$var · $function() · new $class · eval($source)</code><span>известно только при исполнении</span></div>
-    <div class="dynamic-route"><b>PHP JIT</b><strong>Оставить Zend</strong><p>При выходе из трассы исполнение продолжает VM.</p></div>
-    <div class="dynamic-route"><b>TypePHP</b><strong>Ограничить модуль</strong><p>$$var запрещена; поддержанные вызовы возвращаются в Zend.</p></div>
-    <div class="dynamic-route"><b>KPHP</b><strong>Сузить язык</strong><p>eval, динамические имена и рефлексия исключены.</p></div>
-    <div class="dynamic-route"><b>elephc</b><strong>Встроить интерпретатор</strong><p>Для динамических фрагментов eval — Magician; подходящие литералы — AOT.</p></div>
-  </div>
-  <p class="note">// одна конструкция — четыре границы между компилятором и рантаймом</p>
-</section>
-
-<section class="slide" data-label="Структура программы TypePHP"
-  data-speaker-notes="В TypePHP исполняемые операторы нельзя оставлять на верхнем уровне: входом в программу служит main(). Именованную функцию нельзя объявить внутри другой функции, а переменные переменные запрещены. Так компилятор заранее узнаёт набор объявлений и локальных переменных. Слева — допустимый PHP, справа — форма, которую принимает TypePHP.">
-  <div class="top"><span><span class="part">TypePHP</span> INCOMPATIBLE_PHP_FEATURES.md</span><span class="count"></span></div>
-  <h2 class="slide-title">Структура программы должна быть известна при сборке</h2>
-  <div class="code-compare">
-    <pre class="plate" data-lang="php"><span class="out">// допустимо в PHP</span>
-echo 'boot';
-
-function outer(): void {
-    function inner(): void {}
-}
-
-$name = 'value';
-$$name = 42;</pre>
-    <pre class="plate" data-lang="php"><span class="out">// форма для TypePHP</span>
-function inner(): void {}
-
-function outer(): void {
-    inner();
-}
-
-function main(): void {
-    $value = 42;
-}</pre>
-  </div>
-  <p class="note">// только объявления на верхнем уровне · вложенные функции и $$var запрещены · вход через main()</p>
-</section>
-
-<section class="slide" data-label="Что TypePHP не поддерживает"
-  data-speaker-notes="TypePHP фиксирует машинное представление значений при сборке. Поэтому часть привычных состояний PHP недоступна: тип выведенной нативной переменной нельзя сменить, а нативное свойство нельзя вернуть в состояние unset. Привязка замыкания к другому объекту или области видимости тоже запрещена. Обычный Zend остаётся вокруг расширения, но внутри собранного модуля этих возможностей нет.">
-  <div class="top"><span><span class="part">TypePHP</span> Несовместимость с PHP</span><span class="count"></span></div>
-  <h2 class="slide-title">Нативное представление исключает часть семантики PHP</h2>
-  <table class="table">
-    <tr><th>Не поддерживается</th><th>Что мешает AOT</th></tr>
-    <tr><td>нестрогая типизация</td><td>машинное представление требует стабильного типа</td></tr>
-    <tr><td>смена выведенного типа</td><td>машинное представление уже зафиксировано</td></tr>
-    <tr><td>полный <b>unset</b> / uninitialized</td><td>фиксированная раскладка не хранит все состояния zval</td></tr>
-    <tr><td><b>Closure::bind*</b></td><td>объект и область видимости меняются при исполнении</td></tr>
-  </table>
-  <p class="note">// факт ограничений: INCOMPATIBLE_PHP_FEATURES.md · причины следуют из архитектуры</p>
+// аргументы 7 и 2 приходят при запуске</pre>
+  <div class="division-answers"><article><span>Обычный PHP</span><b>3,5</b><p>Деление сохраняет дробную часть.</p></article><article><span>TypePHP · native</span><b>3</b><p>Сначала целочисленное деление C++, затем приведение к float.</p></article></div>
+  <p class="closing">Возвращаемый <code>float</code> не возвращает уже потерянную дробь.</p>
+  <p class="note">// новый запуск 27.09.2026 · PHP 8.4 и TypePHP 0.9.2 · оба операнда — int</p>
 </section>
 
 
 
-<section class="slide semantic-review" data-label="Manticore: состояние и доступ к полям"
-  data-speaker-notes="В Manticore компактность обычного объекта пока нужно рассматривать вместе с неполной поддержкой поведения PHP. Первый случай — типизированное поле без значения. PHP отличает его от поля, которому присвоили ноль, и при чтении выбрасывает Error. В изученном коде Manticore обычный int-слот обнуляется, а отдельное состояние неинициализированного свойства не сохраняется.
 
-Второй случай — доступ к объявленному private-полю известного класса. В PHP обращение снаружи запрещено. Изученный путь Manticore вычисляет смещение и читает слот без проверки видимости свойства. В коде сериализатора прямо отмечено, что свободная функция может читать private-поле. Это не утверждение, что у проекта отсутствуют все проверки доступа: динамические методы уже имеют отдельную проверку видимости.
 
-Два обращения справа рассматриваются независимо: ошибка первого в обычном PHP не должна скрывать второй пример. Это ревью исходников 69310ff, новые исполняемые примеры не запускались. Также отсюда не следует, что полная поддержка PHP обязательно требует шестнадцать байт на каждое поле: состояние и доступ можно реализовать другими способами. Но нынешние размеры нельзя считать сравнением полностью одинаковой семантики.">
-  <div class="top"><span><span class="part">Manticore</span> Ревью исходников</span><span class="count"></span></div>
-  <h2 class="slide-title">Manticore: семантика свойств</h2>
-  <div class="review-grid">
-    <pre class="plate" data-lang="php">class Account
-{
-    public int $balance;
-    private int $limit = 100;
-}
 
-$a = new Account();</pre>
-    <div class="review-results">
-      <article><h3><code>$a-&gt;balance</code></h3><p>PHP: <b>Error</b> — поле не задано.<br />В коде Manticore: int-слот обнуляется.</p></article>
-      <article><h3><code>$a-&gt;limit</code></h3><p>PHP: <b>Error</b> — поле закрыто.<br />В коде Manticore: чтение без проверки видимости.</p></article>
-    </div>
-  </div>
-  <p class="closing">Сравнивая размер объекта, нужно сравнивать и сохранённые правила PHP.</p>
-  <p class="note">// исходники 69310ff · обращения независимы · примеры не запускались</p>
-</section>
+
+
+
+
+
+
 
 <section class="slide divider optimization-divider" data-label="Что под капотом?"
   data-speaker-notes="Ускорение появляется, когда часть работы больше не нужно выполнять. Например, проверять переполнение, искать метод во время вызова или обслуживать универсальное значение. Чтобы убрать такую работу без изменения поведения программы, компилятору нужны доказательства.">
@@ -532,22 +458,7 @@ for ($i = 0; $i &lt; 100_000_000; $i++) {
   <p class="note">// 23.09.2026 · 10⁸ итераций · тело в функции · opcache без JIT — 358 мс · Manticore — 21 мс</p>
 </section>
 
-<section class="slide" data-label="Одно слово в объявлении"
-  data-speaker-notes="Здесь показан C++, полученный из одного PHP-цикла. В одном режиме переменная хранится как динамический php::Var, в другом — как машинный php::Int.
 
-Выбор представления меняет стоимость операций. Но вместе с ним меняется и поведение при переполнении. Обычная аннотация int в PHP сама по себе не означает переход к нативному целому.">
-  <div class="top"><span><span class="part">Замер</span> Сгенерированный C++</span><span class="count"></span></div>
-  <h2 class="slide-title">Тип в исходнике тот же; директива меняет представление</h2>
-  <pre class="plate"><span class="out">// сгенерированный TypePHP C++, один и тот же PHP-цикл</span>
-
-<span class="hi">php::Var h = 1L;</span>             <span class="out">// use varint_types — 996 мс</span>
-h = ((((((h) * (31L))) + (i))) &amp; (1073741823L));
-
-<span class="hi">php::Int h = php::toInt(1L);</span> <span class="out">// по умолчанию     —  85 мс</span>
-h = php::toInt(((((((h) * (31L))) + (i))) &amp; (1073741823L)));</pre>
-  <p class="closing"><b>php::Int = zend_long.</b> Вместе с представлением меняется поведение при переполнении.</p>
-  <p class="note">// TypePHP 0.9.2 · php::Int — это typedef zend_long · в августе было 3996 и 90 мс</p>
-</section>
 
 <section class="slide" data-label="elephc 0.27: цепочка без аллокации"
   data-speaker-notes="В августовской версии elephc выделял два Mixed на каждую итерацию. После PR 817 проверенное умножение, сложение и приведение объединены: обычный путь проходит без этих аллокаций, а проверка переполнения остаётся. При повторном запуске августовской сборки 23 сентября получили 4512 миллисекунд, у новой версии — 246. На диаграмме за 30 августа было 5202 миллисекунды: это другой запуск старой версии. Для этой цепочки мы проверили случай переполнения отдельно; другой случай на следующем слайде показывает дефект версии 0.27.">
@@ -576,10 +487,22 @@ for ($i = 1; $i &lt;= 64; $i++) { $h = $h * 2; }
   <p class="note">// elephc.dev/docs/php/operators: «Integer overflow promotes to double»</p>
 </section>
 
-<section class="slide" data-label="Вызов через интерфейс"
+<section class="slide interface-call-example" data-label="Вызов через интерфейс"
   data-speaker-notes="На одном месте вызова чередуются две реализации интерфейса. Из общего времени вычли контрольный цикл с обычными функциями и разделили разницу на двадцать миллионов вызовов. JIT тратит около 8 наносекунд на вызов через интерфейс, TypePHP — 58, elephc — 216, Manticore — меньше 3. Для TypePHP важна смена класса: при одном классе он быстрее JIT. Значит, число здесь характеризует конкретную форму вызова, а не все методы проекта.">
   <div class="top"><span><span class="part">Замер</span> Вызов метода</span><span class="count"></span></div>
   <h2 class="slide-title">Цена вызова через интерфейс</h2>
+  <pre class="plate interface-source" data-lang="php">interface Step {
+    public function apply(int $h): int;
+}
+// Scale и Shift реализуют Step:
+// ($h * 31) &amp; 0x3fffffff
+// ($h + 17) &amp; 0x3fffffff
+
+for ($i = 0; $i &lt; 20_000_000; $i++) {
+    $step = ($i &amp; 1) === 0
+        ? $scale : $shift;
+    $h = $step-&gt;apply($h + $i);
+}</pre>
   <table class="table">
     <tr><th>Движок</th><th>Функции</th><th>Интерфейс</th><th>На вызов</th></tr>
     <tr><td>PHP 8.4 JIT</td><td class="num">69 мс</td><td class="num">232 мс</td><td class="num">8,1 нс</td></tr>
@@ -591,12 +514,12 @@ for ($i = 1; $i &lt;= 64; $i++) { $h = $h * 2; }
   <p class="note">// 2·10⁷ вызовов · две final-реализации одного интерфейса · 23.09.2026</p>
 </section>
 
-<section class="slide" data-label="TypePHP и Laravel"
+<section class="slide laravel-fit" data-label="TypePHP и Laravel"
   data-speaker-notes="TypePHP 0.9.2 проверили на Laravel 13. Собрать всё приложение без изменений не удалось: пришлось исключить bootstrap, конфигурацию, маршруты, модели и провайдеры. В итоге скомпилировались три файла, а остальной код выполнялся как байт-код Zend внутри бинарника.
 
 Отдельный вычислительный класс удалось собрать как расширение без правок приложения. В постоянном процессе выигрыш был заметен, а при запуске нового процесса на каждый запрос сократился до семи процентов. Octane и php-fpm в этом опыте не запускались: сравнивались сами режимы жизни процесса.">
   <div class="top"><span><span class="part">Замер</span> TypePHP и Laravel 13</span><span class="count"></span></div>
-  <h2 class="slide-title">TypePHP не собирает Laravel как есть</h2>
+  <h2 class="slide-title">TypePHP не собирает Laravel.<span class="laravel-subtitle">Как Пыхнуть неPHPуемое</span></h2>
   <table class="table">
     <tr><th></th><th>Бинарник целиком</th><th>Расширение</th></tr>
     <tr><td>Скомпилировано</td><td>3 файла, 176 МБ</td><td>1 класс, 30 КБ</td></tr>

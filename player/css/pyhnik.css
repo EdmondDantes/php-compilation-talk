@@ -140,7 +140,7 @@
 }
 [data-theme='pyhnik'] .rankings-elephant {
   background-image: linear-gradient(90deg, rgba(0, 10, 47, .12), rgba(0, 10, 47, .02)),
-    url('../assets/pyhnik/php-survival-revenant.png');
+    url('../assets/pyhnik/php-survival-oscar.png');
 }
 
 [data-theme='pyhnik'] :is(.rust-question strong, .complexity-copy .after,

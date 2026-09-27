@@ -953,3 +953,11 @@ extension examples are documented in
 [the hosting, build-time and compatibility note](hosting-buildtime-compatibility-2026-09.md).
 No benchmark figures were changed. The elephc syntax is pinned to 0.27.0;
 the TypePHP vector syntax already appears in the repository's benchmark cases.
+
+
+## Concrete compatibility and story refresh — 2026-09-28
+
+[Updated evidence and measured semantic probes](ecosystem-and-concrete-compatibility-2026-09.md)
+backs the consolidated restrictions slide, corrected Deno narrative, project
+stories and the division/foreach observations. The performance tables retain
+September 23 results; this edit did not rerun performance measurements.

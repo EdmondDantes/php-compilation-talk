@@ -13,7 +13,7 @@ Palette from the site's `assets/app.css`: navy `#000a2f`, green `#4bfb75`,
 white `#ffffff`, warm accent `#ff9f45`.
 
 `player/css/pyhnik.css` selects dedicated navy/green Matrix-inspired versions
-for all 12 illustrations in the active deck. Original themes keep their assets.
+for the illustrated scenes in the active deck. Original themes keep their assets.
 The title image fades into the exact theme background at its left/top/bottom edges.
 Bounded is used for titles; body text and code retain the deck's readable fonts.
 
@@ -71,3 +71,23 @@ on the compilation-attempts divider. It uses photographic realism: Rust Cohle
 in an interview room, beer can, PHP paper entering a grinder and green binary
 code leaving it. Generated with built-in imagegen; exact prompt is in
 `detective-grinder-prompt.md`. Earlier variants remain available as sources.
+
+
+## September 28 story additions
+
+- `deno-npm-comic.png`: three-panel fictional Deno dinosaur comic; historical
+  chronology and parody dialogue are separate editable slide text.
+- `hiphop-dumbledore.png`: Dumbledore/HipHop deployment metaphor.
+- `kphp-elephant-protest.png`: PHP elephant protest meme, with no human.
+- `overflow-diamond-arm-typephp.png`: active overflow illustration, refined
+  with a film portrait reference, recognizable headband and a qipao/TypePHP badge.
+- `laravel-typephp-crate.png`: active Laravel metaphor; only the crate and
+  TypePHP machine remain, with no human.
+
+These images were made with built-in imagegen. Matching `*-prompt.md` files
+record the instructions. Earlier generated versions are retained but not
+referenced by the active slides. The image gags are fictional, not photographs
+of actual incidents. Semantic measurements are documented separately.
+
+`php-survival-oscar.png` is the active survival scene, with the Oscar trophy
+added directly to the image. `php-survival-oscar-prompt.md` records the edit.
