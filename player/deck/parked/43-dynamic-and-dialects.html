@@ -1,0 +1,32 @@
+<!-- Removed from the active deck at the speaker's request. -->
+
+<section class="slide" data-label="Динамические имена и код"
+  data-speaker-notes="Имя функции может прийти из запроса, имя класса — из конфигурации, а eval создаёт код уже после сборки. Для неизвестного вызова нужен поиск цели во время исполнения; для eval — возможность выполнить новый код. Проект может поддержать это в собственном рантайме, передать Zend или запретить конструкцию.">
+  <div class="top"><span><span class="part">Механика</span> Код неизвестен заранее</span><span class="count"></span></div>
+  <h2 class="slide-title">Цель вызова может стать известна только при исполнении</h2>
+  <div class="problem-example">
+    <pre class="plate" data-lang="php">$handler = $_GET['handler'];
+$result = $handler($payload);
+
+$class = $config['class'];
+$object = new $class();
+
+eval($source);</pre>
+    <div class="obligation"><span>Компилятору нужен</span><p>путь для динамического вызова или запрет такой конструкции.</p></div>
+  </div>
+  <p class="note">// при сборке неизвестны адрес вызова, класс объекта и сам текст eval()</p>
+</section>
+
+<section class="slide" data-label="Три примера расширенного PHP"
+  data-speaker-notes="Собственный компилятор позволяет не только ограничивать PHP, но и добавлять новые возможности. TypePHP предлагает неизменяемые DTO и генерацию методов. elephc добавляет типизированную память и взаимодействие с C. KPHP — средства конкурентного серверного исполнения.
+
+Программа сохраняет знакомую основу PHP, но начинает зависеть от возможностей конкретного компилятора.">
+  <div class="top"><span><span class="part">Расширения</span> Три направления</span><span class="count"></span></div>
+  <h2 class="slide-title">Три проекта — три расширения PHP</h2>
+  <div class="extension-examples">
+    <article><span>TypePHP</span><h3>Неизменяемый DTO</h3><p>Компилятор проверяет неизменяемость и создаёт методы из объявления класса.</p><code>#[Immutable] · #[With]</code></article>
+    <article><span>elephc</span><h3>Системный код на PHP-синтаксисе</h3><p>Типизированная память, плотные структуры и вызов функций C.</p><code>buffer&lt;T&gt; · packed · extern</code></article>
+    <article><span>KPHP</span><h3>Конкурентный серверный код</h3><p>Запрос может ждать сеть и выполнять другую работу; тяжёлую задачу можно вынести в отдельный процесс.</p><code>fork() · wait() · job worker</code></article>
+  </div>
+  <p class="note">// эти возможности требуют принять правила соответствующего проекта</p>
+</section>

@@ -109,6 +109,11 @@ Goal: the deck exists end to end and runs in a browser.
       Manticore, then replace the table with three logical memory diagrams
       titled "Как реализуются абстракции", as requested. Keep the table in
       reserve; the three consecutive slides advance normally with space.
+- [x] S4.11 Rebuild the memory schematics on one aligned grid: equal
+      columns, fixed storage rows, centred cells and identical connectors.
+      Align the compiler output panels and their runtime captions too.
+      Remove the dynamic-call target and three-dialect examples from the
+      active deck at the speaker's request; retain their markup in reserve.
 
 ## S7. Our own measurement of TypePHP and elephc [done]
 

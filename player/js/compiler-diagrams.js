@@ -111,7 +111,7 @@
     text(canvas.dataset.compilerDiagram === 'typephp' ? '01 / КОМПИЛЯТОР НА PHP → ГЕНЕРАЦИЯ C++' : '01 / КОМПИЛЯЦИЯ', 0, 0, 25, 'accent', 600, mono);
     diagram.stages.forEach(([title, detail, caption], n) => reveal(n, () => {
       const x = n * 342;
-      if (n) line([[x - 38, 137], [x - 8, 137]], true);
+      if (n) line([[x - 22, 137], [x - 8, 137]], true);
       panel(x, 57, 312, 172, n === step || step >= 5);
       text(title, x + 20, 78, 36, 'ink', 600);
       text(detail, x + 20, 132, 26, 'accent');
@@ -125,23 +125,25 @@
         if (n === 6 && diagram.analysisBranch) {
           line([[840, 233], [840, 280], [target, 280], [target, 330]], true);
         } else {
-          line([[1540, 233], [1540, 254], [target, 254], [target, 330]], true);
+          line([[1524, 233], [1524, 254], [target, 254], [target, 330]], true);
         }
         panel(x, 342, width, 250, true);
         text(data.title, x + 24, 362, 34, 'ink', 600);
-        if (data.tag) text(data.tag, x + 470, 370, 24, 'dim');
+        if (data.tag) {
+          ctx.font = `400 24px ${body}`;
+          text(data.tag, x + width - 24 - ctx.measureText(data.tag).width, 370, 24, 'dim');
+        }
         data.rows.forEach(([label, detail], i) => {
           text(label, x + 24, 416 + i * 42, 28, 'accent', 600, mono);
           text(detail, x + 220, 416 + i * 42, 28);
         });
-        line([[x + 24, 508], [x + width - 24, 508]]);
-        text(data.base, x + 24, 530, 30, 'ink', 600);
-        const detailX = Math.max(x + 318, x + 24 + ctx.measureText(data.base).width + 24);
-        text(data.detail, detailX, 534, 25, 'dim');
+        line([[x + 24, 492], [x + width - 24, 492]]);
+        text(data.base, x + 24, 510, 29, 'ink', 600);
+        text(data.detail, x + 24, 550, 25, 'dim');
       });
     }
-    runtimePanel(5, 0, 818, diagram.left);
-    runtimePanel(6, 866, 814, diagram.right);
+    runtimePanel(5, 0, 816, diagram.left);
+    runtimePanel(6, 864, 816, diagram.right);
     if (step >= 5) text(diagram.takeaway, 0, 632, 30, 'ink', 500);
     canvas.dataset.renderedStep = String(step);
   }
