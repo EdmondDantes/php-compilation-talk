@@ -380,6 +380,23 @@
 }
 .representation-table b { font-size: 27px; font-weight: 600; }
 
+.memory-costs .memory-cost-table {
+  top: 280px;
+  transform: none;
+  table-layout: fixed;
+}
+.memory-costs .memory-cost-table th:first-child { width: 43%; }
+.memory-costs .memory-cost-table th { vertical-align: top; }
+.memory-costs .memory-cost-table td { padding-top: 18px; padding-bottom: 18px; }
+.memory-cost-table span {
+  display: block;
+  margin-top: 10px;
+  color: var(--dim);
+  font: 24px/1.2 var(--font-body);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 .cover .kicker {
   position: absolute;
   left: var(--pad);

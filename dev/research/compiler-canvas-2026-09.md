@@ -58,7 +58,7 @@ Three consecutive slides immediately after Manticore compare ordinary
 dynamic values, objects and PHP arrays, each across all three compilers.
 They share the title "Как реализуются абстракции" and advance with space.
 The preceding table design is preserved in `player/deck/parked/`.
-These are logical memory diagrams, without byte sizes or physical scale.
+The diagrams now carry checked 64-bit byte sizes, but are not drawn to physical scale. See [the size probes and explicit memory model](../../bench/layouts/README.md).
 They do not claim every value is boxed and exclude TypePHP Nano, explicit
 std containers and specialized classes. All three remain separate pages
 in print and overview, so none of the memory states is lost in export.
@@ -78,8 +78,7 @@ stored directly; the general-purpose representation is not universal.
 Manticore's `src/Compile/Mir/Type.php` defines `cell` as a tagged union.
 `MemoryAbi.php` and `docs/design/memory-abi.md` describe the object
 descriptor/refcount/fields and unified PhpArray PACKED/HASHED modes.
-The diagrams deliberately avoid hard-coded byte sizes or an ABI version:
-the implementation and narrative documents have differing version labels.
+Byte sizes were subsequently checked against the implementation and, for Zend/PHPX, sizeof probes. An ABI version is not inferred from stale prose labels; the implementation and narrative documents have differing version labels.
 
 ## Presentation behavior
 

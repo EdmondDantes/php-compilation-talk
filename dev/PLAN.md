@@ -114,6 +114,10 @@ Goal: the deck exists end to end and runs in a browser.
       Align the compiler output panels and their runtime captions too.
       Remove the dynamic-call target and three-dialect examples from the
       active deck at the speaker's request; retain their markup in reserve.
+- [x] S4.12 Annotate memory diagrams with checked 64-bit sizes, explain
+      field density separately from the existing interface-call benchmark,
+      review hash lookup/storage algorithms, and add a reproducible memory
+      model comparison. These are structural byte counts, not RSS results.
 
 ## S7. Our own measurement of TypePHP and elephc [done]
 

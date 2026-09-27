@@ -1,4 +1,4 @@
-/* Logical layouts, not byte-accurate structs. Every comparison uses one grid:
+/* Logical layouts with checked 64-bit sizes, not drawn to byte scale. One grid:
  * equal columns, identical storage rows, centred cells and common baselines. */
 (() => {
   'use strict';
@@ -11,49 +11,49 @@
   const BOX_HEIGHT = 116;
   const layouts = {
     value: {
-      title: '01 / ДИНАМИЧЕСКОЕ ЗНАЧЕНИЕ',
+      title: '01 / ДИНАМИЧЕСКОЕ ЗНАЧЕНИЕ · 64 БИТА',
       columns: [
-        { first: ['php::Var / zval', ['тип', 'данные / адрес']], link: 'для ссылочных значений',
+        { first: ['php::Var / zval', ['payload · 8 Б', 'служебные · 8 Б'], '16 Б'], link: 'для ссылочных значений',
           second: ['Данные Zend в куче', ['строка / массив / объект']],
-          notes: ['int, float и bool — внутри zval.', 'Время жизни обслуживает Zend.'] },
-        { first: ['Переменная Mixed', ['указатель']], link: 'адрес универсальной ячейки',
-          second: ['Mixed в куче', ['тег', 'payload']],
-          notes: ['Упаковка — отдельная ячейка.', 'Внутри — данные или ссылка.'] },
-        { first: ['cell', ['тег', 'payload']], link: 'для ссылочных значений',
-          second: ['Собственные данные в куче', ['строка / массив / объект']],
-          notes: ['Собственное тегированное значение.', 'Представление не совместимо с zval.'] }
+          notes: ['int, float и bool — внутри zval.', 'Память по ссылке считается отдельно.'] },
+        { first: ['Переменная Mixed', ['указатель · 8 Б'], '8 Б'], link: 'адрес универсальной ячейки',
+          second: ['Mixed в куче', ['тег · 8 Б', 'payload · 16 Б'], '24 Б'],
+          notes: ['Ещё 16 Б — заголовок аллокации.', '8 Б указатель + 40 Б в куче.'] },
+        { first: ['cell', ['тег и данные в одном слове'], '8 Б'], link: 'для ссылочных значений',
+          second: ['Данные в куче', ['строка / массив / объект']],
+          notes: ['8 Б — только само значение cell.', 'Память по ссылке считается отдельно.'] }
       ],
-      takeaway: 'Динамическое значение хранит тип и данные. Известным скалярам универсальная упаковка не нужна.'
+      takeaway: 'Размер значения и память за указателем — разные расходы. Считать нужно оба.'
     },
     object: {
-      title: '02 / ОБЪЕКТ',
+      title: '02 / ОБЫЧНЫЙ ОБЪЕКТ · N ПОЛЕЙ · 64 БИТА',
       columns: [
-        { first: ['php::Object / zval', ['IS_OBJECT', 'указатель']], link: 'адрес объекта',
-          second: ['zend_object', ['служебные поля', 'свойства']],
-          notes: ['Объектная модель Zend / PHPX.', 'AOT-методы — нативный код.'] },
-        { first: ['Переменная объекта', ['указатель']], link: 'адрес объекта',
-          second: ['Объект elephc', ['class_id', 'поле 0', 'поле 1']],
-          notes: ['Поля — по фиксированным смещениям.', 'RC — в заголовке аллокации.'] },
-        { first: ['Переменная объекта', ['указатель']], link: 'адрес объекта',
-          second: ['Объект Manticore', ['descriptor*', 'RC', 'поля']],
-          notes: ['descriptor* → метаданные класса.', 'RC → счётчик ссылок.'] }
+        { first: ['php::Object / zval', ['IS_OBJECT', 'указатель'], '16 Б'], link: 'адрес объекта',
+          second: ['zend_object', ['header · 40 Б', 'поле · 16 Б'], '40 + 16N Б'],
+          notes: ['Поле хранится в zval, даже если это int.', 'Метаданные класса — общие.'], metric: '20 млн вызовов: 1178,6 мс' },
+        { first: ['Переменная объекта', ['указатель'], '8 Б'], link: 'адрес объекта',
+          second: ['Объект elephc', ['class_id · 8 Б', 'поле · 16 Б'], '8 + 16N Б'],
+          notes: ['Ещё 16 Б — заголовок аллокации.', 'Слот поля — 16 Б, в том числе для int.'], metric: '20 млн вызовов: 4757,3 мс' },
+        { first: ['Переменная объекта', ['указатель'], '8 Б'], link: 'адрес объекта',
+          second: ['Объект Manticore', ['descr* · 8 Б', 'RC · 8 Б', 'поле · 8 Б'], '16 + 8N Б'],
+          notes: ['Ещё 8 Б — префикс RC-аллокации.', 'Обычные поля — 8 Б, с выравниванием.'], metric: '20 млн вызовов: 64,4 мс' }
       ],
-      takeaway: 'Одинаковый синтаксис объекта — разные структуры и способы управления временем жизни.'
+      takeaway: 'PHP JIT: 231,6 мс. В тесте классы без полей: это скорость вызовов, а не проверка плотности.'
     },
     array: {
-      title: '03 / МАССИВ',
+      title: '03 / МАССИВ · ЗАГОЛОВОК И СЛОТЫ · 64 БИТА',
       columns: [
-        { first: ['php::Array → zend_array', ['HashTable Zend']], link: 'два режима одного контейнера',
-          second: ['Плотный режим · packed', ['zval', 'zval', 'zval']],
-          third: ['Хешированный режим', ['Bucket: ключ + zval']] },
-        { first: ['Array / AssocArray', ['indexed', 'hash']], link: 'два отдельных представления',
-          second: ['Индексированный массив', ['header', 'v₀', 'v₁']],
-          third: ['Хеш-таблица', ['header', 'entries*']] },
-        { first: ['Единый PhpArray', ['режим', 'RC', 'длина']], link: 'два режима одного контейнера',
-          second: ['Плотный режим · PACKED', ['v₀', 'v₁', 'v₂']],
-          third: ['Хешированный режим', ['ключ → значение']] }
+        { first: ['php::Array → HashTable', ['обёртка · 16 Б', 'header · 56 Б']], link: 'два режима одного контейнера',
+          second: ['Плотный режим', ['zval · 16 Б', 'zval · 16 Б'], '16 Б / слот'],
+          third: ['Хеш-режим', ['Bucket · 32 Б', '+ хеш-индекс'], '32 Б / запись'] },
+        { first: ['Array / AssocArray', ['Array · 24 Б', 'Hash · 64 Б']], link: 'заголовки без аллокатора',
+          second: ['Индексированный', ['8 Б: int и ссылки', '16 Б: строки'], '8 / 16 Б'],
+          third: ['Хеш-таблица', ['entry · 64 Б', 'включая prev/next'], '64 Б / слот'] },
+        { first: ['PhpArray', ['header · 56 Б', 'RC-префикс · 8 Б']], link: 'два режима одного контейнера',
+          second: ['Плотный режим', ['v₀ · 8 Б', 'v₁ · 8 Б'], '8 Б / слот'],
+          third: ['Хеш-режим', ['entry · 24 Б', '+ хеш-индекс'], '24 Б / запись'] }
       ],
-      takeaway: 'Режим хранения и представление элементов определяют стоимость доступа к массиву.'
+      takeaway: 'Размер записи ещё не даёт полный расход: нужны запас ёмкости, индекс и данные ключей.'
     }
   };
 
@@ -83,7 +83,7 @@
       ctx.lineTo(x + width, y);
       ctx.stroke();
     }
-    function box(x, y, [title, cells]) {
+    function box(x, y, [title, cells, bytes]) {
       ctx.fillStyle = color('panel');
       ctx.strokeStyle = color('rule');
       ctx.lineWidth = 1;
@@ -92,6 +92,7 @@
       ctx.fill();
       ctx.stroke();
       text(title, x + PAD, y + 18, 25, 'accent', 500, mono);
+      if (bytes) text(bytes, x + COLUMN - PAD, y + 18, 24, 'ink', 600, body, 'right');
       rule(x + PAD, y + 55, COLUMN - 2 * PAD);
       const width = (COLUMN - 2 * PAD) / cells.length;
       cells.forEach((cell, i) => {
@@ -124,6 +125,7 @@
       box(x, SECOND_ROW, column.second);
       if (column.third) box(x, THIRD_ROW, column.third);
       column.notes?.forEach((line, row) => text(line, x + PAD, 506 + row * 40, 24, 'dim'));
+      if (column.metric) text(column.metric, x + PAD, 588, 25, 'accent', 500);
     });
     text(layout.takeaway, 0, 638, 27);
     canvas.dataset.renderedStep = '0';
