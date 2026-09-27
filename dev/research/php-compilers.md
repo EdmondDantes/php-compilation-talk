@@ -944,3 +944,12 @@ product behind it). Limelight is still on paper.
 - Why Tagua VM was abandoned.
 - Every performance number above that is marked project-authored.
 - Whether the talk needs a measurement of its own at all.
+
+
+## Presentation comparison refresh — 2026-09-27
+
+The restored qualitative compatibility table and TypePHP/elephc language
+extension examples are documented in
+[the hosting, build-time and compatibility note](hosting-buildtime-compatibility-2026-09.md).
+No benchmark figures were changed. The elephc syntax is pinned to 0.27.0;
+the TypePHP vector syntax already appears in the repository's benchmark cases.

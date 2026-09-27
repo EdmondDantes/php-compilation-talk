@@ -241,3 +241,14 @@ enough to present from.
 - [x] S6.13 Add the speaker's language-efficiency thesis below the four
       ranking cards on the PHP survival slide. Verified 51 slides in four
       themes and three states with no collisions or overflows.
+
+- [x] S6.14 Reframe hosting as the shift from shared hosting to controllable
+      cloud images, without claiming PHP uniquely isolates tenants or that
+      C++ is intrinsically forbidden. Replace the DI-only example with three
+      build-time cards: services, routes and Twig. Use the realistic Rust
+      Cohle interview/grinder illustration on the compilation-attempts divider.
+      Restore a qualitative compatibility table and add TypePHP vector and
+      elephc packed-buffer examples. Move eight architecture/memory slides
+      after the renamed "What is under the hood?" divider. Source evidence:
+      dev/research/hosting-buildtime-compatibility-2026-09.md. Verified all
+      54 slides in four themes and three states; no collisions or overflows.

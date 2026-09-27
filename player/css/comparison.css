@@ -1,0 +1,84 @@
+/* Build-time examples and compatibility overview, at the deck's native size. */
+.compilation-benefit-cards {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 284px;
+  bottom: 160px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+}
+.compilation-benefit-cards article {
+  padding: 30px 34px;
+  border: 1px solid var(--rule);
+  border-top: 4px solid var(--accent);
+  border-radius: 20px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+}
+.benefit-number, .extension-eyebrow {
+  color: var(--accent);
+  font: 600 24px/1.2 var(--font-mono);
+  letter-spacing: .04em;
+}
+.compilation-benefit-cards h3 {
+  margin: 26px 0 22px;
+  font: 600 38px/1.15 var(--font-body);
+}
+.benefit-input { margin: 0; color: var(--dim); font-size: 28px; line-height: 1.3; }
+.benefit-arrow { padding: 12px 0; color: var(--accent); font: 32px/1 var(--font-mono); }
+.benefit-output {
+  padding: 20px 24px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--bg);
+}
+.benefit-output > span { display: block; margin-bottom: 12px; font-size: 24px; color: var(--dim); }
+.benefit-output code { font: 26px/1.4 var(--font-mono); }
+.benefit-payoff { margin: auto 0 0; padding-top: 22px; font-size: 28px; line-height: 1.25; }
+
+.compatibility-overview .slide-title { font-size: 68px; }
+.compatibility-matrix {
+  position: absolute;
+  left: var(--pad);
+  top: 278px;
+  width: calc(var(--stage-w) - 2 * var(--pad));
+  border-collapse: separate;
+  border-spacing: 0 10px;
+  table-layout: fixed;
+  font-size: 27px;
+  line-height: 1.25;
+}
+.compatibility-matrix th, .compatibility-matrix td { padding: 14px 24px; text-align: left; }
+.compatibility-matrix thead th { padding-top: 0; color: var(--dim); font-size: 24px; font-weight: 400; }
+.compatibility-matrix th:nth-child(1) { width: 17%; }
+.compatibility-matrix th:nth-child(2) { width: 24%; }
+.compatibility-matrix th:nth-child(3) { width: 24%; }
+.compatibility-matrix th:nth-child(4) { width: 35%; }
+.compatibility-matrix tbody th, .compatibility-matrix tbody td { background: var(--panel); border-block: 1px solid var(--rule); }
+.compatibility-matrix tbody th { border-left: 3px solid var(--accent); border-radius: 12px 0 0 12px; }
+.compatibility-matrix tbody td:last-child { border-right: 1px solid var(--rule); border-radius: 0 12px 12px 0; }
+.compatibility-matrix th span { display: block; margin-top: 7px; font-size: 24px; color: var(--dim); font-weight: 400; }
+.compat-yes { color: var(--ok); }
+.compat-limit { color: var(--warn); font-weight: 500; }
+
+.language-extension-example .slide-title { font-size: 64px; }
+.extension-example-grid {
+  position: absolute;
+  left: var(--pad);
+  right: var(--pad);
+  top: 304px;
+  bottom: 164px;
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 44px;
+}
+.extension-example-grid .plate { position: static; margin: 0; padding: 36px; font-size: 28px; line-height: 1.5; border-radius: 16px; }
+.extension-explanation { padding: 22px 16px; }
+.extension-explanation h3 { margin: 24px 0; font: 600 40px/1.16 var(--font-body); }
+.extension-explanation p { margin: 0; font-size: 30px; line-height: 1.35; }
+.extension-explanation code { font-family: var(--font-mono); font-size: .9em; }
+.extension-boundary { margin-top: 34px; padding: 24px 28px; border-left: 3px solid var(--warn); background: var(--panel); }
+.extension-boundary b { display: block; margin-bottom: 12px; color: var(--warn); font-size: 26px; }

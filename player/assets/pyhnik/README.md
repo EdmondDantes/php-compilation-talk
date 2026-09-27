@@ -64,3 +64,10 @@ ecosystem. `php-survival-revenant.png` illustrates the renamed PHP survival
 slide, with the Revenant protagonist chasing a fleeing elephant. Both were
 created with built-in imagegen; exact prompts are recorded in
 `don-illustration-prompt.md` and `survival-illustration-prompt.md`.
+
+
+`php-compilation-detective-grinder.png` replaces the outdoor detective scene
+on the compilation-attempts divider. It uses photographic realism: Rust Cohle
+in an interview room, beer can, PHP paper entering a grinder and green binary
+code leaving it. Generated with built-in imagegen; exact prompt is in
+`detective-grinder-prompt.md`. Earlier variants remain available as sources.
