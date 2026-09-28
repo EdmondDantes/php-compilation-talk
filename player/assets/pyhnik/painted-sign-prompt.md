@@ -3,7 +3,7 @@
 Generated with the built-in imagegen tool, 2026-09-27.
 The close-up replaces the separate HTML/CSS tag. The generated QR pattern did not decode. With explicit user authorization,
 `../../tools/embed-conference-qr.py` embedded the exact QR into the painted
-surface, producing `php-ecosystem-migration-qr.png`. The final slide decodes
+surface, producing `php-ecosystem-migration-qr.png`. That version decoded
 at 1920, 1280 and 960 pixels wide.
 
 ## Final prompt

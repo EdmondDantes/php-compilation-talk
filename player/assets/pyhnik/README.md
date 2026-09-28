@@ -36,14 +36,22 @@ Exact prompts are recorded in `generation-prompts.json`.
 `php-optimizer-detective.png` was generated before its foreach chapter was
 removed from the active deck; retained as a reusable asset.
 
-## Conference QR
+## Final slide illustration
+
+The active Pyhnik final scene is `php-ecosystem-migration-clean.png`: the
+close-up elephant without a sign. It was edited from the QR version with the
+built-in imagegen tool on 2026-09-28. The sign, ropes and eyelets were removed;
+the elephant's skin and tail were reconstructed. The original framing and
+industrial background remain.
+
+## Archived conference QR
 
 `conference-qr.svg` encodes exactly `https://pyhnik.phpyh.ru`, with error
 correction H and a four-module white quiet zone. The former CSS plate was
 removed at the user's request.
 
-The active Pyhnik final scene is `php-ecosystem-migration-qr.png`: a close-up
-elephant with a sign physically illustrated on its tail. There is no separate
+The previous Pyhnik final scene was `php-ecosystem-migration-qr.png`: a close-up
+elephant with a sign physically illustrated on its tail. There was no separate
 HTML/CSS sign. The original generated illustration is retained as
 `php-ecosystem-migration-painted.png`; its prompt is in `painted-sign-prompt.md`.
 
@@ -52,7 +60,7 @@ by the speaker. `../../tools/embed-conference-qr.py` reproduces it using
 Python qrcode and Pillow, matching the enamel color and slight perspective
 while preserving the painted frame, rope and shadows.
 
-ZXing decoded the final embedded QR from the actual slide screenshot at
+ZXing decoded that embedded QR from the actual slide screenshot at
 1920, 1280 and 960 pixels wide, yielding exactly `https://pyhnik.phpyh.ru`.
 
 
